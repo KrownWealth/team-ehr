@@ -81,9 +81,9 @@ export const errorHandler = (
 
 const emailService = new EmailService();
 
-export const register = async (req: Request, res: Response) => {
+export const registerAdmin = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, phone, password } = req.body;
+    const { firstName, lastName, email, phone, password, terms } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -116,7 +116,24 @@ export const register = async (req: Request, res: Response) => {
     // Send OTP email
     await emailService.sendOTPEmail(email, otpCode);
 
-    // Create user (not verified yet, no clinicId yet)
+    // Ensure "pending" clinic exists (fails silently if it already exists)
+    await prisma.clinic.upsert({
+      where: { id: "pending" },
+      update: {},
+      create: {
+        id: "pending",
+        name: "Pending Clinic",
+        type: "Placeholder",
+        address: "",
+        city: "",
+        state: "",
+        lga: "",
+        phone: "",
+        email: "pending@system.local",
+      },
+    });
+
+    // Create admin user (linked to placeholder clinic)
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -125,7 +142,79 @@ export const register = async (req: Request, res: Response) => {
         phone,
         password: hashedPassword,
         role: "ADMIN",
-        clinicId: "temp", // Temporary, will be updated during onboarding
+        clinicId: "pending", // ✅ satisfies FK
+        isVerified: false,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    logger.info(`Admin registered: ${email}`);
+
+    return res.status(201).json({
+      status: "success",
+      message: "Admin registration successful. Please verify your email.",
+      data: { user },
+    });
+  } catch (error: any) {
+    logger.error("Admin registration error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, phone, password, role } = req.body;
+
+    const validRoles = ["DOCTOR", "NURSE", "RECEPTIONIST", "STAFF"];
+    const assignedRole = validRoles.includes(role) ? role : "STAFF";
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email already registered",
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate OTP
+    const otpCode = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP
+    await prisma.oTP.create({
+      data: {
+        email,
+        code: otpCode,
+        expiresAt: otpExpiry,
+      },
+    });
+
+    await emailService.sendOTPEmail(email, otpCode);
+
+    // Create user (not verified yet, no clinicId yet)
+    const user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        password: hashedPassword,
+        role: assignedRole,
         isVerified: false,
       },
       select: {

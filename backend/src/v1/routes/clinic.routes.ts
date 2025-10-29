@@ -6,8 +6,10 @@ import {
   getClinicById,
   updateClinic,
 } from "../../controllers/clinic.controller";
+import { validate } from "uuid";
+import { clinicValidator } from "../../validators/clinic.validator";
 
-router.post("/register", registerClinic);
+router.post("/register", clinicValidator, validate, registerClinic);
 
 router.get("/:id", getClinicById);
 

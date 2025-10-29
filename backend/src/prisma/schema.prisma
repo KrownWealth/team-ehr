@@ -63,7 +63,7 @@ model Clinic {
 
 model User {
   id                 String    @id @default(cuid())
-  clinicId           String
+  clinicId           String?
   email              String    @unique
   password           String?
   firstName          String
@@ -79,7 +79,8 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  clinic        Clinic         @relation(fields: [clinicId], references: [id])
+  clinic        Clinic?        @relation(fields: [clinicId], references: [id])
+  //clinic        Clinic         @relation(fields: [clinicId], references: [id])
   consultations Consultation[]
   vitals        Vitals[]
 

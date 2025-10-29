@@ -41,7 +41,9 @@ export const authenticate = async (
     }
 
     req.user = user;
-    req.clinicId = user.clinicId;
+    req.clinicId = user.clinicId ?? undefined;
+
+    //req.clinicId = user.clinicId;
 
     logger.debug(`User authenticated: ${user.email}`);
     next();
