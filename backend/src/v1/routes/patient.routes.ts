@@ -26,7 +26,6 @@ router.use(tenantIsolation);
 // NIN Validation
 router.post("/validate-nin", validateNIN);
 
-// Patient Management
 router.post(
   "/",
   authorize(["ADMIN", "CLERK"]),

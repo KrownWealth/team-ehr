@@ -30,6 +30,7 @@ router.post("/login", loginValidator, validate, login);
 router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/change-password", changePassword);
 
 // OAuth routes
 router.get("/google", googleAuth);

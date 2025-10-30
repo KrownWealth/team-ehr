@@ -185,7 +185,7 @@ The wecareEHR system is built to ensure:
 #### Storage (Cloud Storage)
 - Stores binary files (photos, exports)
 
-#### Client Application (React/React Native)
+#### Client Application (Next.JS)
 - Captures user interactions triggering actions
 - Renders current state based on API responses or local data
 - Manages local state for offline usage (indexedDB)

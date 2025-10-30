@@ -64,7 +64,7 @@ export const onboardClinic = async (req: AuthRequest, res: Response) => {
 
 export const createStaff = async (req: AuthRequest, res: Response) => {
   try {
-    const { email, role, firstName, lastName, phone, licenseId } = req.body;
+    const { email, role, firstName, lastName, phone } = req.body;
     const { clinicId } = req;
 
     // Check if email already exists
@@ -93,7 +93,7 @@ export const createStaff = async (req: AuthRequest, res: Response) => {
         lastName,
         phone,
         role,
-        licenseId,
+        // licenseId,
         isVerified: true,
         mustChangePassword: true,
       },
