@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  registerAdmin,
   register,
   verifyOtp,
   login,
@@ -22,6 +23,7 @@ import {
 const router = Router();
 
 // Public routes
+router.post("/register-admin", registerValidator, validate, registerAdmin);
 router.post("/register", registerValidator, validate, register);
 router.post("/verify-otp", verifyOtpValidator, validate, verifyOtp);
 router.post("/login", loginValidator, validate, login);

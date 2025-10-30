@@ -21,6 +21,7 @@ import notificationRoutes from "./notification.routes";
 const router = express.Router();
 
 // Mount all routes with base paths
+
 router.use("/auth", authRoutes);
 router.use("/clinic", clinicRoutes);
 router.use("/staff", staffRoutes);
