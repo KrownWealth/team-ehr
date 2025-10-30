@@ -1,11 +1,36 @@
-import express from "express";
-const router = express.Router();
+import { Router } from "express";
+import {
+  getRevenueReport,
+  getPatientStats,
+  getConsultationMetrics,
+  exportReport,
+  getAppointmentStats,
+} from "../../controllers/report.controller";
+import { authenticate, authorize } from "../../middleware/auth.middleware";
+import { tenantIsolation } from "../../middleware/tenant.middleware";
 
-router.get("/revenue", (req, res) => res.send("Get revenue reports"));
-router.get("/patient-stats", (req, res) => res.send("Get patient statistics"));
-router.get("/consultation-metrics", (req, res) =>
-  res.send("Get consultation metrics")
+const router = Router();
+
+// All routes require authentication and tenant isolation
+router.use(authenticate);
+router.use(tenantIsolation);
+
+router.get("/revenue", authorize(["ADMIN", "CASHIER"]), getRevenueReport);
+
+router.get("/patient-stats", authorize(["ADMIN", "DOCTOR"]), getPatientStats);
+
+router.get(
+  "/consultation-metrics",
+  authorize(["ADMIN", "DOCTOR"]),
+  getConsultationMetrics
 );
-router.get("/export", (req, res) => res.send("Export reports to PDF/Excel"));
+
+router.get(
+  "/appointment-stats",
+  authorize(["ADMIN", "CLERK"]),
+  getAppointmentStats
+);
+
+router.get("/export", authorize(["ADMIN"]), exportReport);
 
 export default router;

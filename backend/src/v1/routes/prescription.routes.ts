@@ -1,10 +1,51 @@
-import express from "express";
-const router = express.Router();
+import { Router } from "express";
+import {
+  createPrescription,
+  getPatientPrescriptions,
+  getPrescriptionById,
+  updatePrescription,
+  checkAllergies,
+} from "../../controllers/prescription.controller";
+import { authenticate, authorize } from "../../middleware/auth.middleware";
+import { tenantIsolation } from "../../middleware/tenant.middleware";
+import { validate } from "../../middleware/validation.middleware";
+import {
+  checkAllergiesValidator,
+  createPrescriptionValidator,
+  updatePrescriptionValidator,
+} from "../../validators/prescription.validator";
 
-router.post("/create", (req, res) => res.send("Add prescription"));
-router.get("/patient/:id", (req, res) => res.send("Get patient prescriptions"));
-router.get("/:id", (req, res) => res.send(`Get prescription ${req.params.id}`));
-router.patch("/:id", (req, res) => res.send("Update prescription"));
-router.post("/check-allergies", (req, res) => res.send("Run allergy check"));
+const router = Router();
+
+router.use(authenticate);
+router.use(tenantIsolation);
+
+router.post(
+  "/create",
+  authorize(["DOCTOR"]),
+  createPrescriptionValidator,
+  validate,
+  createPrescription
+);
+
+router.get("/patient/:patientId", getPatientPrescriptions);
+
+router.get("/:id", getPrescriptionById);
+
+router.patch(
+  "/:id",
+  authorize(["DOCTOR"]),
+  updatePrescriptionValidator,
+  validate,
+  updatePrescription
+);
+
+router.post(
+  "/check-allergies",
+  authorize(["DOCTOR"]),
+  checkAllergiesValidator,
+  validate,
+  checkAllergies
+);
 
 export default router;

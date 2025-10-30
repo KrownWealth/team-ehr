@@ -1,0 +1,14 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": [
+    "node_modules",
+    "src/prisma/schema.prisma",
+    "src/prisma/migrations",
+    "prisma",
+    "dist",
+    ".env",
+    "package-lock.json"
+  ],
+  "exec": "ts-node src/server.ts"
+}

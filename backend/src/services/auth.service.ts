@@ -1,6 +1,5 @@
 import { addToCollection, getCollection } from "../database/database.utils";
 
-// ✅ Register admin
 export const signupService = (userData: any) => {
   const newUser = {
     id: `admin-${Date.now()}`,
@@ -13,30 +12,25 @@ export const signupService = (userData: any) => {
   return { message: "Admin registered successfully", user: newUser };
 };
 
-// ✅ Get all admins
 export const getAllAdminsService = () => {
   const admins = getCollection("admins");
   return { message: "All admins fetched successfully", admins };
 };
 
-// ✅ Verify OTP
 export const verifyOtpService = (otpData: any) => ({
   message: "OTP verified successfully",
   data: otpData,
 });
 
-// ✅ Login
 export const loginService = (credentials: any) => ({
   message: "Login successful",
   token: "sample-jwt-token",
 });
 
-// ✅ Logout
 export const logoutService = () => ({
   message: "Logout successful",
 });
 
-// ✅ Get all users (fetch from admins collection for now)
 export const getAllUsersService = () => {
   const users = getCollection("admins");
   return { message: "Fetched all users", users };
