@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   syncData,
   getSyncStatus,
@@ -7,7 +8,7 @@ import {
 import { authenticate } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All sync routes require authentication and tenant isolation
 router.use(authenticate);

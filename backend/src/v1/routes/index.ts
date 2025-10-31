@@ -15,9 +15,8 @@ import billingRoutes from "./billing.routes";
 import reportsRoutes from "./report.routes";
 import aiRoutes from "./ai.routes";
 import systemRoutes from "./system.routes";
-import { tenantRoutes } from "./tenant.routes";
-import { notificationRoutes } from "./notification.routes";
-
+import tenantRoutes from "./tenant.routes";
+import notificationRoutes from "./notification.routes";
 // Initialize router
 const router = express.Router();
 
@@ -27,17 +26,17 @@ router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/clinic", clinicRoutes);
 router.use("/staff", staffRoutes);
-router.use("/patients", patientRoutes);
+router.use("/patient", patientRoutes);
 router.use("/queue", queueRoutes);
 router.use("/vitals", vitalsRoutes);
-router.use("/consultations", consultationRoutes);
-router.use("/prescriptions", prescriptionRoutes);
+router.use("/consultation", consultationRoutes);
+router.use("/prescription", prescriptionRoutes);
 router.use("/labs", labRoutes);
 router.use("/billing", billingRoutes);
-router.use("/reports", reportsRoutes);
+router.use("/report", reportsRoutes);
 router.use("/ai", aiRoutes);
 router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
-router.use("/notifications", notificationRoutes);
+router.use("/notification", notificationRoutes);
 
 export default router;

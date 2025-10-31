@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   addToQueue,
   getClinicQueue,
@@ -16,7 +17,7 @@ import {
 } from "../../validators/queue.validator";
 import { add } from "winston";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All routes require authentication and tenant isolation
 router.use(authenticate);

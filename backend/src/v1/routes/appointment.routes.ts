@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   createAppointment,
   getAllAppointments,
@@ -16,7 +17,7 @@ import { validate } from "../../middleware/validation.middleware";
 import { appointmentValidator } from "../../validators/appointment.validator";
 import { idempotencyCheck } from "../../middleware/idempotency.middleware";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All routes require authentication and tenant isolation
 router.use(authenticate);

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   recordVitals,
   getPatientVitals,
@@ -10,7 +11,7 @@ import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { validate } from "../../middleware/validation.middleware";
 import { vitalsValidator } from "../../validators/vitals.validator";
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 router.use(tenantIsolation);

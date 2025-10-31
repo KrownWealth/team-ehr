@@ -1,18 +1,19 @@
+import { Router } from "express";
+import type { Router as RouterType } from "express";
 import { authenticate } from "../../middleware/auth.middleware";
 import logger from "../../utils/logger.utils";
-import { Router as NotificationRouter } from "express";
 import { firestore } from "../../config/gcp";
 import { AuthRequest } from "../../middleware/auth.middleware";
 
-const notificationRouter = NotificationRouter();
+const notificationRoutes: RouterType = Router();
 
-notificationRouter.use(authenticate);
+notificationRoutes.use(authenticate);
 
 /**
  * POST /api/v1/notifications/send
  * Send notification (for internal system use)
  */
-notificationRouter.post("/send", async (req: AuthRequest, res) => {
+notificationRoutes.post("/send", async (req: AuthRequest, res) => {
   try {
     const { userId, title, message, type, data } = req.body;
 
@@ -50,7 +51,7 @@ notificationRouter.post("/send", async (req: AuthRequest, res) => {
  * GET /api/v1/notifications
  * Get user notifications
  */
-notificationRouter.get("/", async (req: AuthRequest, res) => {
+notificationRoutes.get("/", async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
     const { limit = 20, unreadOnly = false } = req.query;
@@ -93,7 +94,7 @@ notificationRouter.get("/", async (req: AuthRequest, res) => {
  * GET /api/v1/notifications/:id
  * Get notification by ID
  */
-notificationRouter.get("/:id", async (req: AuthRequest, res) => {
+notificationRoutes.get("/:id", async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -124,7 +125,7 @@ notificationRouter.get("/:id", async (req: AuthRequest, res) => {
  * PATCH /api/v1/notifications/:id/read
  * Mark notification as read
  */
-notificationRouter.patch("/:id/read", async (req: AuthRequest, res) => {
+notificationRoutes.patch("/:id/read", async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -158,7 +159,7 @@ notificationRouter.patch("/:id/read", async (req: AuthRequest, res) => {
  * PATCH /api/v1/notifications/mark-all-read
  * Mark all notifications as read
  */
-notificationRouter.patch("/mark-all-read", async (req: AuthRequest, res) => {
+notificationRoutes.patch("/mark-all-read", async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
 
@@ -188,4 +189,4 @@ notificationRouter.patch("/mark-all-read", async (req: AuthRequest, res) => {
   }
 });
 
-export const notificationRoutes = notificationRouter;
+export default notificationRoutes;

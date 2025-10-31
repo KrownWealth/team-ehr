@@ -1,14 +1,15 @@
-import { Router as TenantRouter } from "express";
+import { Router } from "express";
+import type { Router as RouterType } from "express";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import prisma from "../../config/database";
 import logger from "../../utils/logger.utils";
 
-const tenantRouter = TenantRouter();
+const tenantRoutes: RouterType = Router();
 
-tenantRouter.use(authenticate);
-tenantRouter.use(authorize(["ADMIN"])); // In production, use SUPER_ADMIN role
+tenantRoutes.use(authenticate);
+tenantRoutes.use(authorize(["ADMIN"]));
 
-tenantRouter.get("/", async (req, res) => {
+tenantRoutes.get("/", async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
 
@@ -59,7 +60,7 @@ tenantRouter.get("/", async (req, res) => {
   }
 });
 
-tenantRouter.get("/:id", async (req, res) => {
+tenantRoutes.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -97,7 +98,7 @@ tenantRouter.get("/:id", async (req, res) => {
   }
 });
 
-tenantRouter.delete("/:id", async (req, res) => {
+tenantRoutes.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -123,4 +124,4 @@ tenantRouter.delete("/:id", async (req, res) => {
   }
 });
 
-export const tenantRoutes = tenantRouter;
+export default tenantRoutes;

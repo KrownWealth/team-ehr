@@ -1,9 +1,10 @@
-import express from "express";
 import dotenv from "dotenv";
+import { Router } from "express";
+import type { Router as RouterType } from "express";
 
 dotenv.config();
 
-const router = express.Router();
+const router: RouterType = Router();
 
 import {
   validateNIN,
