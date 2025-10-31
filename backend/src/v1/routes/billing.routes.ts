@@ -26,7 +26,6 @@ router.put("/bills/:id", authorize(["ADMIN", "CASHIER"]), updateBill);
 router.post("/payments", authorize(["CASHIER"]), recordPayment);
 router.get("/payments", getAllPayments);
 
-// Reports
 router.get(
   "/reports/revenue",
   authorize(["ADMIN", "CASHIER"]),
