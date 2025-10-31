@@ -9,13 +9,11 @@ import {
 } from "../../controllers/queue.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
-import { body } from "express-validator";
 import { validate } from "../../middleware/validation.middleware";
 import {
   addToQueueValidator,
   getQueueValidator,
 } from "../../validators/queue.validator";
-import { add } from "winston";
 
 const router: RouterType = Router();
 
