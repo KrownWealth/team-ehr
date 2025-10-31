@@ -12,7 +12,6 @@ import { tenantIsolation } from "../../middleware/tenant.middleware";
 
 const router: RouterType = Router();
 
-// All routes require authentication and tenant isolation
 router.use(authenticate);
 router.use(tenantIsolation);
 
