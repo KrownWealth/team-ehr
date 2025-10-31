@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   getSystemRoles,
   getICD10Codes,
@@ -8,7 +9,7 @@ import {
 } from "../../controllers/system.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All routes require authentication
 router.use(authenticate);

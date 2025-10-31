@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   getClinics,
   getClinicById,
@@ -11,7 +12,7 @@ import { validate } from "../../middleware/validation.middleware";
 import { clinicValidator } from "../../validators/clinic.validator";
 import { onboardClinic } from "../../controllers/admin.controller";
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 router.use(tenantIsolation);

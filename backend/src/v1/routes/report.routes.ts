@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   getRevenueReport,
   getPatientStats,
@@ -9,7 +10,7 @@ import {
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All routes require authentication and tenant isolation
 router.use(authenticate);

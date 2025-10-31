@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   createLabOrder,
   getAllLabOrders,
@@ -13,7 +14,7 @@ import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { upload } from "../../middleware/upload.middleware";
 import { idempotencyCheck } from "../../middleware/idempotency.middleware";
 
-const router = Router();
+const router: RouterType = Router();
 
 // All routes require authentication and tenant isolation
 router.use(authenticate);

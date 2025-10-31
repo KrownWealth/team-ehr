@@ -1,10 +1,10 @@
-import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
+import { Router } from "express";
+import type { Router as RouterType } from "express";
 
 dotenv.config();
 
-const router = express.Router();
+const router: RouterType = Router();
 
 import {
   validateNIN,
@@ -27,7 +27,7 @@ router.use(tenantIsolation);
 router.post("/validate-nin", validateNIN);
 
 router.post(
-  "/",
+  "/register",
   authorize(["ADMIN", "CLERK"]),
   upload.single("photo"),
   patientValidator,

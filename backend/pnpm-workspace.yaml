@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - protobufjs
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma

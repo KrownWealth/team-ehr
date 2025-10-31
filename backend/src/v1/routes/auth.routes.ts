@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 import {
   registerAdmin,
   register,
@@ -20,7 +21,7 @@ import {
   changePasswordValidator,
 } from "../../validators/auth.validator";
 
-const router = Router();
+const router: RouterType = Router();
 
 // Public routes
 router.post("/register-admin", registerValidator, validate, registerAdmin);

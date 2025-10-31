@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as RouterType } from "express";
 
 import {
   createConsultation,
@@ -11,7 +12,7 @@ import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { validate } from "../../middleware/validation.middleware";
 import { consultationValidator } from "../../validators/consultation.validator";
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 router.use(tenantIsolation);
