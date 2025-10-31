@@ -1,4 +1,4 @@
-import { firestore } from "../config/gcp";
+import { safeFirestore as firestore } from "../config/gcp";
 import logger from "../utils/logger.utils";
 
 export class QueueService {
@@ -39,7 +39,7 @@ export class QueueService {
         .orderBy("checkedInAt", "asc")
         .get();
 
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       logger.error("Failed to get clinic queue:", error);
       throw error;
@@ -63,8 +63,8 @@ export class QueueService {
     return this.queueCollection
       .where("clinicId", "==", clinicId)
       .where("status", "in", ["WAITING", "IN_CONSULTATION"])
-      .onSnapshot((snapshot) => {
-        const queue = snapshot.docs.map((doc) => ({
+      .onSnapshot((snapshot: any) => {
+        const queue = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data(),
         }));
