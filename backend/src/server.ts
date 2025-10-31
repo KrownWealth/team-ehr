@@ -19,18 +19,6 @@ async function connectDatabase() {
 async function startServer() {
   await connectDatabase();
 
-  // const server = app.listen(PORT, () => {
-  //   logger.info("🚀 ===================================");
-  //   logger.info(`🚀 WeCareEHR Backend Server Started`);
-  //   logger.info(`🚀 Environment: ${config.nodeEnv}`);
-  //   logger.info(`🚀 Port: ${PORT}`);
-  //   logger.info(`🚀 API Version: ${config.apiVersion}`);
-  //   logger.info(
-  //     `🚀 API URL: http://localhost:${PORT}/api/${config.apiVersion}`
-  //   );
-  //   logger.info("🚀 ===================================");
-  // });
-
   const gracefulShutdown = async (signal: string) => {
     logger.info(`\n${signal} signal received: closing HTTP server`);
     await prisma.$disconnect();
