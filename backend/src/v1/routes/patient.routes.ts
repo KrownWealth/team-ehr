@@ -23,7 +23,6 @@ import { upload } from "../../middleware/upload.middleware";
 router.use(authenticate);
 router.use(tenantIsolation);
 
-// NIN Validation
 router.post("/validate-nin", validateNIN);
 
 router.post(
