@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -27,7 +26,7 @@ router.use(tenantIsolation);
 router.post("/validate-nin", validateNIN);
 
 router.post(
-  "/",
+  "/register",
   authorize(["ADMIN", "CLERK"]),
   upload.single("photo"),
   patientValidator,
