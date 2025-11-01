@@ -57,9 +57,9 @@ images:
   - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
 timeout: 1200s
-
+serviceAccount: projects/team-ehr/serviceAccounts/388451425677@cloudbuild.gserviceaccount.com
 
 
 options:
   machineType: 'E2_HIGHCPU_8'
-  logging: CLOUD_LOGGING_ONLY
+  logging: CLOUD_LOGGING_ONLY 
