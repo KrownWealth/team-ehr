@@ -58,8 +58,6 @@ images:
 
 timeout: 1200s
 
-serviceAccount: projects/team-ehr/serviceAccounts/388451425677@cloudbuild.gserviceaccount.com
-
 logsBucket: gs://team-ehr_cloudbuild
 
 options:
