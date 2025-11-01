@@ -9,7 +9,7 @@ steps:
       - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
       - '-f'
       - 'backend/Dockerfile'
-      - './backend'
+      - '.'
     timeout: 600s
 
   # Push the image to Artifact Registry
