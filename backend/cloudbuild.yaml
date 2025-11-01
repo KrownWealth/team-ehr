@@ -1,77 +1,66 @@
-name: wecareehr-backend-deploy
-description: Deploy WeCareEHR backend to Cloud Run
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - '-t'
+      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+      - '-f'
+      - 'backend/Dockerfile'
+      - './backend'
+    timeout: 600s
 
-# GitHub source
-github:
-  owner: KrownWealth
-  name: team-ehr
-  push:
-    branch: ^main$
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
 
-# Build configuration
-build:
-  steps:
-    # Build the Docker image
-    - name: 'gcr.io/cloud-builders/docker'
-      args:
-        - 'build'
-        - '-t'
-        - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
-        - '-t'
-        - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
-        - '-f'
-        - 'backend/Dockerfile'
-        - './backend'
-      timeout: 600s
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
-    # Push to Artifact Registry
-    - name: 'gcr.io/cloud-builders/docker'
-      args:
-        - 'push'
-        - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'wecareehr-backend'
+      - '--image'
+      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - '--region'
+      - 'africa-south1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300s'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--set-env-vars'
+      - 'NODE_ENV=production'
+      - '--set-secrets'
+      - 'DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
 
-    - name: 'gcr.io/cloud-builders/docker'
-      args:
-        - 'push'
-        - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+images:
+  - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+  - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
-    # Deploy to Cloud Run
-    - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-      entrypoint: gcloud
-      args:
-        - 'run'
-        - 'deploy'
-        - 'wecareehr-backend'
-        - '--image'
-        - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
-        - '--region'
-        - 'africa-south1'
-        - '--platform'
-        - 'managed'
-        - '--allow-unauthenticated'
-        - '--memory'
-        - '1Gi'
-        - '--cpu'
-        - '1'
-        - '--timeout'
-        - '300s'
-        - '--max-instances'
-        - '10'
-        - '--min-instances'
-        - '0'
-        - '--set-env-vars'
-        - 'NODE_ENV=production'
-        - '--set-secrets'
-        - 'DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
+timeout: 1200s
 
-  images:
-    - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
-    - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+serviceAccount: projects/team-ehr/serviceAccounts/388451425677@cloudbuild.gserviceaccount.com
 
-  timeout: 1200s
-  
-  serviceAccount: 'projects/team-ehr/serviceAccounts/388451425677@cloudbuild.gserviceaccount.com'
-  
-  options:
-    machineType: 'E2_HIGHCPU_8'
-    logging: CLOUD_LOGGING_ONLY
+logsBucket: gs://team-ehr_cloudbuild
+
+options:
+  machineType: 'E2_HIGHCPU_8'
