@@ -4,9 +4,9 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
       - '-t'
-      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
       - '-f'
       - 'Dockerfile'
       - '.'
@@ -17,12 +17,12 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -32,7 +32,7 @@ steps:
       - 'deploy'
       - 'wecareehr-backend'
       - '--image'
-      - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
       - '--region'
       - 'africa-south1'
       - '--platform'
@@ -54,8 +54,8 @@ steps:
       - 'DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
 
 images:
-  - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
-  - 'africa-south1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
+  - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+  - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
 timeout: 1200s
 
