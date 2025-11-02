@@ -2,7 +2,7 @@
 FROM node:18-alpine AS builder
 
 # Install pnpm and build dependencies
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@9
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
@@ -28,7 +28,7 @@ RUN pnpm run build
 FROM node:18-alpine AS runtime
 
 # Install pnpm
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@9
 
 WORKDIR /app
 
