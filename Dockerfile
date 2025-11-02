@@ -8,17 +8,17 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy dependency files first (for better caching)
-COPY backend/package.json backend/pnpm-lock.yaml ./
-COPY backend/prisma ./prisma/
+COPY package.json pnpm-lock.yaml ./
+COPY src/prisma ./src/prisma/
 
 # Install all dependencies (including devDeps for build)
 RUN pnpm install --frozen-lockfile
 
-# Generate Prisma client
-RUN pnpm prisma generate
+# Generate Prisma client (using the custom schema path)
+RUN pnpm prisma generate --schema=src/prisma/schema.prisma
 
 # Copy source code
-COPY backend/ .
+COPY . .
 
 # Build TypeScript
 RUN pnpm run build
@@ -36,10 +36,13 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/prisma ./src/prisma
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
+
+# Generate Prisma client again for runtime (production dependencies only)
+RUN pnpm prisma generate --schema=src/prisma/schema.prisma
 
 # Create logs directory
 RUN mkdir -p logs
