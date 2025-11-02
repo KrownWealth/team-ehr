@@ -1,5 +1,4 @@
 import { Router } from "express";
-import type { Router as RouterType } from "express";
 import {
   createStaff,
   getAllStaff,
@@ -13,7 +12,7 @@ import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { staffValidator } from "../../validators/staff.validator";
 import { validate } from "../../middleware/validation.middleware";
 
-const router: RouterType = Router();
+const router = Router();
 
 router.use(authenticate);
 router.use(tenantIsolation);
