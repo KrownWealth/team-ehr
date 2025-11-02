@@ -1,0 +1,33 @@
+backend/node_modules
+backend/dist
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Explicitly ignore sensitive files
+backend/.env.local
+backend/.env.production
+backend/.env.staging
+backend/.env.development
+backend/.env.test
+
+backend/logs
+backend/*.log
+.git
+.gitignore
+README.md
+backend/npm-debug.log
+backend/*.md
+README.md
+backend/.vscode
+backend/.idea
+backend/dist
+backend/coverage
+backend/.nyc_output
+backend/.DS_Store
+backend/*.swp
+backend/*.swo
+backend/*~
+backend/service-account.json
+backend/service-account-*.json
