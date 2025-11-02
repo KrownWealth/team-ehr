@@ -10,6 +10,7 @@ interface ValidationResult {
 export function validateEnvironment(): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+
   // Required for all environments
   const required = [
     "NODE_ENV",
@@ -18,11 +19,13 @@ export function validateEnvironment(): ValidationResult {
     "JWT_SECRET",
     "JWT_REFRESH_SECRET",
   ];
+
   required.forEach((key) => {
     if (!process.env[key]) {
       errors.push(`Missing required environment variable: ${key}`);
     }
   });
+
   // Production-specific requirements
   if (process.env.NODE_ENV === "production") {
     const productionRequired = [
@@ -30,13 +33,14 @@ export function validateEnvironment(): ValidationResult {
       "SMTP_USER",
       "SMTP_PASSWORD",
       "ENCRYPTION_KEY",
-      "FRONTEND_URL",
     ];
+
     productionRequired.forEach((key) => {
       if (!process.env[key]) {
         errors.push(`Missing production environment variable: ${key}`);
       }
     });
+
     // Check for weak secrets in production
     if (
       process.env.JWT_SECRET &&
@@ -45,13 +49,15 @@ export function validateEnvironment(): ValidationResult {
       errors.push("JWT_SECRET appears to be a development secret!");
     }
   }
+
   // Optional but recommended
-  const recommended = ["SMTP_HOST", "FRONTEND_URL", "GCP_PROJECT_ID"];
+  const recommended = ["FRONTEND_URL", "GCP_PROJECT_ID"];
   recommended.forEach((key) => {
     if (!process.env[key]) {
       warnings.push(`Optional environment variable not set: ${key}`);
     }
   });
+
   // Validate URL formats
   if (
     process.env.DATABASE_URL &&
@@ -59,17 +65,20 @@ export function validateEnvironment(): ValidationResult {
   ) {
     errors.push("DATABASE_URL must start with postgresql://");
   }
+
   if (
     process.env.FRONTEND_URL &&
     !process.env.FRONTEND_URL.startsWith("http")
   ) {
     errors.push("FRONTEND_URL must be a valid HTTP(S) URL");
   }
+
   // Validate numeric values
   const port = parseInt(process.env.PORT || "8080", 10);
   if (isNaN(port) || port < 1 || port > 65535) {
     errors.push("PORT must be a valid number between 1 and 65535");
   }
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -92,21 +101,21 @@ export const config = {
   },
   oauth: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackUrl: process.env.GOOGLE_CALLBACK_URL!,
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      callbackUrl: process.env.GOOGLE_CALLBACK_URL || "",
     },
   },
   email: {
-    host: process.env.SMTP_HOST!,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT || "587", 10),
-    user: process.env.SMTP_USER!,
-    password: process.env.SMTP_PASSWORD!,
-    from: process.env.FROM_EMAIL!,
+    user: process.env.SMTP_USER || "",
+    password: process.env.SMTP_PASSWORD || "",
+    from: process.env.FROM_EMAIL || "noreply@wecareehr.com",
   },
   gcp: {
-    projectId: process.env.GCP_PROJECT_ID!,
-    bucketName: process.env.GCP_BUCKET_NAME!,
+    projectId: process.env.GCP_PROJECT_ID || "team-ehr",
+    bucketName: process.env.GCP_BUCKET_NAME || "",
     credentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },
   externalApis: {

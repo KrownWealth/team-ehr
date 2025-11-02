@@ -7,11 +7,14 @@ import { config } from "./env";
 import logger from "../utils/logger.utils";
 import fs from "fs";
 
-// Check if service account file exists
+// Check if running in Cloud Run (has automatic credentials)
+const isCloudRun = process.env.K_SERVICE !== undefined;
+
+// Check if service account file exists (local development)
 const hasServiceAccount =
   config.gcp.credentials && fs.existsSync(config.gcp.credentials);
 
-if (!hasServiceAccount) {
+if (!hasServiceAccount && !isCloudRun) {
   logger.warn(
     "⚠️  GCP Service Account not found. GCP services will be disabled for local development."
   );
@@ -20,7 +23,7 @@ if (!hasServiceAccount) {
   );
 }
 
-// Initialize GCP services only if credentials exist
+// Initialize GCP services
 let storage: Storage | null = null;
 let patientPhotosBucket: Bucket | null = null;
 let labResultsBucket: Bucket | null = null;
@@ -30,13 +33,16 @@ let pubsub: PubSub | null = null;
 let bigquery: BigQuery | null = null;
 let secretManager: SecretManagerServiceClient | null = null;
 
-if (hasServiceAccount) {
+if (hasServiceAccount || isCloudRun) {
   try {
     // Cloud Storage
-    storage = new Storage({
-    //  projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
-    });
+    storage = new Storage(
+      hasServiceAccount
+        ? {
+            keyFilename: config.gcp.credentials,
+          }
+        : undefined // Use default credentials in Cloud Run
+    );
 
     patientPhotosBucket = storage.bucket(
       `${config.gcp.projectId}-patient-photos`
@@ -45,27 +51,40 @@ if (hasServiceAccount) {
     reportsBucket = storage.bucket(`${config.gcp.projectId}-reports`);
 
     // Firestore
-    firestore = new Firestore({
-     // projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
-    });
+    firestore = new Firestore(
+      hasServiceAccount
+        ? {
+            keyFilename: config.gcp.credentials,
+          }
+        : undefined
+    );
 
     // Pub/Sub
-    pubsub = new PubSub({
-     // projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
-    });
+    pubsub = new PubSub(
+      hasServiceAccount
+        ? {
+            keyFilename: config.gcp.credentials,
+          }
+        : undefined
+    );
 
     // BigQuery
-    bigquery = new BigQuery({
-     // projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
-    });
+    bigquery = new BigQuery(
+      hasServiceAccount
+        ? {
+            keyFilename: config.gcp.credentials,
+          }
+        : undefined
+    );
 
     // Secret Manager
-    secretManager = new SecretManagerServiceClient({
-      keyFilename: config.gcp.credentials,
-    });
+    secretManager = new SecretManagerServiceClient(
+      hasServiceAccount
+        ? {
+            keyFilename: config.gcp.credentials,
+          }
+        : undefined
+    );
 
     logger.info("✅ GCP services initialized successfully");
   } catch (error) {
@@ -124,6 +143,7 @@ const createMockFirestore = (): any => ({
       }),
     }),
     get: async () => ({ docs: [], size: 0 }),
+    onSnapshot: () => () => {}, // Mock unsubscribe function
   }),
   batch: () => ({
     delete: () => {},
@@ -134,7 +154,7 @@ const createMockFirestore = (): any => ({
 
 const createMockPubSub = (): any => ({
   topic: () => ({
-    publish: async () => {
+    publishMessage: async () => {
       logger.warn("Mock: PubSub message skipped (GCP not configured)");
       return Promise.resolve();
     },
@@ -156,7 +176,7 @@ const createMockBigQuery = (): any => ({
   },
 });
 
-// Export with fallbacks for local development
+// Export with fallbacks
 export {
   storage,
   patientPhotosBucket,
@@ -168,7 +188,6 @@ export {
   secretManager,
 };
 
-// Export safe versions that use mocks when GCP is not available
 export const safeStorage = storage || createMockBucket();
 export const safePatientPhotosBucket =
   patientPhotosBucket || createMockBucket();
@@ -177,4 +196,3 @@ export const safeReportsBucket = reportsBucket || createMockBucket();
 export const safeFirestore = firestore || createMockFirestore();
 export const safePubsub = pubsub || createMockPubSub();
 export const safeBigquery = bigquery || createMockBigQuery();
-
