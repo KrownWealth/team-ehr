@@ -1,33 +1,54 @@
-backend/node_modules
-backend/dist
-# Environment variables
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment files
 .env
 .env.*
 !.env.example
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.test
 
-# Explicitly ignore sensitive files
-backend/.env.local
-backend/.env.production
-backend/.env.staging
-backend/.env.development
-backend/.env.test
+# Logs
+logs
+*.log
+npm-debug.log
 
-backend/logs
-backend/*.log
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Git
 .git
 .gitignore
-README.md
-backend/npm-debug.log
-backend/*.md
-README.md
-backend/.vscode
-backend/.idea
-backend/dist
-backend/coverage
-backend/.nyc_output
-backend/.DS_Store
-backend/*.swp
-backend/*.swo
-backend/*~
-backend/service-account.json
-backend/service-account-*.json
+
+# IDE
+.vscode
+.idea
+
+# Test files
+*.test.ts
+*.spec.ts
+coverage
+.nyc_output
+
+# Documentation
+*.md
+
+# Docker files
+docker-compose.yml
+
+# Service account files
+service-account.json
+service-account-*.json
+
+# Workspace files that might confuse pnpm
+pnpm-workspace.yaml
