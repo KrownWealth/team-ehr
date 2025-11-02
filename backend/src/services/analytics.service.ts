@@ -2,7 +2,9 @@ import { bigquery } from "../config/gcp";
 import logger from "../utils/logger.utils";
 
 export class AnalyticsService {
-  private dataset = bigquery.dataset("wecareehr_analytics");
+  //private dataset = bigquery.dataset("wecareehr_analytics");
+
+  private dataset = bigquery ? bigquery.dataset("wecareehr_analytics") : null;
 
   async recordPatientVisit(data: {
     patientId: string;
@@ -10,6 +12,8 @@ export class AnalyticsService {
     diagnosis: string;
     amount: number;
   }): Promise<void> {
+    if (!this.dataset) throw new Error("BigQuery client is not initialized");
+
     try {
       const table = this.dataset.table("patient_visits");
       await table.insert([
@@ -28,6 +32,8 @@ export class AnalyticsService {
   }
 
   async getDailyRevenue(clinicId: string, date: string) {
+    if (!bigquery) throw new Error("BigQuery client is not initialized");
+
     try {
       const query = `
         SELECT 
@@ -53,6 +59,8 @@ export class AnalyticsService {
   }
 
   async getMonthlyTrends(clinicId: string) {
+    if (!bigquery) throw new Error("BigQuery client is not initialized");
+
     try {
       const query = `
         SELECT 
@@ -80,6 +88,8 @@ export class AnalyticsService {
   }
 
   async recordVitalsTrend(patientId: string, vitals: any): Promise<void> {
+    if (!this.dataset) throw new Error("BigQuery client is not initialized");
+
     try {
       const table = this.dataset.table("vitals_trends");
       const [systolic, diastolic] = vitals.bloodPressure.split("/").map(Number);

@@ -2,9 +2,6 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../utils/logger.utils";
 
-/**
- * Get system roles
- */
 export const getSystemRoles = async (req: AuthRequest, res: Response) => {
   try {
     const roles = [

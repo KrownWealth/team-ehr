@@ -44,7 +44,7 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
     const patientNumber = generatePatientNumber(patientCount);
 
     // Upload photo if provided
-    let photoUrl = null;
+    let photoUrl: string | null = null;
     if (req.file) {
       photoUrl = await storageService.uploadPatientPhoto(
         req.file,

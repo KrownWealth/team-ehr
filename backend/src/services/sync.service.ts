@@ -1,9 +1,8 @@
 import prisma from "../config/database";
 import logger from "../utils/logger.utils";
-import { Prisma } from "@prisma/client";
 
 export interface SyncAction {
-  clientId: string; // Client-generated UUID for tracking
+  clientId: string;
   type:
     | "CREATE_PATIENT"
     | "UPDATE_PATIENT"
@@ -211,7 +210,8 @@ export class SyncService {
       };
     }
 
-    let bmi = null;
+    let bmi: number | null = null;
+
     if (action.data.weight && action.data.height) {
       bmi = calculateBMI(action.data.weight, action.data.height);
     }

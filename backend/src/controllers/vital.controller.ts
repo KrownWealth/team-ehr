@@ -12,8 +12,7 @@ export const recordVitals = async (req: AuthRequest, res: Response) => {
     const { patientId, ...vitalsData } = req.body;
     const { user } = req;
 
-    // Calculate BMI if weight and height provided
-    let bmi = null;
+    let bmi = 0;
     if (vitalsData.weight && vitalsData.height) {
       bmi = calculateBMI(vitalsData.weight, vitalsData.height);
     }

@@ -1,8 +1,4 @@
-import {
-  patientPhotosBucket,
-  labResultsBucket,
-  reportsBucket,
-} from "../config/gcp";
+import { patientPhotosBucket, labResultsBucket } from "../config/gcp";
 import { v4 as uuidv4 } from "uuid";
 import logger from "../utils/logger.utils";
 
@@ -11,6 +7,9 @@ export class StorageService {
     file: Express.Multer.File,
     patientId: string
   ): Promise<string> {
+    if (!patientPhotosBucket)
+      throw new Error("patientPhotosBucket is not initialized");
+
     try {
       const filename = `${patientId}/${uuidv4()}-${file.originalname}`;
       const blob = patientPhotosBucket.file(filename);
@@ -36,6 +35,9 @@ export class StorageService {
     file: Express.Multer.File,
     consultationId: string
   ): Promise<string> {
+    if (!labResultsBucket)
+      throw new Error("patientPhotosBucket is not initialized");
+
     try {
       const filename = `${consultationId}/${uuidv4()}-${file.originalname}`;
       const blob = labResultsBucket.file(filename);
@@ -61,7 +63,9 @@ export class StorageService {
       const bucket = url.includes("patient-photos")
         ? patientPhotosBucket
         : labResultsBucket;
-
+      if (!bucket) {
+        throw new Error("GCP bucket is not initialized");
+      }
       await bucket.file(filename).delete();
       logger.info(`File deleted: ${filename}`);
     } catch (error) {
