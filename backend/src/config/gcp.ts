@@ -34,7 +34,7 @@ if (hasServiceAccount) {
   try {
     // Cloud Storage
     storage = new Storage({
-      projectId: config.gcp.projectId,
+    //  projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
@@ -46,19 +46,19 @@ if (hasServiceAccount) {
 
     // Firestore
     firestore = new Firestore({
-      projectId: config.gcp.projectId,
+     // projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
     // Pub/Sub
     pubsub = new PubSub({
-      projectId: config.gcp.projectId,
+     // projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
     // BigQuery
     bigquery = new BigQuery({
-      projectId: config.gcp.projectId,
+     // projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
@@ -177,3 +177,4 @@ export const safeReportsBucket = reportsBucket || createMockBucket();
 export const safeFirestore = firestore || createMockFirestore();
 export const safePubsub = pubsub || createMockPubSub();
 export const safeBigquery = bigquery || createMockBigQuery();
+
