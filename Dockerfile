@@ -1,0 +1,61 @@
+# ---------- BUILD STAGE ----------
+FROM node:18-alpine AS builder
+
+# Install pnpm and build dependencies
+RUN npm install -g pnpm@8
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy dependency files first (for better caching)
+COPY backend/package.json backend/pnpm-lock.yaml ./
+COPY backend/prisma ./prisma/
+
+# Install all dependencies (including devDeps for build)
+RUN pnpm install --frozen-lockfile
+
+# Generate Prisma client
+RUN pnpm prisma generate
+
+# Copy source code
+COPY backend/ .
+
+# Build TypeScript
+RUN pnpm run build
+
+
+# ---------- RUNTIME STAGE ----------
+FROM node:18-alpine AS runtime
+
+# Install pnpm
+RUN npm install -g pnpm@8
+
+WORKDIR /app
+
+# Copy only essential files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/prisma ./prisma
+
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Create and use non-root user
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nodejs -u 1001 && \
+  chown -R nodejs:nodejs /app
+USER nodejs
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start the application
+CMD ["node", "dist/server.js"]
