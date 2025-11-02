@@ -50,7 +50,6 @@ export function validateEnvironment(): ValidationResult {
     }
   }
 
-  // Optional but recommended
   const recommended = ["FRONTEND_URL", "GCP_PROJECT_ID"];
   recommended.forEach((key) => {
     if (!process.env[key]) {
@@ -58,7 +57,6 @@ export function validateEnvironment(): ValidationResult {
     }
   });
 
-  // Validate URL formats
   if (
     process.env.DATABASE_URL &&
     !process.env.DATABASE_URL.startsWith("postgresql://")
@@ -73,7 +71,6 @@ export function validateEnvironment(): ValidationResult {
     errors.push("FRONTEND_URL must be a valid HTTP(S) URL");
   }
 
-  // Validate numeric values
   const port = parseInt(process.env.PORT || "8080", 10);
   if (isNaN(port) || port < 1 || port > 65535) {
     errors.push("PORT must be a valid number between 1 and 65535");
