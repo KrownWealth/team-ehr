@@ -1,7 +1,4 @@
-import logger from "../utils/logger.utils";
-
 import dotenv from "dotenv";
-
 dotenv.config();
 
 interface ValidationResult {
@@ -13,7 +10,6 @@ interface ValidationResult {
 export function validateEnvironment(): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-
   // Required for all environments
   const required = [
     "NODE_ENV",
@@ -22,13 +18,11 @@ export function validateEnvironment(): ValidationResult {
     "JWT_SECRET",
     "JWT_REFRESH_SECRET",
   ];
-
   required.forEach((key) => {
     if (!process.env[key]) {
       errors.push(`Missing required environment variable: ${key}`);
     }
   });
-
   // Production-specific requirements
   if (process.env.NODE_ENV === "production") {
     const productionRequired = [
@@ -38,13 +32,11 @@ export function validateEnvironment(): ValidationResult {
       "ENCRYPTION_KEY",
       "FRONTEND_URL",
     ];
-
     productionRequired.forEach((key) => {
       if (!process.env[key]) {
         errors.push(`Missing production environment variable: ${key}`);
       }
     });
-
     // Check for weak secrets in production
     if (
       process.env.JWT_SECRET &&
@@ -53,16 +45,13 @@ export function validateEnvironment(): ValidationResult {
       errors.push("JWT_SECRET appears to be a development secret!");
     }
   }
-
   // Optional but recommended
   const recommended = ["SMTP_HOST", "FRONTEND_URL", "GCP_PROJECT_ID"];
-
   recommended.forEach((key) => {
     if (!process.env[key]) {
       warnings.push(`Optional environment variable not set: ${key}`);
     }
   });
-
   // Validate URL formats
   if (
     process.env.DATABASE_URL &&
@@ -70,20 +59,17 @@ export function validateEnvironment(): ValidationResult {
   ) {
     errors.push("DATABASE_URL must start with postgresql://");
   }
-
   if (
     process.env.FRONTEND_URL &&
     !process.env.FRONTEND_URL.startsWith("http")
   ) {
     errors.push("FRONTEND_URL must be a valid HTTP(S) URL");
   }
-
   // Validate numeric values
   const port = parseInt(process.env.PORT || "8080", 10);
   if (isNaN(port) || port < 1 || port > 65535) {
     errors.push("PORT must be a valid number between 1 and 65535");
   }
-
   return {
     isValid: errors.length === 0,
     errors,
@@ -91,41 +77,19 @@ export function validateEnvironment(): ValidationResult {
   };
 }
 
-// Run validation on startup
-export function validateOrExit() {
-  const result = validateEnvironment();
-
-  if (result.warnings.length > 0) {
-    logger.warn("Environment validation warnings:");
-    result.warnings.forEach((warning) => logger.warn(`  - ${warning}`));
-  }
-
-  if (!result.isValid) {
-    logger.error("❌ Environment validation failed:");
-    result.errors.forEach((error) => logger.error(`  - ${error}`));
-    logger.error("\nPlease check your .env file and try again.");
-    process.exit(1);
-  }
-
-  logger.info("✅ Environment validation passed");
-}
-
 export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: parseInt(process.env.PORT || "8080", 10),
   apiVersion: process.env.API_VERSION || "v1",
-
   database: {
     url: process.env.DATABASE_URL!,
   },
-
   jwt: {
     secret: process.env.JWT_SECRET!,
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     refreshSecret: process.env.JWT_REFRESH_SECRET!,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
   },
-
   oauth: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -133,7 +97,6 @@ export const config = {
       callbackUrl: process.env.GOOGLE_CALLBACK_URL!,
     },
   },
-
   email: {
     host: process.env.SMTP_HOST!,
     port: parseInt(process.env.SMTP_PORT || "587", 10),
@@ -141,21 +104,17 @@ export const config = {
     password: process.env.SMTP_PASSWORD!,
     from: process.env.FROM_EMAIL!,
   },
-
   gcp: {
     projectId: process.env.GCP_PROJECT_ID!,
     bucketName: process.env.GCP_BUCKET_NAME!,
     credentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },
-
   externalApis: {
     ninApiUrl: process.env.NIN_API_URL,
     ninApiKey: process.env.NIN_API_KEY,
     aiDiagnosisUrl: process.env.AI_DIAGNOSIS_FUNCTION_URL,
   },
-
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
-
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
