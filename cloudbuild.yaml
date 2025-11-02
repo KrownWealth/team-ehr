@@ -9,11 +9,10 @@ steps:
       - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
       - '-f'
       - 'Dockerfile'
-      - 'backend'  # Build context is the backend folder
+      - 'backend'
     timeout: 600s
-    # Remove dir: 'backend' line
 
-  # Push the image to Artifact Registry
+  # Push the images
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
@@ -31,44 +30,19 @@ steps:
       - 'run'
       - 'deploy'
       - 'wecareehr-backend'
-      - '--image'
-      - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
-      - '--region'
-      - 'africa-south1'
-      - '--platform'
-      - 'managed'
+      - '--image=europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
+      - '--region=africa-south1'
+      - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--memory'
-      - '1Gi'
-      - '--cpu'
-      - '1'
-      - '--timeout'
-      - '300s'
-      - '--max-instances'
-      - '10'
-      - '--min-instances'
-      - '0'
-      - '--set-env-vars'
-      - >
-        NODE_ENV=production,
-        PORT=8080,
-        API_VERSION=v1,
-        SMTP_HOST=smtp.gmail.com,
-        SMTP_PORT=587,
-        FROM_EMAIL=noreply@wecareehr.com,
-        FRONTEND_URL=https://wecareehr.com,
-        GCP_PROJECT_ID=team-ehr,
-        RATE_LIMIT_WINDOW_MS=900000,
-        RATE_LIMIT_MAX_REQUESTS=100
-      # Set secrets from Secret Manager
-      - '--set-secrets'
-      - >
-        DATABASE_URL=DATABASE_URL:latest,
-        JWT_SECRET=JWT_SECRET:latest,
-        JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,
-        SMTP_USER=SMTP_USER:latest,
-        SMTP_PASSWORD=SMTP_PASSWORD:latest,
-        ENCRYPTION_KEY=ENCRYPTION_KEY:latest
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--timeout=300s'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--concurrency=80'
+      - '--set-env-vars=NODE_ENV=production,PORT=8080,API_VERSION=v1,SMTP_HOST=smtp.gmail.com,SMTP_PORT=587,FROM_EMAIL=noreply@wecareehr.com,FRONTEND_URL=https://wecareehr.com,GCP_PROJECT_ID=team-ehr,RATE_LIMIT_WINDOW_MS=900000,RATE_LIMIT_MAX_REQUESTS=100'
+      - '--update-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
+
 images:
   - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
   - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
