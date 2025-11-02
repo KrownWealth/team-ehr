@@ -9,16 +9,9 @@ export interface IdempotentRequest extends Request {
 
 const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-/**
- * Idempotency middleware ensures critical operations can be safely retried
- * without causing duplicate records or side effects.
- *
- * Uses Firestore to track processed request IDs with TTL.
- */
 export const idempotencyCheck = (options?: { required?: boolean }) => {
   return async (req: IdempotentRequest, res: Response, next: NextFunction) => {
     try {
-      // Extract request ID from header (client-generated UUID)
       const requestId =
         req.headers["x-request-id"] || req.headers["x-idempotency-key"];
 
@@ -30,13 +23,14 @@ export const idempotencyCheck = (options?: { required?: boolean }) => {
             message: "X-Request-ID header is required for this operation",
           });
         }
-        // Otherwise, allow request to proceed without idempotency check
         return next();
       }
 
       req.requestId = requestId as string;
 
-      // Check if this request ID has been processed before
+      if (!firestore) {
+        throw new Error("Firestore is not initialized");
+      }
       const idempotencyDoc = firestore
         .collection("idempotency_keys")
         .doc(requestId as string);
@@ -97,11 +91,12 @@ export const idempotencyCheck = (options?: { required?: boolean }) => {
   };
 };
 
-/**
- * Cleanup expired idempotency keys (run as scheduled Cloud Function)
- */
 export const cleanupExpiredKeys = async (): Promise<number> => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
+
     const snapshot = await firestore
       .collection("idempotency_keys")
       .where("expiresAt", "<", new Date())
