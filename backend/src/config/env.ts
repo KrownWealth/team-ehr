@@ -14,7 +14,6 @@ export function validateEnvironment(): ValidationResult {
   // Required for all environments
   const required = [
     "NODE_ENV",
-    "PORT",
     "DATABASE_URL",
     "JWT_SECRET",
     "JWT_REFRESH_SECRET",
@@ -71,6 +70,7 @@ export function validateEnvironment(): ValidationResult {
     errors.push("FRONTEND_URL must be a valid HTTP(S) URL");
   }
 
+  // PORT validation - Cloud Run sets this automatically
   const port = parseInt(process.env.PORT || "8080", 10);
   if (isNaN(port) || port < 1 || port > 65535) {
     errors.push("PORT must be a valid number between 1 and 65535");
@@ -85,7 +85,7 @@ export function validateEnvironment(): ValidationResult {
 
 export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
-  port: parseInt(process.env.PORT || "8080", 10),
+  port: parseInt(process.env.PORT || "8080", 10), // Cloud Run sets PORT automatically
   apiVersion: process.env.API_VERSION || "v1",
   database: {
     url: process.env.DATABASE_URL!,
