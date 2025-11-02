@@ -1,5 +1,4 @@
 import { Router } from "express";
-import type { Router as RouterType } from "express";
 import {
   createPrescription,
   getPatientPrescriptions,
@@ -16,8 +15,7 @@ import {
   updatePrescriptionValidator,
 } from "../../validators/prescription.validator";
 
-const router: RouterType = Router();
-
+const router = Router();
 router.use(authenticate);
 router.use(tenantIsolation);
 

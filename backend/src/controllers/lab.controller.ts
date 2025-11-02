@@ -70,6 +70,9 @@ export const createLabOrder = async (req: AuthRequest, res: Response) => {
 
     // Create lab order in Firestore
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const labOrderRef = await firestore.collection("lab_orders").add({
       clinicId,
       patientId,
@@ -127,6 +130,9 @@ export const getAllLabOrders = async (req: AuthRequest, res: Response) => {
     const { status, patientId, urgency, page = 1, limit = 50 } = req.query;
 
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     let query = firestore
       .collection("lab_orders")
       .where("clinicId", "==", clinicId);
@@ -190,6 +196,9 @@ export const getLabOrderById = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
 
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const doc = await firestore.collection("lab_orders").doc(id).get();
 
     if (!doc.exists || (doc.data() as any).clinicId !== clinicId) {
@@ -227,6 +236,9 @@ export const updateLabOrderStatus = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
 
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const docRef = firestore.collection("lab_orders").doc(id);
     const doc = await docRef.get();
 
@@ -270,6 +282,9 @@ export const uploadLabResult = async (req: AuthRequest, res: Response) => {
     }
 
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const docRef = firestore.collection("lab_orders").doc(id);
     const doc = await docRef.get();
 
@@ -338,6 +353,9 @@ export const getPatientLabHistory = async (req: AuthRequest, res: Response) => {
     }
 
     const { firestore } = await import("../config/gcp");
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const snapshot = await firestore
       .collection("lab_orders")
       .where("patientId", "==", patientId)

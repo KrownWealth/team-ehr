@@ -1,20 +1,18 @@
 import { Router } from "express";
-import type { Router as RouterType } from "express";
 import { authenticate } from "../../middleware/auth.middleware";
 import logger from "../../utils/logger.utils";
 import { firestore } from "../../config/gcp";
 import { AuthRequest } from "../../middleware/auth.middleware";
 
-const notificationRoutes: RouterType = Router();
+const router = Router();
 
-notificationRoutes.use(authenticate);
+router.use(authenticate);
 
-/**
- * POST /api/v1/notifications/send
- * Send notification (for internal system use)
- */
-notificationRoutes.post("/send", async (req: AuthRequest, res) => {
+router.post("/send", async (req: AuthRequest, res) => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const { userId, title, message, type, data } = req.body;
 
     const notification = {
@@ -47,12 +45,11 @@ notificationRoutes.post("/send", async (req: AuthRequest, res) => {
   }
 });
 
-/**
- * GET /api/v1/notifications
- * Get user notifications
- */
-notificationRoutes.get("/", async (req: AuthRequest, res) => {
+router.get("/", async (req: AuthRequest, res) => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const userId = req.user!.id;
     const { limit = 20, unreadOnly = false } = req.query;
 
@@ -90,12 +87,11 @@ notificationRoutes.get("/", async (req: AuthRequest, res) => {
   }
 });
 
-/**
- * GET /api/v1/notifications/:id
- * Get notification by ID
- */
-notificationRoutes.get("/:id", async (req: AuthRequest, res) => {
+router.get("/:id", async (req: AuthRequest, res) => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const { id } = req.params;
     const userId = req.user!.id;
 
@@ -125,8 +121,11 @@ notificationRoutes.get("/:id", async (req: AuthRequest, res) => {
  * PATCH /api/v1/notifications/:id/read
  * Mark notification as read
  */
-notificationRoutes.patch("/:id/read", async (req: AuthRequest, res) => {
+router.patch("/:id/read", async (req: AuthRequest, res) => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const { id } = req.params;
     const userId = req.user!.id;
 
@@ -159,8 +158,11 @@ notificationRoutes.patch("/:id/read", async (req: AuthRequest, res) => {
  * PATCH /api/v1/notifications/mark-all-read
  * Mark all notifications as read
  */
-notificationRoutes.patch("/mark-all-read", async (req: AuthRequest, res) => {
+router.patch("/mark-all-read", async (req: AuthRequest, res) => {
   try {
+    if (!firestore) {
+      throw new Error("Firestore is not initialized");
+    }
     const userId = req.user!.id;
 
     const snapshot = await firestore
@@ -189,4 +191,4 @@ notificationRoutes.patch("/mark-all-read", async (req: AuthRequest, res) => {
   }
 });
 
-export default notificationRoutes;
+export default router;

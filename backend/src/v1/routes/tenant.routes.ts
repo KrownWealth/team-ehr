@@ -1,15 +1,14 @@
 import { Router } from "express";
-import type { Router as RouterType } from "express";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import prisma from "../../config/database";
 import logger from "../../utils/logger.utils";
 
-const tenantRoutes: RouterType = Router();
+const router = Router();
 
-tenantRoutes.use(authenticate);
-tenantRoutes.use(authorize(["ADMIN"]));
+router.use(authenticate);
+router.use(authorize(["ADMIN"]));
 
-tenantRoutes.get("/", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
 
@@ -60,7 +59,7 @@ tenantRoutes.get("/", async (req, res) => {
   }
 });
 
-tenantRoutes.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -98,7 +97,7 @@ tenantRoutes.get("/:id", async (req, res) => {
   }
 });
 
-tenantRoutes.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -124,4 +123,4 @@ tenantRoutes.delete("/:id", async (req, res) => {
   }
 });
 
-export default tenantRoutes;
+export default router;
