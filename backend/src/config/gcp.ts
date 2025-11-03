@@ -1,4 +1,4 @@
-import { Bucket, Storage } from "@google-cloud/storage";
+import { Storage } from "@google-cloud/storage";
 import { Firestore } from "@google-cloud/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
