@@ -12,11 +12,10 @@ import consultationRoutes from "./consultation.routes";
 import prescriptionRoutes from "./prescription.routes";
 import labRoutes from "./lab.routes";
 import billingRoutes from "./billing.routes";
-import reportsRoutes from "./report.routes";
 import aiRoutes from "./ai.routes";
 import systemRoutes from "./system.routes";
 import tenantRoutes from "./tenant.routes";
-import notificationRoutes from "./notification.routes";
+
 // Initialize router
 const router = express.Router();
 
@@ -33,10 +32,8 @@ router.use("/consultation", consultationRoutes);
 router.use("/prescription", prescriptionRoutes);
 router.use("/labs", labRoutes);
 router.use("/billing", billingRoutes);
-router.use("/report", reportsRoutes);
 router.use("/ai", aiRoutes);
 router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
-router.use("/notification", notificationRoutes);
 
 export default router;

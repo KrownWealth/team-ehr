@@ -6,15 +6,16 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-COPY src/prisma ./src/prisma/
+COPY backend/package.json backend/pnpm-lock.yaml ./
+COPY backend/src/prisma ./src/prisma/
+
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm prisma generate --schema=src/prisma/schema.prisma
 
-COPY src ./src/
-COPY tsconfig.json ./
-COPY nodemon.json ./
+COPY backend/src ./src/
+COPY backend/tsconfig.json ./
+COPY backend/nodemon.json ./
 
 RUN pnpm run build
 

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/env";
-import prisma from "../config/database";
 import logger from "../utils/logger.utils";
+import db from "../services/database.service";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -28,10 +28,8 @@ export const authenticate = async (
 
     const decoded = jwt.verify(token, config.jwt.secret) as any;
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      include: { clinic: true },
-    });
+    // Fetch user from Firestore
+    const user = await db.getUser(decoded.userId);
 
     if (!user || !user.isActive) {
       return res.status(401).json({
@@ -42,8 +40,6 @@ export const authenticate = async (
 
     req.user = user;
     req.clinicId = user.clinicId ?? undefined;
-
-    //req.clinicId = user.clinicId;
 
     logger.debug(`User authenticated: ${user.email}`);
     next();

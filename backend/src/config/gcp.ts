@@ -1,20 +1,16 @@
 import { Bucket, Storage } from "@google-cloud/storage";
 import { Firestore } from "@google-cloud/firestore";
-import { PubSub } from "@google-cloud/pubsub";
-import { BigQuery } from "@google-cloud/bigquery";
+import { VertexAI } from "@google-cloud/vertexai";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { config } from "./env";
 import logger from "../utils/logger.utils";
 import fs from "fs";
 
-// Check if running in Cloud Run (has automatic credentials)
-const isCloudRun = process.env.K_SERVICE !== undefined;
-
-// Check if service account file exists (local development)
+// Check if service account file exists
 const hasServiceAccount =
   config.gcp.credentials && fs.existsSync(config.gcp.credentials);
 
-if (!hasServiceAccount && !isCloudRun) {
+if (!hasServiceAccount) {
   logger.warn(
     "⚠️  GCP Service Account not found. GCP services will be disabled for local development."
   );
@@ -23,68 +19,29 @@ if (!hasServiceAccount && !isCloudRun) {
   );
 }
 
-// Initialize GCP services
+// Initialize GCP services only if credentials exist
 let storage: Storage | null = null;
-let patientPhotosBucket: Bucket | null = null;
-let labResultsBucket: Bucket | null = null;
-let reportsBucket: Bucket | null = null;
 let firestore: Firestore | null = null;
-let pubsub: PubSub | null = null;
-let bigquery: BigQuery | null = null;
 let secretManager: SecretManagerServiceClient | null = null;
+let vertexai: VertexAI | null = null;
 
-if (hasServiceAccount || isCloudRun) {
+if (hasServiceAccount) {
   try {
     // Cloud Storage
-    storage = new Storage(
-      hasServiceAccount
-        ? {
-            keyFilename: config.gcp.credentials,
-          }
-        : undefined // Use default credentials in Cloud Run
-    );
-
-    patientPhotosBucket = storage.bucket(
-      `${config.gcp.projectId}-patient-photos`
-    );
-    labResultsBucket = storage.bucket(`${config.gcp.projectId}-lab-results`);
-    reportsBucket = storage.bucket(`${config.gcp.projectId}-reports`);
+    storage = new Storage({
+      //  projectId: config.gcp.projectId,
+      keyFilename: config.gcp.credentials,
+    });
 
     // Firestore
-    firestore = new Firestore(
-      hasServiceAccount
-        ? {
-            keyFilename: config.gcp.credentials,
-          }
-        : undefined
-    );
+    firestore = new Firestore({
+      // projectId: config.gcp.projectId,
+      keyFilename: config.gcp.credentials,
+    });
 
-    // Pub/Sub
-    pubsub = new PubSub(
-      hasServiceAccount
-        ? {
-            keyFilename: config.gcp.credentials,
-          }
-        : undefined
-    );
-
-    // BigQuery
-    bigquery = new BigQuery(
-      hasServiceAccount
-        ? {
-            keyFilename: config.gcp.credentials,
-          }
-        : undefined
-    );
-
-    // Secret Manager
-    secretManager = new SecretManagerServiceClient(
-      hasServiceAccount
-        ? {
-            keyFilename: config.gcp.credentials,
-          }
-        : undefined
-    );
+    secretManager = new SecretManagerServiceClient({
+      keyFilename: config.gcp.credentials,
+    });
 
     logger.info("✅ GCP services initialized successfully");
   } catch (error) {
@@ -143,7 +100,6 @@ const createMockFirestore = (): any => ({
       }),
     }),
     get: async () => ({ docs: [], size: 0 }),
-    onSnapshot: () => () => {}, // Mock unsubscribe function
   }),
   batch: () => ({
     delete: () => {},
@@ -152,47 +108,15 @@ const createMockFirestore = (): any => ({
   }),
 });
 
-const createMockPubSub = (): any => ({
-  topic: () => ({
-    publishMessage: async () => {
-      logger.warn("Mock: PubSub message skipped (GCP not configured)");
-      return Promise.resolve();
-    },
-  }),
+const mockVertexAi = (): any => ({
+  // Add mock methods as needed
 });
 
-const createMockBigQuery = (): any => ({
-  dataset: () => ({
-    table: () => ({
-      insert: async () => {
-        logger.warn("Mock: BigQuery insert skipped (GCP not configured)");
-        return Promise.resolve();
-      },
-    }),
-  }),
-  query: async () => {
-    logger.warn("Mock: BigQuery query skipped (GCP not configured)");
-    return [[]];
-  },
-});
+// Export with fallbacks for local development
+export { storage, firestore, vertexai, secretManager };
 
-// Export with fallbacks
-export {
-  storage,
-  patientPhotosBucket,
-  labResultsBucket,
-  reportsBucket,
-  firestore,
-  pubsub,
-  bigquery,
-  secretManager,
-};
-
+// Export safe versions that use mocks when GCP is not available
 export const safeStorage = storage || createMockBucket();
-export const safePatientPhotosBucket =
-  patientPhotosBucket || createMockBucket();
-export const safeLabResultsBucket = labResultsBucket || createMockBucket();
-export const safeReportsBucket = reportsBucket || createMockBucket();
 export const safeFirestore = firestore || createMockFirestore();
-export const safePubsub = pubsub || createMockPubSub();
-export const safeBigquery = bigquery || createMockBigQuery();
+export const safeVertexAi = vertexai || mockVertexAi();
+export const safeSecretManager = secretManager || {};

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import prisma from "../config/database";
+import db, { Clinic } from "../services/database.service";
 import logger from "../utils/logger.utils";
 
 export const registerClinic = async (req: Request, res: Response) => {
@@ -34,10 +34,9 @@ export const registerClinic = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if clinic already exists
-    const existingClinic = await prisma.clinic.findUnique({
-      where: { email },
-    });
+    // Check if clinic already exists by email
+    const existingClinics = await db.listClinics();
+    const existingClinic = existingClinics.find((c) => c.email === email);
 
     if (existingClinic) {
       return res.status(400).json({
@@ -47,29 +46,27 @@ export const registerClinic = async (req: Request, res: Response) => {
     }
 
     // Create new clinic
-    const clinic = await prisma.clinic.create({
-      data: {
-        name,
-        type,
-        address,
-        city,
-        state,
-        lga,
-        phone,
-        email,
-        numberOfDoctors: numberOfDoctors ? Number(numberOfDoctors) : null,
-        averageDailyPatients: averageDailyPatients
-          ? Number(averageDailyPatients)
-          : null,
-      },
+    const newClinic: Clinic = await db.createClinic({
+      name,
+      type,
+      address,
+      city,
+      state,
+      lga,
+      phone,
+      email,
+      numberOfDoctors: numberOfDoctors ? Number(numberOfDoctors) : null,
+      averageDailyPatients: averageDailyPatients
+        ? Number(averageDailyPatients)
+        : null,
     });
 
-    logger.info(`Clinic registered successfully: ${clinic.email}`);
+    logger.info(`Clinic registered successfully: ${newClinic.email}`);
 
     return res.status(201).json({
       status: "success",
       message: "Clinic registered successfully.",
-      data: clinic,
+      data: newClinic,
     });
   } catch (error: any) {
     logger.error("Error registering clinic:", error);
@@ -83,11 +80,10 @@ export const registerClinic = async (req: Request, res: Response) => {
 // Fetch all clinics
 export const getClinics = async (req: Request, res: Response) => {
   try {
-    const clinics = await prisma.clinic.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const clinics = await db.listClinics();
     res.json({ status: "success", data: clinics });
   } catch (error: any) {
+    logger.error("Error fetching clinics:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };
@@ -96,7 +92,7 @@ export const getClinics = async (req: Request, res: Response) => {
 export const getClinicById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clinic = await prisma.clinic.findUnique({ where: { id } });
+    const clinic = await db.getClinic(id);
 
     if (!clinic) {
       return res
@@ -106,6 +102,7 @@ export const getClinicById = async (req: Request, res: Response) => {
 
     res.json({ status: "success", data: clinic });
   } catch (error: any) {
+    logger.error("Error fetching clinic:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };
@@ -116,17 +113,28 @@ export const updateClinic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const clinic = await prisma.clinic.update({
-      where: { id },
-      data: updateData,
-    });
+    // Fetch existing clinic first
+    const clinic = await db.getClinic(id);
+    if (!clinic) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Clinic not found" });
+    }
 
+    const updatedClinic: Clinic = {
+      ...clinic,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+
+    await db.createClinic(updatedClinic); // Firestore set() will overwrite by ID
     res.json({
       status: "success",
       message: "Clinic updated successfully.",
-      data: clinic,
+      data: updatedClinic,
     });
   } catch (error: any) {
+    logger.error("Error updating clinic:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };

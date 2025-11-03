@@ -1,0 +1,52 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function belongsToClinic(clinicId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.clinicId == clinicId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Patients collection
+    match /patients/{patientId} {
+      allow read, write: if belongsToClinic(resource.data.clinicId);
+    }
+
+    // Vitals collection
+    match /vitals/{vitalId} {
+      allow read, write: if belongsToClinic(resource.data.clinicId);
+    }
+
+    // Consultations collection
+    match /consultations/{consultId} {
+      allow read, write: if belongsToClinic(resource.data.clinicId);
+    }
+
+    // Bills collection
+    match /bills/{billId} {
+      allow read, write: if belongsToClinic(resource.data.clinicId);
+    }
+
+    // Appointments collection
+    match /appointments/{apptId} {
+      allow read, write: if belongsToClinic(resource.data.clinicId);
+    }
+
+    // Clinics collection
+    match /clinics/{clinicId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+  }
+}

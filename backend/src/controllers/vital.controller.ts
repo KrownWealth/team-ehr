@@ -1,54 +1,49 @@
 import { Response } from "express";
-import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { AnalyticsService } from "../services/analytics.service";
+import db from "../services/database.service";
 import { calculateBMI, checkVitalFlags } from "../utils/helpers.utils";
 import logger from "../utils/logger.utils";
-
-const analyticsService = new AnalyticsService();
 
 export const recordVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, ...vitalsData } = req.body;
-    const { user } = req;
+    const { clinicId, user } = req;
 
+    // Verify patient exists
+    const patient = await db.getPatient(patientId, clinicId!);
+    if (!patient) {
+      return res.status(404).json({
+        status: "error",
+        message: "Patient not found",
+      });
+    }
+
+    // Calculate BMI
     let bmi = 0;
     if (vitalsData.weight && vitalsData.height) {
       bmi = calculateBMI(vitalsData.weight, vitalsData.height);
     }
 
-    // Check for abnormal values
+    // Check for abnormal flags
     const flags = checkVitalFlags(vitalsData);
 
-    const vitals = await prisma.vitals.create({
-      data: {
-        patientId,
-        recordedById: user!.id,
-        ...vitalsData,
-        bmi,
-        flags,
-      },
-      include: {
-        patient: true,
-        recordedBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+    // Create vitals record in Firestore
+    const vitalsRecord = await db.createVitals({
+      clinicId: clinicId!,
+      patientId,
+      recordedBy: user!.id,
+      ...vitalsData,
+      bmi,
+      flags,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
-
-    // Record in BigQuery for analytics
-    if (vitalsData.bloodPressure) {
-      await analyticsService.recordVitalsTrend(patientId, vitalsData);
-    }
 
     logger.info(`Vitals recorded for patient: ${patientId}`);
 
     res.status(201).json({
       status: "success",
-      data: vitals,
+      data: vitalsRecord,
       alerts: flags.filter((f) => f.startsWith("CRITICAL")),
     });
   } catch (error: any) {
@@ -64,25 +59,14 @@ export const getPatientVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId } = req.params;
     const { clinicId } = req;
-    const { limit = 10 } = req.query;
+    const { limit = 10, page = 1 } = req.query;
 
-    const vitals = await prisma.vitals.findMany({
-      where: {
-        patientId,
-        patient: { clinicId },
-      },
-      orderBy: { createdAt: "desc" },
-      take: Number(limit),
-      include: {
-        recordedBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            role: true,
-          },
-        },
-      },
-    });
+    const vitals = await db.listVitals(
+      patientId,
+      clinicId!,
+      Number(limit),
+      Number(page)
+    );
 
     res.json({
       status: "success",
@@ -90,43 +74,36 @@ export const getPatientVitals = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Get patient vitals error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
 export const updateVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { ...updateData } = req.body;
 
-    // Recalculate BMI if needed
+    // Recalculate BMI if weight/height provided
     if (updateData.weight && updateData.height) {
       updateData.bmi = calculateBMI(updateData.weight, updateData.height);
     }
 
     // Recheck flags
     updateData.flags = checkVitalFlags(updateData);
+    updateData.updatedAt = new Date();
 
-    const vitals = await prisma.vitals.update({
-      where: { id },
-      data: updateData,
-    });
+    // Update Firestore record
+    const updatedVitals = await db.updateVitals(id, updateData);
 
     logger.info(`Vitals updated: ${id}`);
 
     res.json({
       status: "success",
-      data: vitals,
+      data: updatedVitals,
     });
   } catch (error: any) {
     logger.error("Update vitals error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -134,11 +111,7 @@ export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const vitals = await prisma.vitals.findUnique({
-      where: { id },
-      select: { flags: true },
-    });
-
+    const vitals = await db.getVitalsById(id);
     if (!vitals) {
       return res.status(404).json({
         status: "error",
@@ -149,16 +122,17 @@ export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
     res.json({
       status: "success",
       data: {
-        flags: vitals.flags,
-        critical: vitals.flags.filter((f: any) => f.startsWith("CRITICAL")),
-        warnings: vitals.flags.filter((f: any) => f.startsWith("WARNING")),
+        flags: vitals.flags || [],
+        critical: (vitals.flags || []).filter((f: string) =>
+          f.startsWith("CRITICAL")
+        ),
+        warnings: (vitals.flags || []).filter((f: string) =>
+          f.startsWith("WARNING")
+        ),
       },
     });
   } catch (error: any) {
     logger.error("Get abnormal flags error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };

@@ -1,14 +1,10 @@
 import { Response } from "express";
-import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { PubSubService } from "../services/pubsub.service";
+import db, { QueueEntry, Consultation } from "../services/database.service";
 import { EmailService } from "../services/email.service";
-import { QueueService } from "../services/queue.service";
 import logger from "../utils/logger.utils";
 
-const pubsubService = new PubSubService();
 const emailService = new EmailService();
-const queueService = new QueueService();
 
 export const createConsultation = async (req: AuthRequest, res: Response) => {
   try {
@@ -24,18 +20,8 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
     } = req.body;
     const { clinicId, user } = req;
 
-    // Get patient details for allergy check
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      select: {
-        allergies: true,
-        email: true,
-        patientNumber: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-
+    // Get patient details
+    const patient = await db.getPatient(patientId, clinicId!);
     if (!patient) {
       return res.status(404).json({
         status: "error",
@@ -43,10 +29,25 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Get doctor assigned from queue
+    const queueEntries: QueueEntry[] = await db.getQueue(clinicId!);
+    const queueEntry = queueEntries.find(
+      (q) => q.patientId === patientId && q.status === "IN_CONSULTATION"
+    );
+
+    if (!queueEntry || !queueEntry.doctorId) {
+      return res.status(400).json({
+        status: "error",
+        message: "Patient has not been assigned to a doctor yet.",
+      });
+    }
+
+    const doctorId = queueEntry.doctorId;
+
     // Check for drug allergies
-    if (prescriptions && prescriptions.length > 0 && patient.allergies) {
+    if (prescriptions?.length && (patient as any).allergies?.length) {
       const allergyConflicts = prescriptions.filter((med: any) =>
-        patient.allergies!.some((allergy: string) =>
+        (patient as any).allergies.some((allergy: string) =>
           med.drug.toLowerCase().includes(allergy.toLowerCase())
         )
       );
@@ -60,11 +61,10 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const consultation = await prisma.consultation.create({
-      data: {
-        clinicId: clinicId!,
+    const consultation = await db.createConsultation(
+      clinicId!,
+      {
         patientId,
-        doctorId: user!.id,
         subjective,
         objective,
         assessment,
@@ -73,33 +73,16 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
         labOrders: labOrders || [],
         followUpDate: followUpDate ? new Date(followUpDate) : null,
       },
-      include: {
-        patient: true,
-        doctor: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+      doctorId // <-- pass doctorId separately
+    );
 
-    // Send prescription email if prescriptions exist
-    if (prescriptions && prescriptions.length > 0 && patient.email) {
+    if (prescriptions?.length && (patient as any).email) {
       await emailService.sendPrescriptionEmail(
-        patient.email,
+        (patient as any).email,
         prescriptions,
-        patient.patientNumber
+        (patient as any).patientNumber
       );
     }
-
-    // Publish consultation completed event
-    await pubsubService.publishConsultationCompleted({
-      consultationId: consultation.id,
-      patientId,
-      clinicId,
-      prescriptions,
-    });
 
     logger.info(`Consultation created: ${consultation.id}`);
 
@@ -115,26 +98,14 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-
+// Get consultation by ID
 export const getConsultationById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { clinicId } = req;
 
-    const consultation = await prisma.consultation.findFirst({
-      where: { id, clinicId },
-      include: {
-        patient: true,
-        doctor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            licenseId: true,
-          },
-        },
-      },
-    });
+    const consultations = await db.listConsultations(id, clinicId!);
+    const consultation = consultations.find((c) => c.id === id);
 
     if (!consultation) {
       return res.status(404).json({
@@ -149,10 +120,7 @@ export const getConsultationById = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Get consultation by ID error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -162,9 +130,13 @@ export const updateConsultation = async (req: AuthRequest, res: Response) => {
     const { clinicId, user } = req;
     const updateData = req.body;
 
-    const consultation = await prisma.consultation.findFirst({
-      where: { id, clinicId, doctorId: user!.id },
-    });
+    const consultations = (await db.listConsultations(
+      id,
+      clinicId!
+    )) as Consultation[];
+    const consultation = consultations.find(
+      (c) => c.id === id && c.doctorId === user!.id
+    );
 
     if (!consultation) {
       return res.status(404).json({
@@ -173,23 +145,28 @@ export const updateConsultation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updated = await prisma.consultation.update({
-      where: { id },
-      data: updateData,
-    });
+    const updatedConsultation = {
+      ...consultation,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+
+    // Overwrite in Firestore
+    await db.createConsultation(
+      clinicId!,
+      updatedConsultation,
+      updatedConsultation.doctorId
+    );
 
     logger.info(`Consultation updated: ${id}`);
 
     res.json({
       status: "success",
-      data: updated,
+      data: updatedConsultation,
     });
   } catch (error: any) {
     logger.error("Update consultation error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -201,31 +178,17 @@ export const getPatientConsultations = async (
     const { patientId } = req.params;
     const { clinicId } = req;
 
-    const consultations = await prisma.consultation.findMany({
-      where: {
-        patientId,
-        clinicId,
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        doctor: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+    const consultations = await db.listConsultations(patientId, clinicId!);
+    const patientConsultations = consultations.filter(
+      (c) => c.patientId === patientId
+    );
 
     res.json({
       status: "success",
-      data: consultations,
+      data: patientConsultations,
     });
   } catch (error: any) {
     logger.error("Get patient consultations error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
