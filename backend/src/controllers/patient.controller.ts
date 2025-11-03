@@ -1,55 +1,86 @@
-import { Response } from "express";
-import { AuthRequest } from "../middleware/auth.middleware";
-import db from "../services/database.service";
+import { Request, Response } from "express";
+import prisma from "../config/database";
 import { EmailService } from "../services/email.service";
+import { QueueService } from "../services/queue.service";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { generatePatientNumber } from "../utils/helpers.utils";
 import logger from "../utils/logger.utils";
 
 const emailService = new EmailService();
+const queueService = new QueueService();
+
+// export const validateNIN = async (req: Request, res: Response) => {
+//   try {
+//     const { nin } = req.body;
+
+//     const result = await ninService.validateNIN(nin);
+
+//     res.json({
+//       status: "success",
+//       data: result,
+//     });
+//   } catch (error: any) {
+//     logger.error("NIN validation error:", error);
+//     res.status(500).json({
+//       status: "error",
+//       message: error.message,
+//     });
+//   }
+// };
 
 export const registerPatient = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
-    const { addToQueue = true, ...patientData } = req.body;
+    const patientData = req.body;
 
-    if (!clinicId) {
-      return res.status(400).json({
-        status: "error",
-        message: "Missing clinic ID in request.",
-      });
-    }
+    // Generate patient number
+    const patientCount = await prisma.patient.count({ where: { clinicId } });
+    const patientNumber = generatePatientNumber(patientCount);
 
-    // Create patient and optionally add to queue
-    const patient = await db.createPatient(clinicId, {
-      firstName: patientData.firstName,
-      lastName: patientData.lastName,
-      phone: patientData.phone,
-      gender: patientData.gender,
-      dateOfBirth: patientData.dateOfBirth,
+    // Create patient
+    const patient = await prisma.patient.create({
+      data: {
+        ...patientData,
+        clinicId,
+        patientNumber,
+        birthDate: new Date(patientData.birthDate),
+      },
     });
 
-    // Optionally add to queue
-    if (addToQueue) {
-      await db.addToQueue(patient.id, clinicId);
-    }
+    // Add to queue
+    await queueService.addToQueue(
+      patient.id,
+      `${patient.firstName} ${patient.lastName}`,
+      clinicId!,
+      0
+    );
 
-    // Send welcome email (optional)
-    if (patientData.email) {
+    // Publish event
+    // await pubsubService.publishPatientRegistered({
+    //   patientId: patient.id,
+    //   patientNumber: patient.patientNumber,
+    //   email: patient.email,
+    //   clinicId,
+    // });
+
+    // Send welcome email
+    if (patient.email) {
       await emailService.sendWelcomeEmail(
-        patientData.email,
+        patient.email,
         patient.id,
-        patient.patientNumber!
+        patient.patientNumber
       );
     }
 
-    logger.info(`👤 Patient registered: ${patient.patientNumber}`);
+    logger.info(`Patient registered: ${patient.patientNumber}`);
 
-    return res.status(201).json({
+    res.status(201).json({
       status: "success",
       data: patient,
     });
   } catch (error: any) {
     logger.error("Register patient error:", error);
-    return res.status(500).json({
+    res.status(500).json({
       status: "error",
       message: error.message,
     });
@@ -59,47 +90,83 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
 export const getAllPatients = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
-    const { limit = 20 } = req.query;
+    const { page = 1, limit = 20, search } = req.query;
 
-    if (!clinicId) {
-      return res.status(400).json({
-        status: "error",
-        message: "Missing clinic ID in request.",
-      });
+    const where: any = { clinicId, isActive: true };
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search as string, mode: "insensitive" } },
+        { lastName: { contains: search as string, mode: "insensitive" } },
+        { patientNumber: { contains: search as string, mode: "insensitive" } },
+        { phone: { contains: search as string } },
+      ];
     }
 
-    const patients = await db.listPatients(clinicId, Number(limit));
+    const [patients, total] = await Promise.all([
+      prisma.patient.findMany({
+        where,
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.patient.count({ where }),
+    ]);
 
-    return res.json({
+    res.json({
       status: "success",
-      data: patients,
+      data: {
+        patients,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      },
     });
   } catch (error: any) {
     logger.error("Get all patients error:", error);
-    return res.status(500).json({
+    res.status(500).json({
       status: "error",
       message: error.message,
     });
   }
 };
 
-/**
- * GET /patients/:id
- * Retrieve a single patient and recent related data.
- */
 export const getPatientById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { clinicId } = req;
 
-    if (!clinicId) {
-      return res.status(400).json({
-        status: "error",
-        message: "Missing clinic ID in request.",
-      });
-    }
+    const patient = await prisma.patient.findFirst({
+      where: { id, clinicId },
+      include: {
+        vitals: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+        consultations: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: {
+            doctor: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        appointments: {
+          where: {
+            appointmentDate: { gte: new Date() },
+          },
+          orderBy: { appointmentDate: "asc" },
+        },
+      },
+    });
 
-    const patient = await db.getPatient(id, clinicId);
     if (!patient) {
       return res.status(404).json({
         status: "error",
@@ -107,70 +174,41 @@ export const getPatientById = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Fetch recent vitals and consultations
-    const [vitals, consultations, appointments] = await Promise.all([
-      db.getPatientVitals(id, clinicId, 5),
-      db.listConsultations(id, clinicId, 10),
-      db.listAppointments(clinicId, undefined, 10),
-    ]);
-
-    return res.json({
+    res.json({
       status: "success",
-      data: {
-        ...patient,
-        vitals,
-        consultations,
-        appointments,
-      },
+      data: patient,
     });
   } catch (error: any) {
     logger.error("Get patient by ID error:", error);
-    return res.status(500).json({
+    res.status(500).json({
       status: "error",
       message: error.message,
     });
   }
 };
 
-// export const updatePatient = async (req: AuthRequest, res: Response) => {
-//   try {
-//     const { id } = req.params;
-//     const { clinicId } = req;
-//     const updateData = req.body;
+export const updatePatient = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { clinicId } = req;
+    const updateData = req.body;
 
-//     if (!clinicId) {
-//       return res.status(400).json({
-//         status: "error",
-//         message: "Missing clinic ID in request.",
-//       });
-//     }
+    const patient = await prisma.patient.updateMany({
+      where: { id, clinicId },
+      data: updateData,
+    });
 
-//     const patient = await db.getPatient(id, clinicId);
-//     if (!patient) {
-//       return res.status(404).json({
-//         status: "error",
-//         message: "Patient not found",
-//       });
-//     }
-
-//     const ref = db.firestore().collection("patients").doc(id);
-//     const updatePayload = {
-//       ...updateData,
-//       updatedAt: new Date(),
-//     };
-
-//     await ref.update(updatePayload);
-
-//     logger.info(`✏️ Patient updated: ${id}`);
-//     return res.json({
-//       status: "success",
-//       data: { id, ...updatePayload },
-//     });
-//   } catch (error: any) {
-//     logger.error("Update patient error:", error);
-//     return res.status(500).json({
-//       status: "error",
-//       message: error.message,
-//     });
-//   }
-// };
+    if (patient.count === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Patient not found",
+      });
+    }
+  } catch (error: any) {
+    logger.error("Patient updated error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};

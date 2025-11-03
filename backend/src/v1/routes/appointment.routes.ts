@@ -14,7 +14,6 @@ import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { validate } from "../../middleware/validation.middleware";
 import { appointmentValidator } from "../../validators/appointment.validator";
-import { idempotencyCheck } from "../../middleware/idempotency.middleware";
 
 const router = Router();
 // All routes require authentication and tenant isolation
@@ -29,7 +28,7 @@ router.use(tenantIsolation);
 router.post(
   "/",
   authorize(["ADMIN", "CLERK", "DOCTOR", "NURSE"]),
-  idempotencyCheck({ required: true }),
+  //idempotencyCheck({ required: true }),
   appointmentValidator,
   validate,
   createAppointment
@@ -73,7 +72,7 @@ router.put(
 router.post(
   "/:id/check-in",
   authorize(["CLERK", "NURSE"]),
-  idempotencyCheck(),
+  //idempotencyCheck(),
   checkInAppointment
 );
 

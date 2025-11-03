@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  DOCTOR
+  NURSE
+  CLERK
+  PATIENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CHECKED_IN
+  IN_CONSULTATION
+  COMPLETED
+  CANCELLED
+}
+
+enum BillStatus {
+  PENDING
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+model Clinic {
+  id                   String   @id @default(cuid())
+  name                 String
+  type                 String
+  address              String
+  city                 String
+  state                String
+  lga                  String
+  phone                String
+  email                String   @unique
+  numberOfDoctors      Int?
+  averageDailyPatients Int?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users         User[]
+  patients      Patient[]
+  consultations Consultation[]
+  bills         Bill[]
+
+  @@map("clinics")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  clinicId           String?
+  email              String    @unique
+  password           String?
+  firstName          String
+  lastName           String
+  phone              String?
+  role               UserRole
+  licenseId          String?
+  photoUrl           String?
+  isActive           Boolean   @default(true)
+  isVerified         Boolean   @default(false)
+  mustChangePassword Boolean   @default(false)
+  lastLogin          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  clinic        Clinic?        @relation(fields: [clinicId], references: [id])
+  //clinic        Clinic         @relation(fields: [clinicId], references: [id])
+  consultations Consultation[]
+  vitals        Vitals[]
+
+  @@index([clinicId])
+  @@index([email])
+  @@map("users")
+}
+
+model Patient {
+  id                String   @id @default(cuid())
+  clinicId          String
+  patientNumber     String   @unique
+  nationalId        String?
+  healthInsuranceId String?
+  firstName         String
+  lastName          String
+  otherNames        String?
+  gender            Gender
+  birthDate         DateTime
+  phone             String
+  email             String?
+  addressLine       String
+  city              String
+  state             String
+  country           String   @default("Nigeria")
+  bloodGroup        String?
+  allergies         String[]
+  chronicConditions String[]
+  emergencyContact  String
+  emergencyPhone    String
+  emergencyRelation String
+  photoUrl          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  clinic        Clinic         @relation(fields: [clinicId], references: [id])
+  vitals        Vitals[]
+  consultations Consultation[]
+  appointments  Appointment[]
+  bills         Bill[]
+
+  @@index([clinicId])
+  @@index([patientNumber])
+  @@index([nationalId])
+  @@map("patients")
+}
+
+model Vitals {
+  id            String   @id @default(cuid())
+  patientId     String
+  recordedById  String
+  bloodPressure String?
+  temperature   Float?
+  pulse         Int?
+  respiration   Int?
+  weight        Float?
+  height        Float?
+  bmi           Float?
+  spo2          Int?
+  bloodGlucose  Float?
+  notes         String?
+  flags         String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patient    Patient @relation(fields: [patientId], references: [id])
+  recordedBy User    @relation(fields: [recordedById], references: [id])
+
+  @@index([patientId])
+  @@index([createdAt])
+  @@map("vitals")
+}
+
+model Consultation {
+  id            String    @id @default(cuid())
+  clinicId      String
+  patientId     String
+  doctorId      String
+  subjective    String
+  objective     String
+  assessment    String
+  plan          String
+  prescriptions Json?
+  labOrders     Json?
+  followUpDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  User    @relation(fields: [doctorId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("consultations")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  patientId       String
+  appointmentDate DateTime
+  status          AppointmentStatus @default(SCHEDULED)
+  reason          String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@map("appointments")
+}
+
+model Bill {
+  id            String     @id @default(cuid())
+  clinicId      String
+  patientId     String
+  billNumber    String     @unique
+  items         Json
+  totalAmount   Float
+  amountPaid    Float      @default(0)
+  balance       Float
+  status        BillStatus @default(PENDING)
+  paymentMethod String?
+  paymentDate   DateTime?
+  notes         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([billNumber])
+  @@map("bills")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("otps")
+}

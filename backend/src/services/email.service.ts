@@ -17,17 +17,19 @@ export class EmailService {
     });
   }
 
-  async sendRegisterEmail(to: string): Promise<void> {
+  async sendOTPEmail(to: string, otpCode: string): Promise<void> {
     try {
       await this.transporter.sendMail({
         from: config.email.from,
         to,
-        subject: "Thank You for Choosing - WeCareEHR",
+        subject: "Verify Your Email - WeCareEHR",
         html: `
           
             Email Verification
             Thank you for registering with WeCareEHR.
             Your verification code is:
+            
+              ${otpCode}
             
             This code will expire in 10 minutes.
             

@@ -1,21 +1,33 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
+import prisma from "../config/database";
 import { EmailService } from "../services/email.service";
-import db from "../services/database.service";
 import logger from "../utils/logger.utils";
+import { Prisma } from "@prisma/client";
 
 const emailService = new EmailService();
 
 /**
- * Create a prescription
+ * Create prescription (standalone or part of consultation)
  */
 export const createPrescription = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, consultationId, prescriptions, notes } = req.body;
     const { clinicId, user } = req;
 
-    // Verify patient exists
-    const patient = await db.getPatient(patientId, clinicId!);
+    // Verify patient belongs to clinic
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        patientNumber: true,
+        allergies: true,
+      },
+    });
+
     if (!patient) {
       return res.status(404).json({
         status: "error",
@@ -24,9 +36,9 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
     }
 
     // Check for drug allergies
-    if (prescriptions?.length && (patient as any).allergies?.length) {
+    if (prescriptions && prescriptions.length > 0 && patient.allergies) {
       const allergyConflicts = prescriptions.filter((med: any) =>
-        (patient as any).allergies.some((allergy: string) =>
+        patient.allergies!.some((allergy: string) =>
           med.drug.toLowerCase().includes(allergy.toLowerCase())
         )
       );
@@ -41,17 +53,11 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    let prescriptionRecord;
-
+    // If consultationId provided, update consultation
     if (consultationId) {
-      // Attach prescription to existing consultation
-      const consultations = await db.listConsultations(
-        consultationId,
-        clinicId!
-      );
-      const consultation = consultations.find(
-        (c) => c.id === consultationId && c.doctorId === user!.id
-      );
+      const consultation = await prisma.consultation.findFirst({
+        where: { id: consultationId, clinicId, doctorId: user!.id },
+      });
 
       if (!consultation) {
         return res.status(404).json({
@@ -60,40 +66,20 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
         });
       }
 
-      const updatedPrescriptions = [
-        ...(consultation.prescriptions || []),
-        ...prescriptions,
-      ];
-
-      // Overwrite consultation
-      prescriptionRecord = {
-        ...consultation,
-        prescriptions: updatedPrescriptions,
-        notes,
-        updatedAt: new Date(),
-      };
-
-      // Firestore method expects clinicId, data object, and doctorId
-      await db.createConsultation(clinicId!, prescriptionRecord, user!.id);
-    } else {
-      // Create a new prescription document
-      prescriptionRecord = await db.createPrescription({
-        clinicId: clinicId!,
-        patientId,
-        doctorId: user!.id,
-        prescriptions,
-        notes,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      await prisma.consultation.update({
+        where: { id: consultationId },
+        data: {
+          prescriptions: prescriptions,
+        },
       });
     }
 
     // Send prescription email
-    if (prescriptions?.length && (patient as any).email) {
+    if (patient.email && prescriptions && prescriptions.length > 0) {
       await emailService.sendPrescriptionEmail(
-        (patient as any).email,
+        patient.email,
         prescriptions,
-        (patient as any).patientNumber
+        patient.patientNumber
       );
     }
 
@@ -101,7 +87,12 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({
       status: "success",
-      data: prescriptionRecord,
+      data: {
+        patientId,
+        consultationId,
+        prescriptions,
+        notes,
+      },
       message: "Prescription created successfully",
     });
   } catch (error: any) {
@@ -114,7 +105,7 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Get prescriptions for a patient
+ * Get patient prescriptions
  */
 export const getPatientPrescriptions = async (
   req: AuthRequest,
@@ -125,53 +116,148 @@ export const getPatientPrescriptions = async (
     const { clinicId } = req;
     const { limit = 20, page = 1 } = req.query;
 
-    const prescriptions = await db.listPrescriptions(
-      patientId,
-      clinicId!,
-      Number(limit),
-      Number(page)
-    );
+    // Verify patient belongs to clinic
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        status: "error",
+        message: "Patient not found in this clinic",
+      });
+    }
+
+    // Get consultations with prescriptions
+    const consultations = await prisma.consultation.findMany({
+      where: {
+        patientId,
+        clinicId,
+        prescriptions: { not: Prisma.JsonNull },
+      },
+      select: {
+        id: true,
+        prescriptions: true,
+        createdAt: true,
+        doctor: {
+          select: {
+            firstName: true,
+            lastName: true,
+            licenseId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
+
+    const total = await prisma.consultation.count({
+      where: {
+        patientId,
+        clinicId,
+        prescriptions: {
+          not: Prisma.JsonNull,
+        },
+      },
+    });
 
     res.json({
       status: "success",
-      data: prescriptions,
+      data: {
+        prescriptions: consultations,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      },
     });
   } catch (error: any) {
     logger.error("Get patient prescriptions error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
 /**
- * Update a prescription
+ * Get prescription by ID
  */
-export const updatePrescription = async (req: AuthRequest, res: Response) => {
+export const getPrescriptionById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { prescriptions, notes } = req.body;
-    const { clinicId, user } = req;
+    const { clinicId } = req;
 
-    const consultations = await db.listConsultations(id, clinicId!);
-    const consultation = consultations.find(
-      (c) => c.id === id && c.doctorId === user!.id
-    );
+    const consultation = await prisma.consultation.findFirst({
+      where: { id, clinicId },
+      select: {
+        id: true,
+        prescriptions: true,
+        createdAt: true,
+        patient: {
+          select: {
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        doctor: {
+          select: {
+            firstName: true,
+            lastName: true,
+            licenseId: true,
+          },
+        },
+      },
+    });
 
     if (!consultation) {
       return res.status(404).json({
         status: "error",
-        message: "Prescription not found or unauthorized",
+        message: "Prescription not found",
       });
     }
 
-    const updated = {
-      ...consultation,
-      prescriptions,
-      notes,
-      updatedAt: new Date(),
-    };
+    res.json({
+      status: "success",
+      data: consultation,
+    });
+  } catch (error: any) {
+    logger.error("Get prescription error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
 
-    // Firestore overwrite
-    await db.createConsultation(clinicId!, updated, user!.id);
+/**
+ * Update prescription
+ */
+export const updatePrescription = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { prescriptions } = req.body;
+    const { clinicId, user } = req;
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id, clinicId, doctorId: user!.id },
+    });
+
+    if (!consultation) {
+      return res.status(404).json({
+        status: "error",
+        message: "Consultation not found or unauthorized",
+      });
+    }
+
+    const updated = await prisma.consultation.update({
+      where: { id },
+      data: { prescriptions },
+    });
 
     logger.info(`Prescription updated: ${id}`);
 
@@ -182,7 +268,10 @@ export const updatePrescription = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Update prescription error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
@@ -194,17 +283,22 @@ export const checkAllergies = async (req: AuthRequest, res: Response) => {
     const { patientId, drugs } = req.body;
     const { clinicId } = req;
 
-    const patient = await db.getPatient(patientId, clinicId!);
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      select: { allergies: true },
+    });
+
     if (!patient) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Patient not found" });
+      return res.status(404).json({
+        status: "error",
+        message: "Patient not found",
+      });
     }
 
     const conflicts: any[] = [];
-    if ((patient as any).allergies?.length && drugs?.length) {
+    if (patient.allergies && drugs && drugs.length > 0) {
       drugs.forEach((drug: string) => {
-        (patient as any).allergies.forEach((allergy: string) => {
+        patient.allergies!.forEach((allergy: string) => {
           if (drug.toLowerCase().includes(allergy.toLowerCase())) {
             conflicts.push({
               drug,
@@ -222,11 +316,14 @@ export const checkAllergies = async (req: AuthRequest, res: Response) => {
       data: {
         hasConflicts: conflicts.length > 0,
         conflicts,
-        allergies: (patient as any).allergies || [],
+        allergies: patient.allergies || [],
       },
     });
   } catch (error: any) {
     logger.error("Check allergies error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };

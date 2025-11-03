@@ -1,44 +1,69 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
-import db from "../services/database.service";
+import { QueueService } from "../services/queue.service";
 import logger from "../utils/logger.utils";
+import prisma from "../config/database";
 
+const queueService = new QueueService();
+
+/**
+ * Add patient to queue
+ */
 export const addToQueue = async (req: AuthRequest, res: Response) => {
   try {
-    const { patientId } = req.body;
+    const { patientId, priority } = req.body;
     const { clinicId } = req;
 
-    if (!patientId || !clinicId) {
-      return res.status(400).json({
+    // Verify patient exists and belongs to clinic
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        patientNumber: true,
+      },
+    });
+
+    if (!patient) {
+      return res.status(404).json({
         status: "error",
-        message: "Patient ID and clinic ID are required",
+        message: "Patient not found in this clinic",
       });
     }
 
-    const result = await db.addToQueue(patientId, clinicId);
-
-    if (!result.success) {
-      return res
-        .status(500)
-        .json({ status: "error", message: "Failed to add patient to queue" });
-    }
+    const patientName = `${patient.firstName} ${patient.lastName}`;
+    const queueItem = await queueService.addToQueue(
+      patientId,
+      patientName,
+      clinicId!,
+      priority || 0
+    );
 
     logger.info(`Patient added to queue: ${patientId}`);
+
     res.status(201).json({
       status: "success",
+      data: queueItem,
       message: "Patient added to queue successfully",
     });
   } catch (error: any) {
     logger.error("Add to queue error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
+/**
+ * Get clinic queue
+ */
 export const getClinicQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
 
-    const queue = await db.getQueue(clinicId!);
+    const queue = await queueService.getClinicQueue(clinicId!);
 
     res.json({
       status: "success",
@@ -49,10 +74,16 @@ export const getClinicQueue = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Get queue error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
+/**
+ * Update queue status
+ */
 export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -66,61 +97,76 @@ export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const result = await db.updateQueueStatus(id, status);
-    if (!result.success) {
-      return res
-        .status(500)
-        .json({ status: "error", message: "Failed to update queue status" });
-    }
+    await queueService.updateQueueStatus(id, status);
 
     logger.info(`Queue status updated: ${id} -> ${status}`);
+
     res.json({
       status: "success",
       message: "Queue status updated successfully",
     });
   } catch (error: any) {
     logger.error("Update queue status error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
+/**
+ * Remove patient from queue
+ */
 export const removeFromQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { clinicId } = req;
 
-    const result = await db.updateQueueStatus(id, "COMPLETED");
-    if (!result.success) {
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to remove patient from queue",
-      });
-    }
+    // Update status to COMPLETED to effectively remove from active queue
+    await queueService.updateQueueStatus(id, "COMPLETED");
 
     logger.info(`Patient removed from queue: ${id}`);
+
     res.json({
       status: "success",
       message: "Patient removed from queue successfully",
     });
   } catch (error: any) {
     logger.error("Remove from queue error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
+/**
+ * Get next patient in queue
+ */
 export const getNextPatient = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
 
-    const queue = await db.getQueue(clinicId!);
-    const nextPatient = queue.find((item) => item.status === "WAITING");
+    const queue = await queueService.getClinicQueue(clinicId!);
+    const nextPatient = queue.find((item: any) => item.status === "WAITING");
+
+    if (!nextPatient) {
+      return res.json({
+        status: "success",
+        data: null,
+        message: "No patients waiting in queue",
+      });
+    }
 
     res.json({
       status: "success",
-      data: nextPatient || null,
-      message: nextPatient ? undefined : "No patients waiting in queue",
+      data: nextPatient,
     });
   } catch (error: any) {
     logger.error("Get next patient error:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };

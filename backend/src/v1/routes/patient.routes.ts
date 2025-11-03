@@ -6,7 +6,6 @@ dotenv.config();
 const router = Router();
 
 import {
-  validateNIN,
   registerPatient,
   getAllPatients,
   getPatientById,
@@ -17,17 +16,16 @@ import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
 import { validate } from "../../middleware/validation.middleware";
 import { patientValidator } from "../../validators/patient.validator";
-import { upload } from "../../middleware/upload.middleware";
 
 router.use(authenticate);
 router.use(tenantIsolation);
 
-router.post("/validate-nin", validateNIN);
+// router.post("/validate-nin", validateNIN);
 
 router.post(
   "/register",
   authorize(["ADMIN", "CLERK"]),
-  upload.single("photo"),
+  // upload.single("photo"),
   patientValidator,
   validate,
   registerPatient
