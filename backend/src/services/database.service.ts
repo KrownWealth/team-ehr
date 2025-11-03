@@ -127,9 +127,6 @@ export interface Vitals {
   updatedAt: Date;
 }
 
-// ========================
-// FIRESTORE DATABASE SERVICE
-// ========================
 class DatabaseService {
   private db: Firestore;
 

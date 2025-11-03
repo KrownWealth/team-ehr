@@ -1,122 +1,122 @@
-import { Storage } from "@google-cloud/storage";
 import { Firestore } from "@google-cloud/firestore";
+import { Storage } from "@google-cloud/storage";
 import { VertexAI } from "@google-cloud/vertexai";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { config } from "./env";
 import logger from "../utils/logger.utils";
-import fs from "fs";
 
-// Check if service account file exists
-const hasServiceAccount =
-  config.gcp.credentials && fs.existsSync(config.gcp.credentials);
-
-if (!hasServiceAccount) {
-  logger.warn(
-    "⚠️  GCP Service Account not found. GCP services will be disabled for local development."
-  );
-  logger.warn(
-    "   This is normal for local development. GCP services will work in production."
-  );
-}
-
-// Initialize GCP services only if credentials exist
+let firestore: Firestore;
 let storage: Storage | null = null;
-let firestore: Firestore | null = null;
-let secretManager: SecretManagerServiceClient | null = null;
 let vertexai: VertexAI | null = null;
+let secretManager: SecretManagerServiceClient | null = null;
 
-if (hasServiceAccount) {
-  try {
-    // Cloud Storage
-    storage = new Storage({
-      //  projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
-    });
+const isDevelopment = config.nodeEnv === "development";
+const useEmulator = isDevelopment || !!process.env.FIRESTORE_EMULATOR_HOST;
 
-    // Firestore
+try {
+  if (useEmulator) {
+    logger.info("🔧 Using Firestore Emulator for local development");
+
     firestore = new Firestore({
-      // projectId: config.gcp.projectId,
-      keyFilename: config.gcp.credentials,
+      projectId: config.gcp.projectId,
+      host: process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8081",
+      ssl: false,
+      ignoreUndefinedProperties: true,
     });
+  } else {
+    // Production: Use service account credentials
+    logger.info("☁️ Connecting to production Firestore");
 
-    secretManager = new SecretManagerServiceClient({
-      keyFilename: config.gcp.credentials,
-    });
+    const firestoreConfig: any = {
+      projectId: config.gcp.projectId,
+      ignoreUndefinedProperties: true,
+    };
 
-    logger.info("✅ GCP services initialized successfully");
-  } catch (error) {
-    logger.error("Failed to initialize GCP services:", error);
+    // Use service account if provided
+    if (config.gcp.credentials) {
+      firestoreConfig.keyFilename = config.gcp.credentials;
+      logger.info("✅ Using service account credentials");
+    } else {
+      logger.info("✅ Using default application credentials");
+    }
+
+    firestore = new Firestore(firestoreConfig);
   }
+
+  if (!isDevelopment && config.gcp.credentials) {
+    try {
+      storage = new Storage({
+        projectId: config.gcp.projectId,
+        keyFilename: config.gcp.credentials,
+      });
+      logger.info("✅ Cloud Storage initialized");
+    } catch (error) {
+      logger.warn("⚠️ Cloud Storage not initialized:", error);
+      storage = null;
+    }
+  } else {
+    logger.info("ℹ️ Cloud Storage disabled in development mode");
+  }
+
+  if (!isDevelopment && config.gcp.credentials) {
+    try {
+      vertexai = new VertexAI({
+        project: config.gcp.projectId,
+        location: "us-central1",
+      });
+      logger.info("✅ Vertex AI initialized");
+    } catch (error) {
+      logger.warn("⚠️ Vertex AI not initialized:", error);
+      vertexai = null;
+    }
+  } else {
+    logger.info("ℹ️ Vertex AI disabled in development mode");
+  }
+
+  if (!isDevelopment && config.gcp.credentials) {
+    try {
+      secretManager = new SecretManagerServiceClient({
+        keyFilename: config.gcp.credentials,
+      });
+      logger.info("✅ Secret Manager initialized");
+    } catch (error) {
+      logger.warn("⚠️ Secret Manager not initialized:", error);
+      secretManager = null;
+    }
+  } else {
+    logger.info("ℹ️ Secret Manager disabled in development mode");
+  }
+
+  logger.info("✅ GCP services initialization complete");
+} catch (error) {
+  logger.error("❌ Failed to initialize GCP services:", error);
+  throw error;
 }
 
-// Create mock implementations for local development
-const createMockBucket = (): any => ({
-  file: () => ({
-    save: async () => {
-      logger.warn("Mock: File upload skipped (GCP not configured)");
-      return Promise.resolve();
-    },
-    makePublic: async () => Promise.resolve(),
-    delete: async () => Promise.resolve(),
-  }),
-  name: "mock-bucket",
-});
+export function getBucket(bucketName?: string): any {
+  if (!storage) {
+    throw new Error("Cloud Storage is not initialized");
+  }
+  return storage.bucket(bucketName || config.gcp.bucketName);
+}
 
-const createMockFirestore = (): any => ({
-  collection: () => ({
-    add: async (data: any) => ({ id: `mock-${Date.now()}` }),
-    doc: (id: string) => ({
-      get: async () => ({ exists: false, data: () => null }),
-      set: async () => Promise.resolve(),
-      update: async () => Promise.resolve(),
-      delete: async () => Promise.resolve(),
-    }),
-    where: () => ({
-      where: () => ({
-        orderBy: () => ({
-          limit: () => ({
-            offset: () => ({
-              get: async () => ({ docs: [], size: 0 }),
-            }),
-            get: async () => ({ docs: [], size: 0 }),
-          }),
-          get: async () => ({ docs: [], size: 0 }),
-        }),
-        get: async () => ({ docs: [], size: 0 }),
-      }),
-      orderBy: () => ({
-        limit: () => ({
-          get: async () => ({ docs: [], size: 0 }),
-        }),
-        get: async () => ({ docs: [], size: 0 }),
-      }),
-      get: async () => ({ docs: [], size: 0 }),
-    }),
-    orderBy: () => ({
-      limit: () => ({
-        offset: () => ({
-          get: async () => ({ docs: [], size: 0 }),
-        }),
-      }),
-    }),
-    get: async () => ({ docs: [], size: 0 }),
-  }),
-  batch: () => ({
-    delete: () => {},
-    update: () => {},
-    commit: async () => Promise.resolve(),
-  }),
-});
+export async function getSecret(secretName: string): Promise<string> {
+  if (!secretManager) {
+    throw new Error("Secret Manager is not initialized");
+  }
 
-const mockVertexAi = (): any => ({
-  // Add mock methods as needed
-});
+  const name = `projects/${config.gcp.projectId}/secrets/${secretName}/versions/latest`;
+  const [version] = await secretManager.accessSecretVersion({ name });
+  return version.payload?.data?.toString() || "";
+}
 
-// Export with fallbacks for local development
-export { storage, firestore, vertexai, secretManager };
+export function isUsingEmulator(): boolean {
+  return useEmulator;
+}
 
-// Export safe versions that use mocks when GCP is not available
-export const safeStorage = storage || createMockBucket();
-export const safeFirestore = firestore || createMockFirestore();
-export const safeVertexAi = vertexai || mockVertexAi();
-export const safeSecretManager = secretManager || {};
+export function getFirestoreAdmin() {
+  return firestore;
+}
+
+export { firestore, storage, vertexai, secretManager };
+export default firestore;

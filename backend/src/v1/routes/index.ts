@@ -15,12 +15,12 @@ import billingRoutes from "./billing.routes";
 import aiRoutes from "./ai.routes";
 import systemRoutes from "./system.routes";
 import tenantRoutes from "./tenant.routes";
+// Removed: import syncRoutes from "./sync.routes"; (Prisma-dependent)
 
 // Initialize router
 const router = express.Router();
 
 // Mount all routes with base paths
-
 router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/clinic", clinicRoutes);
@@ -35,5 +35,6 @@ router.use("/billing", billingRoutes);
 router.use("/ai", aiRoutes);
 router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
+// Removed: router.use("/sync", syncRoutes);
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
-import prisma from "../../config/database";
+import db from "../../services/database.service";
 import logger from "../../utils/logger.utils";
 
 const router = Router();
@@ -12,41 +12,49 @@ router.get("/", async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
 
-    const where: any = {};
+    const clinics = await db.listClinics(Number(limit));
+
+    // Filter by search if provided
+    let filteredClinics = clinics;
     if (search) {
-      where.OR = [
-        { name: { contains: search as string, mode: "insensitive" } },
-        { email: { contains: search as string, mode: "insensitive" } },
-      ];
+      const searchTerm = (search as string).toLowerCase();
+      filteredClinics = clinics.filter(
+        (clinic) =>
+          clinic.name.toLowerCase().includes(searchTerm) ||
+          clinic.email.toLowerCase().includes(searchTerm)
+      );
     }
 
-    const [clinics, total] = await Promise.all([
-      prisma.clinic.findMany({
-        where,
-        skip: (Number(page) - 1) * Number(limit),
-        take: Number(limit),
-        include: {
+    // Manual pagination
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    const paginatedClinics = filteredClinics.slice(startIndex, endIndex);
+
+    // Get user counts for each clinic
+    const clinicsWithCounts = await Promise.all(
+      paginatedClinics.map(async (clinic) => {
+        const users = await db.listUsers(clinic.id!);
+        const patients = await db.listPatients(clinic.id!);
+
+        return {
+          ...clinic,
           _count: {
-            select: {
-              users: true,
-              patients: true,
-            },
+            users: users.length,
+            patients: patients.length,
           },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.clinic.count({ where }),
-    ]);
+        };
+      })
+    );
 
     res.json({
       status: "success",
       data: {
-        clinics,
+        clinics: clinicsWithCounts,
         pagination: {
           page: Number(page),
           limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
+          total: filteredClinics.length,
+          pages: Math.ceil(filteredClinics.length / Number(limit)),
         },
       },
     });
@@ -59,23 +67,15 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/v1/tenant/:id
+ * Get clinic details by ID
+ */
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const clinic = await prisma.clinic.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            users: true,
-            patients: true,
-            consultations: true,
-            bills: true,
-          },
-        },
-      },
-    });
+    const clinic = await db.getClinic(id);
 
     if (!clinic) {
       return res.status(404).json({
@@ -84,9 +84,26 @@ router.get("/:id", async (req, res) => {
       });
     }
 
+    // Get counts
+    const [users, patients, consultations] = await Promise.all([
+      db.listUsers(id),
+      db.listPatients(id),
+      db.listConsultations("", id), // Empty patientId to get all
+    ]);
+
+    const clinicWithCounts = {
+      ...clinic,
+      _count: {
+        users: users.length,
+        patients: patients.length,
+        consultations: consultations.length,
+        bills: 0, // Would need to implement bill listing in db service
+      },
+    };
+
     res.json({
       status: "success",
-      data: clinic,
+      data: clinicWithCounts,
     });
   } catch (error: any) {
     logger.error("Get tenant error:", error);
@@ -97,15 +114,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/v1/tenant/:id
+ * Deactivate a clinic (soft delete)
+ */
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Soft delete by deactivating
-    const clinic = await prisma.clinic.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    const clinic = await db.updateClinic(id, { isActive: false });
+
+    if (!clinic) {
+      return res.status(404).json({
+        status: "error",
+        message: "Tenant not found",
+      });
+    }
 
     logger.info(`Tenant deactivated: ${id}`);
 

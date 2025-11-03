@@ -1,12 +1,12 @@
 import { validateEnvironment } from "./config/env";
-import prisma from "./config/database";
+import { firestore, isUsingEmulator } from "./config/gcp";
 import app from "./app";
 import logger from "./utils/logger.utils";
 
-// Validate environment
+// Validate environment variables
 const result = validateEnvironment();
 if (result.warnings.length > 0) {
-  console.warn("Environment validation warnings:");
+  console.warn("⚠️ Environment validation warnings:");
   result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
 }
 
@@ -20,18 +20,24 @@ console.info("✅ Environment validation passed");
 
 async function startServer() {
   // Cloud Run provides PORT via environment variable
-  const PORT = process.env.PORT || 8080;
+  const PORT = parseInt(process.env.PORT || "8080", 10);
 
-  // Start server FIRST - this is critical for Cloud Run health checks
+  // Start server FIRST - critical for Cloud Run health checks
   const server = app.listen(PORT, () => {
     logger.info(`🚀 Server running on port ${PORT}`);
-    logger.info(`Environment: ${process.env.NODE_ENV}`);
-    logger.info(`API Version: ${process.env.API_VERSION || "v1"}`);
+    logger.info(`📦 Environment: ${process.env.NODE_ENV}`);
+    logger.info(`🔢 API Version: ${process.env.API_VERSION || "v1"}`);
 
-    // Connect to database AFTER server starts (non-blocking)
-    connectDatabase().catch((err) => {
-      logger.error("Database connection error:", err);
-      // Don't exit - let health checks pass
+    if (isUsingEmulator()) {
+      logger.info(`🔧 Using Firestore Emulator`);
+      logger.info(`📊 Emulator UI: http://localhost:4000`);
+    } else {
+      logger.info(`☁️ Connected to production Firestore`);
+    }
+
+    // Test Firestore connection
+    testFirestoreConnection().catch((err) => {
+      logger.error("Firestore connection test failed:", err);
     });
   });
 
@@ -51,10 +57,12 @@ async function startServer() {
       logger.info("HTTP server closed");
 
       try {
-        await prisma.$disconnect();
-        logger.info("Database connection closed");
+        // Firestore doesn't need explicit disconnection
+        // but we can clean up any pending operations
+        await firestore.terminate();
+        logger.info("Firestore connection terminated");
       } catch (error) {
-        logger.error("Error disconnecting from database:", error);
+        logger.error("Error terminating Firestore:", error);
       }
 
       process.exit(0);
@@ -71,14 +79,23 @@ async function startServer() {
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
-async function connectDatabase() {
+/**
+ * Test Firestore connection by attempting a simple operation
+ */
+async function testFirestoreConnection() {
   try {
-    await prisma.$connect();
-    logger.info("✅ Database connected successfully");
+    // Try to list collections (doesn't create any data)
+    const collections = await firestore.listCollections();
+    logger.info(
+      `✅ Firestore connected successfully (${collections.length} collections)`
+    );
   } catch (error) {
-    logger.error("❌ Database connection failed:", error);
-    // In production, continue without DB - health checks will still pass
-    logger.warn("⚠️  Continuing without database connection");
+    logger.error("❌ Firestore connection failed:", error);
+    if (process.env.NODE_ENV === "production") {
+      logger.warn(
+        "⚠️ Continuing without database - health checks will still pass"
+      );
+    }
   }
 }
 

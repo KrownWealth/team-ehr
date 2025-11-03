@@ -1,7 +1,7 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
     // Helper functions
     function isAuthenticated() {
       return request.auth != null;
@@ -11,42 +11,80 @@ service cloud.firestore {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.clinicId == clinicId;
     }
-
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function isAdmin() {
+      return hasRole('ADMIN');
+    }
+    
     // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == userId || isAdmin());
+      allow create: if true; // Registration is public
+      allow update: if isAuthenticated() && 
+                       (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
     }
-
-    // Patients collection
-    match /patients/{patientId} {
-      allow read, write: if belongsToClinic(resource.data.clinicId);
-    }
-
-    // Vitals collection
-    match /vitals/{vitalId} {
-      allow read, write: if belongsToClinic(resource.data.clinicId);
-    }
-
-    // Consultations collection
-    match /consultations/{consultId} {
-      allow read, write: if belongsToClinic(resource.data.clinicId);
-    }
-
-    // Bills collection
-    match /bills/{billId} {
-      allow read, write: if belongsToClinic(resource.data.clinicId);
-    }
-
-    // Appointments collection
-    match /appointments/{apptId} {
-      allow read, write: if belongsToClinic(resource.data.clinicId);
-    }
-
+    
     // Clinics collection
     match /clinics/{clinicId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if belongsToClinic(clinicId);
+      allow create: if isAuthenticated();
+      allow update: if belongsToClinic(clinicId) && isAdmin();
+      allow delete: if false; // Never delete clinics
+    }
+    
+    // Patients collection
+    match /patients/{patientId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Vitals collection
+    match /vitals/{vitalId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.clinicId);
+    }
+    
+    // Consultations collection
+    match /consultations/{consultationId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Prescriptions collection
+    match /prescriptions/{prescriptionId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Queue collection
+    match /patient_queue/{queueId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Bills collection
+    match /bills/{billId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
+    }
+    
+    // Lab orders collection
+    match /lab_orders/{orderId} {
+      allow read, write: if isAuthenticated() && 
+                            belongsToClinic(resource.data.clinicId);
     }
   }
 }
