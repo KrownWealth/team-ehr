@@ -1,92 +1,69 @@
 #!/bin/bash
 
-# WeCareEHR - Setup Google Cloud Secrets
-# Run this script to create all required secrets in Secret Manager
+# Script to test Docker container locally before deploying
 
-PROJECT_ID="team-ehr"
+set -e
 
-echo "🔐 Setting up secrets for project: $PROJECT_ID"
+echo "🧪 Testing Docker container locally..."
+
+# Build the image
+echo "📦 Building Docker image..."
+docker build -t wecareehr-backend-test -f Dockerfile .
+
+# Create .env.docker file for testing
+cat > .env.docker <<EOF
+NODE_ENV=production
+PORT=8080
+API_VERSION=v1
+DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/wecareehr
+JWT_SECRET=test-secret-minimum-32-characters-long
+JWT_REFRESH_SECRET=test-refresh-secret-minimum-32-char
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=test@example.com
+SMTP_PASSWORD=test-password
+FROM_EMAIL=noreply@wecareehr.com
+FRONTEND_URL=http://localhost:3000
+GCP_PROJECT_ID=team-ehr
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+LOG_LEVEL=debug
+EOF
+
+echo "🚀 Starting container..."
+docker run -d \
+  --name wecareehr-test \
+  -p 8080:8080 \
+  --env-file .env.docker \
+  wecareehr-backend-test
+
+echo "⏳ Waiting 10 seconds for container to start..."
+sleep 10
+
+echo "📊 Container logs:"
+docker logs wecareehr-test
+
 echo ""
-
-# Function to create or update secret
-create_or_update_secret() {
-  local secret_name=$1
-  local secret_value=$2
-  
-  # Check if secret exists
-  if gcloud secrets describe $secret_name --project=$PROJECT_ID &>/dev/null; then
-    echo "✓ Secret $secret_name already exists"
-    read -p "  Update it? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      echo -n "$secret_value" | gcloud secrets versions add $secret_name \
-        --data-file=- \
-        --project=$PROJECT_ID
-      echo "  ✓ Updated"
-    fi
-  else
-    echo -n "$secret_value" | gcloud secrets create $secret_name \
-      --data-file=- \
-      --project=$PROJECT_ID
-    echo "✓ Created $secret_name"
-  fi
-}
-
-# Create SMTP_USER secret
-echo "📧 SMTP Configuration"
-read -p "Enter SMTP_USER (Gmail address): " smtp_user
-create_or_update_secret "SMTP_USER" "$smtp_user"
-
-# Create SMTP_PASSWORD secret
-read -sp "Enter SMTP_PASSWORD (Gmail App Password): " smtp_password
-echo
-create_or_update_secret "SMTP_PASSWORD" "$smtp_password"
-
-# Create DATABASE_URL secret
-echo ""
-echo "🗄️  Database Configuration"
-read -p "Enter DATABASE_URL: " database_url
-create_or_update_secret "DATABASE_URL" "$database_url"
-
-# Generate JWT secrets if they don't exist
-echo ""
-echo "🔑 JWT Secrets"
-if ! gcloud secrets describe JWT_SECRET --project=$PROJECT_ID &>/dev/null; then
-  jwt_secret=$(openssl rand -base64 32)
-  create_or_update_secret "JWT_SECRET" "$jwt_secret"
+echo "🏥 Testing health endpoint..."
+if curl -f http://localhost:8080/health; then
+  echo ""
+  echo "✅ Health check passed!"
 else
-  echo "✓ JWT_SECRET already exists"
+  echo ""
+  echo "❌ Health check failed!"
+  echo "Container logs:"
+  docker logs wecareehr-test
+  docker stop wecareehr-test
+  docker rm wecareehr-test
+  exit 1
 fi
 
-if ! gcloud secrets describe JWT_REFRESH_SECRET --project=$PROJECT_ID &>/dev/null; then
-  jwt_refresh_secret=$(openssl rand -base64 32)
-  create_or_update_secret "JWT_REFRESH_SECRET" "$jwt_refresh_secret"
-else
-  echo "✓ JWT_REFRESH_SECRET already exists"
-fi
-
-# Generate ENCRYPTION_KEY if it doesn't exist
 echo ""
-echo "🔐 Encryption Key"
-if ! gcloud secrets describe ENCRYPTION_KEY --project=$PROJECT_ID &>/dev/null; then
-  encryption_key=$(openssl rand -hex 32)
-  create_or_update_secret "ENCRYPTION_KEY" "$encryption_key"
-else
-  echo "✓ ENCRYPTION_KEY already exists"
-fi
+echo "🧹 Cleaning up..."
+docker stop wecareehr-test
+docker rm wecareehr-test
 
-# Grant Cloud Run access to secrets
+echo "✅ Docker test completed successfully!"
 echo ""
-echo "🔓 Granting Cloud Run access to secrets..."
-SERVICE_ACCOUNT="$PROJECT_ID@$PROJECT_ID.iam.gserviceaccount.com"
-
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$SERVICE_ACCOUNT" \
-  --role="roles/secretmanager.secretAccessor" \
-  --quiet
-
-echo ""
-echo "✅ Secrets setup complete!"
-echo ""
-echo "📝 Summary of secrets created:"
-gcloud secrets list --project=$PROJECT_ID --filter="name:DATABASE_URL OR name:JWT_SECRET OR name:JWT_REFRESH_SECRET OR name:SMTP_USER OR name:SMTP_PASSWORD OR name:ENCRYPTION_KEY"
+echo "Ready to deploy to Cloud Run!"

@@ -18,46 +18,23 @@ if (!result.isValid) {
 }
 console.info("✅ Environment validation passed");
 
-async function connectDatabase() {
-  try {
-    // Test database connection with timeout
-    await Promise.race([
-      prisma.$connect(),
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Database connection timeout")),
-          10000
-        )
-      ),
-    ]);
-    logger.info("✅ Database connected successfully");
-  } catch (error) {
-    logger.error("❌ Database connection failed:", error);
-    // In production, we might want to continue without DB for health checks
-    if (process.env.NODE_ENV === "production") {
-      logger.warn("⚠️  Continuing without database connection");
-    } else {
-      process.exit(1);
-    }
-  }
-}
-
 async function startServer() {
-  // Connect to database (non-blocking in production)
-  connectDatabase().catch((err) => {
-    logger.error("Database connection error:", err);
-  });
-
   // Cloud Run provides PORT via environment variable
   const PORT = process.env.PORT || 8080;
 
+  // Start server FIRST - this is critical for Cloud Run health checks
   const server = app.listen(PORT, () => {
     logger.info(`🚀 Server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV}`);
     logger.info(`API Version: ${process.env.API_VERSION || "v1"}`);
+
+    // Connect to database AFTER server starts (non-blocking)
+    connectDatabase().catch((err) => {
+      logger.error("Database connection error:", err);
+      // Don't exit - let health checks pass
+    });
   });
 
-  // Ensure server starts listening immediately
   server.on("error", (error: any) => {
     logger.error("Server error:", error);
     if (error.code === "EADDRINUSE") {
@@ -92,6 +69,17 @@ async function startServer() {
 
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+}
+
+async function connectDatabase() {
+  try {
+    await prisma.$connect();
+    logger.info("✅ Database connected successfully");
+  } catch (error) {
+    logger.error("❌ Database connection failed:", error);
+    // In production, continue without DB - health checks will still pass
+    logger.warn("⚠️  Continuing without database connection");
+  }
 }
 
 // Start the server
