@@ -1,5 +1,21 @@
 steps:
-  # Build the Docker image
+  # Step 1: Run database migrations
+  - name: 'node:18-alpine'
+    entrypoint: sh
+    args:
+      - '-c'
+      - |
+        echo "🗄️  Running database migrations..."
+        cd backend
+        npm install -g pnpm@9
+        pnpm install --frozen-lockfile
+        pnpm prisma generate --schema=src/prisma/schema.prisma
+        pnpm prisma migrate deploy --schema=src/prisma/schema.prisma
+        echo "✅ Migrations completed successfully!"
+    secretEnv: ['DATABASE_URL']
+    timeout: 300s
+
+  # Step 2: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -12,18 +28,19 @@ steps:
       - '.'
     timeout: 600s
 
-  # Push the images
+  # Step 3: Push the SHA-tagged image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
 
+  # Step 4: Push the latest-tagged image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
-  # Deploy to Cloud Run
+  # Step 5: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -48,13 +65,23 @@ steps:
       - '--set-env-vars=NODE_ENV=production,API_VERSION=v1,SMTP_HOST=smtp.gmail.com,SMTP_PORT=587,FROM_EMAIL=noreply@wecareehr.com,FRONTEND_URL=https://wecareehr.com,GCP_PROJECT_ID=team-ehr,RATE_LIMIT_WINDOW_MS=900000,RATE_LIMIT_MAX_REQUESTS=100,LOG_LEVEL=info,JWT_EXPIRES_IN=7d,JWT_REFRESH_EXPIRES_IN=30d'
       - '--update-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
 
+# Images to be pushed to Artifact Registry
 images:
   - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
   - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:latest'
 
+# Overall build timeout
 timeout: 1200s
 
+# Store logs in Cloud Storage
 logsBucket: gs://team-ehr_cloudbuild
 
+# Secret Manager configuration
+availableSecrets:
+  secretManager:
+    - versionName: projects/team-ehr/secrets/DATABASE_URL/versions/latest
+      env: 'DATABASE_URL'
+
+# Build options
 options:
-   logging: GCS_ONLY
+  logging: GCS_ONLY
