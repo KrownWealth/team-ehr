@@ -37,9 +37,9 @@ COPY --from=builder /app/src/prisma ./src/prisma
 RUN pnpm install --prod --frozen-lockfile
 
 # Generate Prisma Client (install prisma temporarily)
-# RUN pnpm add -D prisma && \
-#   pnpm prisma generate --schema=src/prisma/schema.prisma && \
-#   pnpm remove prisma
+RUN pnpm add -D prisma && \
+  pnpm prisma generate --schema=src/prisma/schema.prisma && \
+  pnpm remove prisma
 
 RUN mkdir -p logs
 
