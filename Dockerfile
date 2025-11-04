@@ -27,16 +27,19 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
-# Copy only built artifacts and essential files
+# Copy built artifacts and essential files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/src/prisma ./src/prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Install production dependencies
 RUN pnpm install --prod --frozen-lockfile
+
+# Generate Prisma Client (install prisma temporarily)
+RUN pnpm add -D prisma && \
+  pnpm prisma generate --schema=src/prisma/schema.prisma && \
+  pnpm remove prisma
 
 RUN mkdir -p logs
 
