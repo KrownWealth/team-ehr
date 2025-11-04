@@ -27,22 +27,16 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
-# Copy built artifacts and essential files
+# Copy only built artifacts and essential files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/src/prisma ./src/prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Install production dependencies
 RUN pnpm install --prod --frozen-lockfile
-
-# Generate Prisma Client (install prisma temporarily)
-RUN pnpm add -D prisma && \
-  pnpm prisma generate --schema=src/prisma/schema.prisma && \
-  pnpm remove prisma
-
-COPY backend/start.sh ./start.sh
-RUN chmod +x start.sh
 
 RUN mkdir -p logs
 
@@ -56,4 +50,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["./start.sh"]
+CMD ["node", "dist/server.js"]
