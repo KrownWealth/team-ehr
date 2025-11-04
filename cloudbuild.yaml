@@ -56,4 +56,4 @@ timeout: 1200s
 logsBucket: gs://team-ehr_cloudbuild
 
 options:
-  logging: E2_HIGHCPU_8
+   logging: GCS_ONLY
