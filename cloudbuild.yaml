@@ -42,11 +42,11 @@ steps:
       - '--concurrency=80'
       - '--port=8080'
       - '--no-cpu-throttling' 
-      - '--execution-environment=gen2'  
+      - '--execution-environment=gen2'
       - '--cpu-boost'
+      - '--add-cloudsql-instances=team-ehr:europe-west1:wecareehr-db-dev'
       - '--set-env-vars=NODE_ENV=production,API_VERSION=v1,SMTP_HOST=smtp.gmail.com,SMTP_PORT=587,FROM_EMAIL=noreply@wecareehr.com,FRONTEND_URL=https://wecareehr.com,GCP_PROJECT_ID=team-ehr,RATE_LIMIT_WINDOW_MS=900000,RATE_LIMIT_MAX_REQUESTS=100,LOG_LEVEL=debug'
       - '--update-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASSWORD=SMTP_PASSWORD:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest'
-     
 
 images:
   - 'europe-west1-docker.pkg.dev/team-ehr/wecareehr-backend/wecareehr-backend:$SHORT_SHA'
