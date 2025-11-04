@@ -6,18 +6,19 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-COPY src/prisma ./src/prisma/
+# Copy backend dependencies
+COPY backend/package.json backend/pnpm-lock.yaml ./
+COPY backend/src/prisma ./src/prisma/
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm prisma generate --schema=src/prisma/schema.prisma
 
-COPY src ./src/
-COPY tsconfig.json ./
-COPY nodemon.json ./
+# Copy app source files
+COPY backend/src ./src/
+COPY backend/tsconfig.json ./
+COPY backend/nodemon.json ./
 
 RUN pnpm run build
-
 
 # ---------- RUNTIME STAGE ----------
 FROM node:18-alpine AS runtime
@@ -26,18 +27,19 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
-# Copy built artifacts and minimal necessary files
+# Copy built artifacts and essential files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/src/prisma ./src/prisma
 
-# Install only production dependencies
+# Install production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
-# Generate Prisma client in runtime
-RUN npx prisma generate --schema=src/prisma/schema.prisma
-# RUN pnpm prisma generate --schema=src/prisma/schema.prisma
+# Generate Prisma Client (install prisma temporarily)
+RUN pnpm add -D prisma && \
+  pnpm prisma generate --schema=src/prisma/schema.prisma && \
+  pnpm remove prisma
 
 RUN mkdir -p logs
 
