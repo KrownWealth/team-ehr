@@ -1,0 +1,452 @@
+import { Response } from "express";
+import { AuthRequest } from "../middleware/auth.middleware";
+import prisma from "../config/database";
+import logger from "../utils/logger.utils";
+import { checkVitalFlags } from "../utils/helpers.utils";
+import { Prisma } from "@prisma/client";
+
+/**
+ * Get patient's own health dashboard
+ */
+export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
+  try {
+    const patientId = req.user!.patientId; // Assuming patient users have patientId
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied. Patient account required.",
+      });
+    }
+
+    const [patient, upcomingAppointments, recentVitals, recentConsultations] =
+      await Promise.all([
+        prisma.patient.findUnique({
+          where: { id: patientId },
+          select: {
+            id: true,
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+            gender: true,
+            birthDate: true,
+            bloodGroup: true,
+            allergies: true,
+            chronicConditions: true,
+          },
+        }),
+        prisma.appointment.findMany({
+          where: {
+            patientId,
+            appointmentDate: { gte: new Date() },
+            status: { in: ["SCHEDULED", "CHECKED_IN"] },
+          },
+          orderBy: { appointmentDate: "asc" },
+          take: 5,
+        }),
+        prisma.vitals.findMany({
+          where: { patientId },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: {
+            recordedBy: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+        }),
+        prisma.consultation.findMany({
+          where: { patientId },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            assessment: true,
+            plan: true,
+            prescriptions: true,
+            createdAt: true,
+            doctor: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+        }),
+      ]);
+
+    if (!patient) {
+      return res.status(404).json({
+        status: "error",
+        message: "Patient record not found",
+      });
+    }
+
+    // Calculate age
+    const age =
+      new Date().getFullYear() - new Date(patient.birthDate).getFullYear();
+
+    // Health summary
+    const latestVital = recentVitals[0];
+    const healthAlerts = latestVital?.flags || [];
+
+    res.json({
+      status: "success",
+      data: {
+        patient_info: { ...patient, age },
+        health_summary: {
+          latest_vitals: latestVital,
+          critical_alerts: healthAlerts.filter((f: string) =>
+            f.startsWith("CRITICAL")
+          ),
+          warnings: healthAlerts.filter((f: string) => f.startsWith("WARNING")),
+        },
+        upcoming_appointments: upcomingAppointments,
+        recent_vitals: recentVitals,
+        recent_consultations: recentConsultations,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Patient dashboard error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Patient self-records vitals (for remote monitoring)
+ */
+export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
+  try {
+    const patientId = req.user!.patientId;
+    const { bloodPressure, temperature, pulse, weight, bloodGlucose, notes } =
+      req.body;
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied. Patient account required.",
+      });
+    }
+
+    // Validate inputs
+    const vitalsData: any = {};
+    if (bloodPressure) vitalsData.bloodPressure = bloodPressure;
+    if (temperature) vitalsData.temperature = parseFloat(temperature);
+    if (pulse) vitalsData.pulse = parseInt(pulse);
+    if (weight) vitalsData.weight = parseFloat(weight);
+    if (bloodGlucose) vitalsData.bloodGlucose = parseFloat(bloodGlucose);
+    if (notes) vitalsData.notes = notes;
+
+    // Check for abnormal values
+    const flags = checkVitalFlags(vitalsData);
+
+    const vitals = await prisma.vitals.create({
+      data: {
+        patientId,
+        recordedById: patientId, // Self-recorded
+        ...vitalsData,
+        flags,
+      },
+    });
+
+    // If critical flags, notify clinic staff
+    const criticalFlags = flags.filter((f: string) => f.startsWith("CRITICAL"));
+    if (criticalFlags.length > 0) {
+      // TODO: Send notification to clinic staff
+      logger.warn(
+        `Critical vitals self-recorded by patient ${patientId}: ${criticalFlags.join(
+          ", "
+        )}`
+      );
+    }
+
+    logger.info(`Patient ${patientId} self-recorded vitals`);
+
+    res.status(201).json({
+      status: "success",
+      data: vitals,
+      alerts:
+        criticalFlags.length > 0
+          ? {
+              critical: true,
+              message:
+                "Critical readings detected. Your healthcare provider has been notified.",
+              flags: criticalFlags,
+            }
+          : null,
+    });
+  } catch (error: any) {
+    logger.error("Self-record vitals error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Get patient's medication reminders
+ */
+export const getMedicationReminders = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const patientId = req.user!.patientId;
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied",
+      });
+    }
+
+    // Get active prescriptions from recent consultations
+    const recentConsultations = await prisma.consultation.findMany({
+      where: {
+        patientId,
+        prescriptions: { not: Prisma.JsonNull },
+        createdAt: {
+          gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Last 90 days
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        doctor: {
+          select: { firstName: true, lastName: true },
+        },
+      },
+    });
+
+    // Extract active medications
+    const activeMedications: any[] = [];
+    recentConsultations.forEach((consultation) => {
+      const prescriptions = consultation.prescriptions as any[];
+      if (Array.isArray(prescriptions)) {
+        prescriptions.forEach((rx) => {
+          activeMedications.push({
+            ...rx,
+            prescribed_date: consultation.createdAt,
+            prescribed_by: `Dr. ${consultation.doctor.firstName} ${consultation.doctor.lastName}`,
+          });
+        });
+      }
+    });
+
+    res.json({
+      status: "success",
+      data: {
+        active_medications: activeMedications,
+        reminder_note:
+          "Set reminders on your device to take medications as prescribed",
+      },
+    });
+  } catch (error: any) {
+    logger.error("Medication reminders error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Request appointment
+ */
+export const requestAppointment = async (req: AuthRequest, res: Response) => {
+  try {
+    const patientId = req.user!.patientId;
+    const { preferredDate, reason, notes } = req.body;
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied",
+      });
+    }
+
+    const appointment = await prisma.appointment.create({
+      data: {
+        patientId,
+        appointmentDate: new Date(preferredDate),
+        reason,
+        notes,
+        status: "SCHEDULED",
+      },
+    });
+
+    logger.info(`Patient ${patientId} requested appointment`);
+
+    res.status(201).json({
+      status: "success",
+      data: appointment,
+      message:
+        "Appointment request submitted. You will receive confirmation soon.",
+    });
+  } catch (error: any) {
+    logger.error("Request appointment error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * View medical records
+ */
+export const getMyMedicalRecords = async (req: AuthRequest, res: Response) => {
+  try {
+    const patientId = req.user!.patientId;
+    const { type, limit = 20, page = 1 } = req.query;
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied",
+      });
+    }
+
+    let records: any = {};
+
+    if (!type || type === "consultations") {
+      records.consultations = await prisma.consultation.findMany({
+        where: { patientId },
+        orderBy: { createdAt: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        select: {
+          id: true,
+          subjective: true,
+          objective: true,
+          assessment: true,
+          plan: true,
+          prescriptions: true,
+          labOrders: true,
+          followUpDate: true,
+          createdAt: true,
+          doctor: {
+            select: { firstName: true, lastName: true, licenseId: true },
+          },
+        },
+      });
+    }
+
+    if (!type || type === "vitals") {
+      records.vitals = await prisma.vitals.findMany({
+        where: { patientId },
+        orderBy: { createdAt: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      });
+    }
+
+    if (!type || type === "appointments") {
+      records.appointments = await prisma.appointment.findMany({
+        where: { patientId },
+        orderBy: { appointmentDate: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      });
+    }
+
+    res.json({
+      status: "success",
+      data: records,
+    });
+  } catch (error: any) {
+    logger.error("Medical records error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Get health education content based on patient's conditions
+ */
+export const getPersonalizedHealthTips = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const patientId = req.user!.patientId;
+
+    if (!patientId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied",
+      });
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      select: {
+        chronicConditions: true,
+        vitals: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        status: "error",
+        message: "Patient not found",
+      });
+    }
+
+    // Generate personalized tips based on conditions
+    const tips: string[] = [];
+    const resources: any[] = [];
+
+    patient.chronicConditions.forEach((condition) => {
+      const conditionLower = condition.toLowerCase();
+
+      if (conditionLower.includes("diabetes")) {
+        tips.push("Monitor your blood sugar levels regularly");
+        tips.push("Follow a balanced diet with controlled carbohydrate intake");
+        resources.push({
+          title: "Living with Diabetes",
+          url: "https://www.who.int/health-topics/diabetes",
+        });
+      }
+
+      if (conditionLower.includes("hypertension")) {
+        tips.push("Reduce salt intake in your diet");
+        tips.push("Exercise regularly (at least 30 minutes daily)");
+        resources.push({
+          title: "Managing High Blood Pressure",
+          url: "https://www.who.int/health-topics/hypertension",
+        });
+      }
+    });
+
+    // Add general tips
+    if (tips.length === 0) {
+      tips.push("Maintain a balanced diet with fruits and vegetables");
+      tips.push("Stay physically active");
+      tips.push("Get adequate sleep (7-9 hours)");
+      tips.push("Stay hydrated");
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        personalized_tips: tips,
+        educational_resources: resources,
+        general_wellness: {
+          message:
+            "Regular check-ups and healthy lifestyle are key to wellness",
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Health tips error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
