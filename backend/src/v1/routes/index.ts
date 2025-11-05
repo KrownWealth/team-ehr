@@ -13,6 +13,7 @@ import prescriptionRoutes from "./prescription.routes";
 import aiRoutes from "./ai.routes";
 import systemRoutes from "./system.routes";
 import tenantRoutes from "./tenant.routes";
+import patientPortalRoutes from "./patient-portal.routes";
 
 // Initialize router
 const router = express.Router();
@@ -31,5 +32,6 @@ router.use("/prescription", prescriptionRoutes);
 router.use("/ai", aiRoutes);
 router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
+router.use("/patient-portal", patientPortalRoutes);
 
 export default router;
