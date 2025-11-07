@@ -1,5 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "frontend/*"
+
 onlyBuiltDependencies:
-  - '@heroui/shared-utils'
-  - '@tailwindcss/oxide'
+  - "@heroui/shared-utils"
+  - "@tailwindcss/oxide"
   - sharp
   - unrs-resolver
