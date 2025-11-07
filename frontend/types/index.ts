@@ -202,3 +202,9 @@ export interface DashboardStats {
   revenue?: number;
   staffCount?: number;
 }
+
+export type ApiError = {
+  message: string;
+  error: string;
+  statusCode: number;
+};

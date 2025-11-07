@@ -39,7 +39,7 @@ export default function RootLayout({
         >
           <ReactQueryProvider>
             <NextTopLoader
-              color="#3B82F6"
+              color="#012201"
               showSpinner={false}
               easing="ease"
               height={3}

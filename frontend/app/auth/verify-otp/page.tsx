@@ -40,7 +40,7 @@ export default function OTPVerificationForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-3xl font-extrabold mb-2 text-gray-900">
         OTP Verification
       </h2>
