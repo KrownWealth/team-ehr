@@ -7,6 +7,7 @@ import { LoginCredentials, LoginResponse, ResponseSuccess } from "@/types";
 import { toast } from "sonner";
 import { getDefaultRouteForRole } from "../constants/routes";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export function useAuth() {
   const {
@@ -19,6 +20,8 @@ export function useAuth() {
     initializeAuth,
   } = useAuthStore();
 
+  const router = useRouter();
+
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
@@ -26,7 +29,7 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const response = await apiClient.post<ResponseSuccess<LoginResponse>>(
-        "/auth/login",
+        "/v1/auth/login",
         credentials
       );
       return response.data.data;
@@ -40,9 +43,7 @@ export function useAuth() {
         data.user.clinicId
       );
 
-      if (typeof window !== "undefined") {
-        window.location.href = redirectUrl;
-      }
+      router.replace(redirectUrl);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Login failed");
@@ -52,16 +53,15 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiClient.post<ResponseSuccess<LoginResponse>>(
-        "/auth/register",
+        "/v1/auth/register-admin",
         data
       );
       return response.data.data;
     },
-    onSuccess: () => {
-      toast.success("Registration successful! Please verify your email/phone.");
-      if (typeof window !== "undefined") {
-        window.location.href = "/auth/verify-otp";
-      }
+    onSuccess: (data) => {
+      toast.success("Registration successful! Please verify your email.");
+
+      router.replace(`/auth/verify-otp?email=${data.user.email}`);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Registration failed");
@@ -69,25 +69,34 @@ export function useAuth() {
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: async (data: { email: string; otp: string }) => {
+    mutationFn: async (data: {
+      email?: string;
+      phone?: string;
+      code: string;
+      type?: string;
+    }) => {
       const response = await apiClient.post<ResponseSuccess<LoginResponse>>(
-        "/auth/verify-otp",
+        "/v1/auth/verify-otp",
         data
       );
-      return response.data.data;
+      return response.data;
     },
     onSuccess: (data) => {
-      setAuth(data.token);
       toast.success("Verification successful!");
 
-      const redirectUrl = getDefaultRouteForRole(
-        data.user.role,
-        data.user.clinicId
-      );
+      // if (data.token) {
+      //   setAuth(data.token);
+      //   const redirectUrl = getDefaultRouteForRole(
+      //     data.user.role,
+      //     data.user.clinicId
+      //   );
 
-      if (typeof window !== "undefined") {
-        window.location.href = redirectUrl;
-      }
+      //   router.replace(redirectUrl);
+      // } else {
+      //   router.replace("/auth/login");
+      // }
+
+      router.replace("/auth/login");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Verification failed");
@@ -96,7 +105,9 @@ export function useAuth() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await apiClient.post("/auth/forgot-password", { email });
+      const response = await apiClient.post("/v1/auth/forgot-password", {
+        email,
+      });
       return response.data;
     },
     onSuccess: () => {

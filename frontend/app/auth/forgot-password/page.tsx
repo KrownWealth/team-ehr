@@ -13,11 +13,11 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 const emailSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
 });
 
 const otpSchema = z.object({
-  otp: z.string().length(4, "OTP must be 4 digits"),
+  otp: z.string().length(5, "OTP must be 4 digits"),
 });
 
 const passwordSchema = z
@@ -33,7 +33,7 @@ const passwordSchema = z
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { forgotPassword, isLoading } = useAuth();

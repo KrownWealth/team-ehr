@@ -6,11 +6,13 @@ export type Role = keyof typeof ROLES;
 
 export const ROLE_HIERARCHY: Record<Role, number> = {
   ADMIN: 100,
-  DOCTOR: 80,
-  NURSE: 60,
-  LAB_TECH: 50,
-  CLERK: 40,
-  CASHIER: 30,
+  DOCTOR: 90,
+  NURSE: 80,
+  LAB_TECH: 70,
+  CLERK: 60,
+  CASHIER: 50,
+  STAFF: 40,
+  RECEPTIONIST: 30,
   PATIENT: 10,
 };
 

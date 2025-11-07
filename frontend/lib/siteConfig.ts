@@ -5,11 +5,11 @@ export const siteConfig = {
   url: "https://app.wecareehr.com",
 
   links: {
-    support: 'mailto:support@wecarehr.com'
+    support: "mailto:support@wecarehr.com",
   },
 
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL,
     timeout: 30000,
   },
 
@@ -21,6 +21,9 @@ export const siteConfig = {
     LAB_TECH: "LAB_TECH",
     CASHIER: "CASHIER",
     PATIENT: "PATIENT",
+
+    RECEPTIONIST: "RECEPTIONIST",
+    STAFF: "STAFF",
   } as const,
 
   roleLabels: {
@@ -31,6 +34,8 @@ export const siteConfig = {
     LAB_TECH: "Lab Technician",
     CASHIER: "Cashier",
     PATIENT: "Patient",
+    RECEPTIONIST: "Receptionist",
+    STAFF: "Staff",
   },
 
   features: {
@@ -87,8 +92,6 @@ export const siteConfig = {
     displayWithTime: "MMM dd, yyyy hh:mm a",
     api: "yyyy-MM-dd",
   },
-
-
 } as const;
 
 export type Role = keyof typeof siteConfig.roles;

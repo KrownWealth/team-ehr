@@ -9,7 +9,6 @@ const PUBLIC_ROUTES = [
   "/auth/register",
   "/auth/verify-otp",
   "/auth/forgot-password",
-  "/auth/reset-password",
 ];
 
 const AUTH_ROUTES = ["/auth/login", "/auth/register"];

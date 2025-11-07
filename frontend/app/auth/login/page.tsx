@@ -30,7 +30,7 @@ const countries = [
 ];
 
 const staffSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 

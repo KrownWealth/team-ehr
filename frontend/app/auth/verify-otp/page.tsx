@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function OTPVerificationPage() {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -20,7 +20,14 @@ export default function OTPVerificationPage() {
 
   const phone = searchParams.get("phone");
   const email = searchParams.get("email");
-  const type = searchParams.get("type") || "staff";
+  const type = searchParams.get("type")?.toUpperCase() || "STAFF";
+
+  useEffect(() => {
+    if (!email && !phone) {
+      toast.error("Invalid verification request. Please login again.");
+      router.push("/auth/login");
+    }
+  }, [email, phone, router]);
 
   useEffect(() => {
     if (timer > 0) {
@@ -53,11 +60,11 @@ export default function OTPVerificationPage() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").slice(0, 4);
+    const pastedData = e.clipboardData.getData("text").slice(0, 6);
     if (/^\d+$/.test(pastedData)) {
       const newOtp = pastedData.split("");
-      setOtp([...newOtp, ...Array(4 - newOtp.length).fill("")]);
-      inputRefs.current[Math.min(pastedData.length, 3)]?.focus();
+      setOtp([...newOtp, ...Array(6 - newOtp.length).fill("")]);
+      inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
     }
   };
 
@@ -68,10 +75,19 @@ export default function OTPVerificationPage() {
     }
 
     const otpString = otp.join("");
-    verifyOtp({
-      email: email || "",
-      otp: otpString,
-    });
+
+    const payload: any = {
+      code: otpString,
+      type: type,
+    };
+
+    if (email) {
+      payload.email = email;
+    } else if (phone) {
+      payload.phone = phone;
+    }
+
+    verifyOtp(payload);
   };
 
   const handleResend = async () => {
@@ -82,12 +98,16 @@ export default function OTPVerificationPage() {
       toast.success("OTP resent successfully!");
       setTimer(60);
       setCanResend(false);
-      setOtp(["", "", "", ""]);
+      setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch (error) {
       toast.error("Failed to resend OTP");
     }
   };
+
+  if (!email && !phone) {
+    return null;
+  }
 
   return (
     <div className="space-y-6 w-full max-w-md">
@@ -104,14 +124,14 @@ export default function OTPVerificationPage() {
           Verify Your Account
         </h2>
         <p className="text-gray-600 mt-2">
-          Enter the 4-digit code sent to{" "}
+          Enter the 6-digit code sent to{" "}
           <span className="font-medium text-gray-900">
             {phone || email || "your contact"}
           </span>
         </p>
       </div>
 
-      <div className="flex justify-center gap-6" onPaste={handlePaste}>
+      <div className="flex justify-between gap-4" onPaste={handlePaste}>
         {otp.map((digit, index) => (
           <Input
             key={index}
