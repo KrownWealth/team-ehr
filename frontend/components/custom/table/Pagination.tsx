@@ -56,15 +56,12 @@ const CustomPagination = ({ meta, onPageChange }: CustomPaginationProps) => {
 
   const pages = [];
 
-  // First page
   pages.push(createPageButton(1));
 
-  // Start ellipsis
   if (currentPage > 4) {
     pages.push(createEllipsis("start"));
   }
 
-  // Middle pages range
   let startPage = Math.max(2, currentPage - 2);
   let endPage = Math.min(totalPages - 1, currentPage + 2);
 
@@ -80,12 +77,10 @@ const CustomPagination = ({ meta, onPageChange }: CustomPaginationProps) => {
     pages.push(createPageButton(page));
   }
 
-  // End ellipsis
   if (currentPage < totalPages - 3) {
     pages.push(createEllipsis("end"));
   }
 
-  // Last page
   if (totalPages > 1) {
     pages.push(createPageButton(totalPages));
   }

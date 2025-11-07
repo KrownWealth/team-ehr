@@ -17,7 +17,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  // Generate breadcrumbs from pathname
   const pathSegments = pathname.split("/").filter(Boolean);
   const breadcrumbs = pathSegments.slice(1).map((segment, index) => ({
     label: segment
@@ -30,7 +29,6 @@ export default function Navbar() {
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm">
         {breadcrumbs.map((crumb, index) => (
           <div key={crumb.href} className="flex items-center gap-2">
@@ -48,18 +46,14 @@ export default function Navbar() {
         ))}
       </nav>
 
-      {/* Right side actions */}
       <div className="flex items-center gap-3">
-        {/* Notifications */}
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
-          {/* Badge for unread notifications */}
           <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
             3
           </span>
         </Button>
 
-        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

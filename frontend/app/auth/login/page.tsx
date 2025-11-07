@@ -107,7 +107,6 @@ export default function LoginPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Staff Login */}
         <TabsContent value="staff" className="space-y-4 mt-6">
           <form
             onSubmit={staffForm.handleSubmit(handleStaffLogin)}
@@ -193,7 +192,6 @@ export default function LoginPage() {
           </div>
         </TabsContent>
 
-        {/* Patient Login */}
         <TabsContent value="patient" className="space-y-4 mt-6">
           <form
             onSubmit={patientForm.handleSubmit(handlePatientOtp)}
@@ -213,7 +211,11 @@ export default function LoginPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {countries.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
+                      <SelectItem
+                        key={c.code}
+                        value={c.code}
+                        className="hover:text-white"
+                      >
                         {c.name} ({c.code})
                       </SelectItem>
                     ))}
@@ -233,12 +235,6 @@ export default function LoginPage() {
                   {patientForm.formState.errors.phone.message}
                 </p>
               )}
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-sm text-green-800">
-                📱 We'll send a 4-digit OTP to verify your phone number
-              </p>
             </div>
 
             <Button type="submit" className="w-full h-12" disabled={isLoading}>

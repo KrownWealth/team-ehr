@@ -113,7 +113,6 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8">
         {STEPS.map((s, idx) => {
           const Icon = s.icon;
@@ -155,7 +154,6 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Step 1: Clinic Info */}
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
@@ -167,7 +165,9 @@ export default function RegisterPage() {
                 {...register("clinicName")}
               />
               {errors.clinicName && (
-                <p className="text-sm text-red-600">{errors.clinicName.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.clinicName.message}
+                </p>
               )}
             </div>
 
@@ -218,13 +218,16 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <Button type="button" onClick={nextStep} className="w-full h-12 mt-6">
+            <Button
+              type="button"
+              onClick={nextStep}
+              className="w-full h-12 mt-6"
+            >
               Continue
             </Button>
           </div>
         )}
 
-        {/* Step 2: Location */}
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
@@ -236,7 +239,9 @@ export default function RegisterPage() {
                 {...register("addressLine")}
               />
               {errors.addressLine && (
-                <p className="text-sm text-red-600">{errors.addressLine.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.addressLine.message}
+                </p>
               )}
             </div>
 
@@ -307,7 +312,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Step 3: Security */}
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
@@ -325,11 +329,17 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -348,11 +358,17 @@ export default function RegisterPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
@@ -374,7 +390,11 @@ export default function RegisterPage() {
               >
                 Back
               </Button>
-              <Button type="submit" className="flex-1 h-12" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="flex-1 h-12"
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating Account..." : "Complete Registration"}
               </Button>
             </div>
@@ -384,7 +404,10 @@ export default function RegisterPage() {
 
       <div className="text-center text-sm text-gray-600">
         Already have an account?{" "}
-        <Link href="/auth/login" className="text-green-600 hover:text-green-700 font-medium">
+        <Link
+          href="/auth/login"
+          className="text-green-600 hover:text-green-700 font-medium"
+        >
           Sign in
         </Link>
       </div>

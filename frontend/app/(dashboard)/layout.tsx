@@ -18,13 +18,11 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
     if (!isAuthenticated) {
       router.push("/auth/login");
       return;
     }
 
-    // Check route permissions
     if (user && !canAccessRoute(user.role, pathname)) {
       router.push("/404");
       return;

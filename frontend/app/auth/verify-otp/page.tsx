@@ -39,7 +39,6 @@ export default function OTPVerificationPage() {
       newOtp[index] = value;
       setOtp(newOtp);
 
-      // Auto-focus next input
       if (value && index < otp.length - 1) {
         inputRefs.current[index + 1]?.focus();
       }
@@ -112,7 +111,6 @@ export default function OTPVerificationPage() {
         </p>
       </div>
 
-      {/* OTP Input */}
       <div className="flex justify-center gap-6" onPaste={handlePaste}>
         {otp.map((digit, index) => (
           <Input
@@ -132,7 +130,6 @@ export default function OTPVerificationPage() {
         ))}
       </div>
 
-      {/* Timer & Resend */}
       <div className="text-center">
         {canResend ? (
           <Button
@@ -150,7 +147,6 @@ export default function OTPVerificationPage() {
         )}
       </div>
 
-      {/* Submit Button */}
       <Button
         onClick={handleSubmit}
         disabled={isLoading || otp.some((d) => d === "")}
@@ -159,7 +155,6 @@ export default function OTPVerificationPage() {
         {isLoading ? "Verifying..." : "Verify & Continue"}
       </Button>
 
-      {/* Help Text */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
         <p className="font-medium mb-1">Didn't receive the code?</p>
         <ul className="list-disc list-inside space-y-1 text-xs">

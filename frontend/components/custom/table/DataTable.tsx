@@ -118,7 +118,6 @@ export function DataTable<TData>({
         </Table>
       </div>
 
-      {/* Pagination controls */}
       <div className="flex flex-wrap gap-2 items-center justify-between bg-neutral-100 p-4.5 py-5 rounded-b-sm">
         <p className="text-sm">
           Total:{" "}

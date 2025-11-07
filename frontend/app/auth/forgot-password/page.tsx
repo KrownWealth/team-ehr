@@ -106,7 +106,6 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
 
-      {/* Progress Indicator */}
       <div className="flex items-center justify-between mb-8">
         {[
           { num: 1, icon: Mail, label: "Email" },
@@ -145,7 +144,6 @@ export default function ForgotPasswordPage() {
         })}
       </div>
 
-      {/* Step 1: Enter Email */}
       {step === 1 && (
         <form
           onSubmit={emailForm.handleSubmit(handleSendOtp)}
@@ -173,7 +171,6 @@ export default function ForgotPasswordPage() {
         </form>
       )}
 
-      {/* Step 2: Verify OTP */}
       {step === 2 && (
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
@@ -210,7 +207,6 @@ export default function ForgotPasswordPage() {
         </div>
       )}
 
-      {/* Step 3: New Password */}
       {step === 3 && (
         <form
           onSubmit={passwordForm.handleSubmit(handleResetPassword)}

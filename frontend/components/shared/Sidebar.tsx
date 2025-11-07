@@ -103,19 +103,16 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const clinicId = user?.clinicId;
 
-  // Filter navigation based on user role
   const allowedItems = navigation.filter((item) =>
     user?.role ? item.roles.includes(user.role) : false
   );
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
-      {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b">
         <h1 className="text-xl font-bold text-green-600">{siteConfig.name}</h1>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-1">
           {allowedItems.map((item) => {
@@ -143,7 +140,6 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* User Info & Logout */}
       <div className="p-4 border-t">
         <div className="mb-3">
           <p className="text-sm font-medium text-gray-900">
