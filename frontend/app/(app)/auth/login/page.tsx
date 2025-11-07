@@ -29,7 +29,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-3xl font-extrabold mb-2 text-gray-900">
         Welcome back!
       </h2>
