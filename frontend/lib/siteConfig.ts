@@ -4,6 +4,10 @@ export const siteConfig = {
   tagline: "Efficient. Secure. Patient-Centered.",
   url: "https://app.wecareehr.com",
 
+  links: {
+    support: 'mailto:support@wecarehr.com'
+  },
+
   api: {
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
     timeout: 30000,
@@ -83,6 +87,8 @@ export const siteConfig = {
     displayWithTime: "MMM dd, yyyy hh:mm a",
     api: "yyyy-MM-dd",
   },
+
+
 } as const;
 
 export type Role = keyof typeof siteConfig.roles;

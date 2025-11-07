@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+import { Eye, EyeOff, Building2, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
+import Link from "next/link";
 
 const countries = [
   { name: "Nigeria", code: "+234" },
@@ -24,157 +26,175 @@ const countries = [
   { name: "UK", code: "+44" },
 ];
 
-const fullSchema = z
+const registerSchema = z
   .object({
-    clinicName: z.string().min(1, "Clinic name is required"),
+    clinicName: z.string().min(3, "Clinic name must be at least 3 characters"),
     email: z.string().email("Invalid email address"),
-    phone: z.string().min(4, "Phone is required"),
-    addressLine: z.string().min(1, "Address is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
-    logo: z
-      .any()
-      .refine((file) => file instanceof File, "Logo file is required"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(6, "Confirm password is required"),
+    phone: z.string().min(4, "Phone number is required"),
+    addressLine: z.string().min(5, "Address is required"),
+    city: z.string().min(2, "City is required"),
+    state: z.string().min(2, "State is required"),
+    logo: z.any().optional(),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
 
-type FormData = z.infer<typeof fullSchema>;
+type FormData = z.infer<typeof registerSchema>;
 
-export default function ClinicRegisterForm() {
+const STEPS = [
+  { number: 1, title: "Clinic Info", icon: Building2 },
+  { number: 2, title: "Location", icon: MapPin },
+  { number: 3, title: "Security", icon: Mail },
+];
+
+export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const { register: registerClinic, isLoading } = useAuth();
 
   const {
     register,
     handleSubmit,
     trigger,
     setValue,
-    getValues,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(fullSchema),
+    resolver: zodResolver(registerSchema),
     mode: "onChange",
   });
 
   const stepFields: Record<number, (keyof FormData)[]> = {
     1: ["clinicName", "email", "phone"],
-    2: ["addressLine", "city", "state", "logo"],
+    2: ["addressLine", "city", "state"],
     3: ["password", "confirmPassword"],
   };
 
   const nextStep = async () => {
     const valid = await trigger(stepFields[step]);
-    if (valid) setStep((prev) => Math.min(prev + 1, 3));
+    if (valid && step < 3) {
+      setStep(step + 1);
+    }
   };
 
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+  };
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit = async (data: FormData) => {
     const formData = new FormData();
     formData.append("clinicName", data.clinicName);
     formData.append("email", data.email);
-    formData.append("phone", selectedCountry.code + data.phone);
+    formData.append("phone", `${selectedCountry.code}${data.phone}`);
     formData.append("addressLine", data.addressLine);
     formData.append("city", data.city);
     formData.append("state", data.state);
     formData.append("password", data.password);
     if (data.logo) formData.append("logo", data.logo);
 
-    try {
-      const res = await fetch("/api/v1/clinic/register", {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Registration failed");
-      toast.success("Clinic registered successfully!");
-    } catch (err) {
-      toast.error((err as Error).message);
-    }
+    registerClinic(Object.fromEntries(formData) as any);
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
-      {step !== 1 && (
-        <div className="flex justify-center mb-4">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400 text-xl">
-            {logoPreview || getValues("logo") ? (
-              <img
-                src={
-                  logoPreview || URL.createObjectURL(getValues("logo") as File)
-                }
-                alt="Clinic Logo"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              "Logo"
-            )}
-          </div>
-        </div>
-      )}
-
-      <h2 className="text-3xl font-extrabold mb-2 text-gray-900">
-        Register Your Clinic
-      </h2>
-
-      <div className="mb-6">
-        <div className="flex justify-between text-sm font-medium text-gray-600 mb-1">
-          <span className={step >= 1 ? "text-gray-900" : ""}>Step 1</span>
-          <span className={step >= 2 ? "text-gray-900" : ""}>Step 2</span>
-          <span className={step >= 3 ? "text-gray-900" : ""}>Step 3</span>
-        </div>
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-2 bg-primary transition-all duration-300"
-            style={{ width: `${(step / 3) * 100}%` }}
-          />
-        </div>
+    <div className="space-y-6 w-full max-w-xl">
+      <div>
+        <h2 className="text-3xl font-extrabold text-gray-900">
+          Register Your Clinic
+        </h2>
+        <p className="text-gray-600 mt-2">
+          Join wecareEHR and modernize your healthcare practice
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Progress Steps */}
+      <div className="flex items-center justify-between mb-8">
+        {STEPS.map((s, idx) => {
+          const Icon = s.icon;
+          const isActive = step === s.number;
+          const isCompleted = step > s.number;
+
+          return (
+            <React.Fragment key={s.number}>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    isActive
+                      ? "bg-green-600 text-white scale-110"
+                      : isCompleted
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+                <span
+                  className={`text-xs mt-2 font-medium ${
+                    isActive ? "text-green-600" : "text-gray-500"
+                  }`}
+                >
+                  {s.title}
+                </span>
+              </div>
+              {idx < STEPS.length - 1 && (
+                <div
+                  className={`flex-1 h-1 mx-2 rounded transition-all ${
+                    isCompleted ? "bg-green-500" : "bg-gray-200"
+                  }`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Step 1: Clinic Info */}
         {step === 1 && (
-          <>
-            <div className="space-y-1">
-              <Label>Clinic Name</Label>
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <Label htmlFor="clinicName">Clinic Name *</Label>
               <Input
-                {...register("clinicName")}
-                placeholder="Enter clinic name"
+                id="clinicName"
+                placeholder="e.g. St. Mary's Medical Center"
                 className="h-12"
+                {...register("clinicName")}
               />
               {errors.clinicName && (
-                <p className="text-red-500 text-sm">
-                  {errors.clinicName.message}
-                </p>
+                <p className="text-sm text-red-600">{errors.clinicName.message}</p>
               )}
             </div>
-            <div className="space-y-1">
-              <Label>Email</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Admin Email Address *</Label>
               <Input
-                {...register("email")}
+                id="email"
+                type="email"
                 placeholder="admin@clinic.com"
                 className="h-12"
+                {...register("email")}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
+                <p className="text-sm text-red-600">{errors.email.message}</p>
               )}
             </div>
-            <div className="space-y-1">
-              <Label>Phone Number</Label>
-              <div className="flex gap-2 items-center">
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Contact Phone Number *</Label>
+              <div className="flex gap-2">
                 <Select
                   value={selectedCountry.code}
                   onValueChange={(value) =>
                     setSelectedCountry(countries.find((c) => c.code === value)!)
                   }
                 >
-                  <SelectTrigger className="h-12 w-24 flex items-center justify-center px-2 border rounded-sm">
+                  <SelectTrigger className="w-28 h-12!">
                     <SelectValue>{selectedCountry.code}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -186,69 +206,71 @@ export default function ClinicRegisterForm() {
                   </SelectContent>
                 </Select>
                 <Input
-                  {...register("phone")}
+                  id="phone"
                   type="tel"
-                  placeholder="Enter phone number"
+                  placeholder="8012345678"
                   className="flex-1 h-12"
+                  {...register("phone")}
                 />
               </div>
               {errors.phone && (
-                <p className="text-red-500 text-sm">{errors.phone.message}</p>
+                <p className="text-sm text-red-600">{errors.phone.message}</p>
               )}
             </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                className="bg-primary text-primary-foreground h-12"
-                onClick={nextStep}
-              >
-                Next
-              </Button>
-            </div>
-          </>
+
+            <Button type="button" onClick={nextStep} className="w-full h-12 mt-6">
+              Continue
+            </Button>
+          </div>
         )}
 
+        {/* Step 2: Location */}
         {step === 2 && (
-          <>
-            <div className="space-y-1">
-              <Label>Address Line</Label>
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <Label htmlFor="addressLine">Street Address *</Label>
               <Input
-                {...register("addressLine")}
-                placeholder="Street, building, etc."
+                id="addressLine"
+                placeholder="123 Medical Drive"
                 className="h-12"
+                {...register("addressLine")}
               />
               {errors.addressLine && (
-                <p className="text-red-500 text-sm">
-                  {errors.addressLine.message}
-                </p>
+                <p className="text-sm text-red-600">{errors.addressLine.message}</p>
               )}
             </div>
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <Label>City</Label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="city">City *</Label>
                 <Input
-                  {...register("city")}
-                  placeholder="City"
+                  id="city"
+                  placeholder="Lagos"
                   className="h-12"
+                  {...register("city")}
                 />
                 {errors.city && (
-                  <p className="text-red-500 text-sm">{errors.city.message}</p>
+                  <p className="text-sm text-red-600">{errors.city.message}</p>
                 )}
               </div>
-              <div className="flex-1 space-y-1">
-                <Label>State</Label>
+              <div className="space-y-2">
+                <Label htmlFor="state">State *</Label>
                 <Input
-                  {...register("state")}
-                  placeholder="State"
+                  id="state"
+                  placeholder="Lagos State"
                   className="h-12"
+                  {...register("state")}
                 />
                 {errors.state && (
-                  <p className="text-red-500 text-sm">{errors.state.message}</p>
+                  <p className="text-sm text-red-600">{errors.state.message}</p>
                 )}
               </div>
             </div>
-            <div className="space-y-1">
-              <Label>Clinic Logo</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="logo">Clinic Logo (Optional)</Label>
               <Input
+                id="logo"
                 type="file"
                 accept="image/*"
                 className="h-12"
@@ -260,96 +282,112 @@ export default function ClinicRegisterForm() {
                   }
                 }}
               />
-              {errors.logo && (
-                <p className="text-red-500 text-sm">
-                  {errors.logo.message?.toString()}
-                </p>
+              {logoPreview && (
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="mt-2 w-20 h-20 object-cover rounded-lg border"
+                />
               )}
             </div>
-            <div className="flex justify-between mt-4">
-              <Button variant="outline" className="h-12" onClick={prevStep}>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                className="flex-1 h-12"
+              >
                 Back
               </Button>
-              <Button
-                className="bg-primary text-primary-foreground h-12"
-                onClick={nextStep}
-              >
-                Next
+              <Button type="button" onClick={nextStep} className="flex-1 h-12">
+                Continue
               </Button>
             </div>
-          </>
+          </div>
         )}
 
+        {/* Step 3: Security */}
         {step === 3 && (
-          <>
-            <div className="space-y-1">
-              <Label>Password</Label>
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
               <div className="relative">
                 <Input
-                  {...register("password")}
+                  id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
-                  className="h-12"
+                  placeholder="••••••••"
+                  className="h-12 pr-10"
+                  {...register("password")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-sm">
-                  {errors.password.message}
-                </p>
+                <p className="text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
-            <div className="space-y-1">
-              <Label>Confirm Password</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
               <div className="relative">
                 <Input
-                  {...register("confirmPassword")}
+                  id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm password"
-                  className="h-12"
+                  placeholder="••••••••"
+                  className="h-12 pr-10"
+                  {...register("confirmPassword")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">
-                  {errors.confirmPassword.message}
-                </p>
+                <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
               )}
             </div>
-            <div className="flex justify-between mt-4">
-              <Button variant="outline" className="h-12" onClick={prevStep}>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+              <p className="font-medium mb-1">Password Requirements:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>At least 8 characters long</li>
+                <li>Contains uppercase and lowercase letters</li>
+                <li>Includes at least one number</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                className="flex-1 h-12"
+              >
                 Back
               </Button>
-              <Button
-                type="submit"
-                className="bg-primary text-primary-foreground h-12"
-              >
-                Register Clinic
+              <Button type="submit" className="flex-1 h-12" disabled={isLoading}>
+                {isLoading ? "Creating Account..." : "Complete Registration"}
               </Button>
             </div>
-          </>
+          </div>
         )}
       </form>
+
+      <div className="text-center text-sm text-gray-600">
+        Already have an account?{" "}
+        <Link href="/auth/login" className="text-green-600 hover:text-green-700 font-medium">
+          Sign in
+        </Link>
+      </div>
     </div>
   );
 }

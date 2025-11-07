@@ -66,7 +66,7 @@ export default function Navbar() {
               variant="ghost"
               className="flex items-center gap-2 hover:bg-gray-50"
             >
-              <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold">
+              <div className="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-semibold">
                 {user && getInitials(user.firstName, user.lastName)}
               </div>
               <span className="text-sm font-medium hidden md:block">

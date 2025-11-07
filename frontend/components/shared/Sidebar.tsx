@@ -112,7 +112,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b">
-        <h1 className="text-xl font-bold text-blue-600">{siteConfig.name}</h1>
+        <h1 className="text-xl font-bold text-green-600">{siteConfig.name}</h1>
       </div>
 
       {/* Navigation */}
@@ -130,7 +130,7 @@ export default function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-600"
+                      ? "bg-green-50 text-green-600"
                       : "text-gray-700 hover:bg-gray-50"
                   )}
                 >
