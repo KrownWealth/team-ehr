@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import Footer from "@/components/reusables/footer/Footer";
-// import { GeneralSans_Regular } from "@/lib";
+import { GeneralSans_Regular } from "@/lib";
 
 export default function LandingPage() {
   const features = [
@@ -109,9 +109,11 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center mt-10 gap-4 py-8 px-6 md:py-16 text-foreground">
         <div className="inline-block max-w-4xl text-center justify-center">
-          <h1 className="capitalize xl:text-6xl text-5xl md:text-nowrap text-wrap mt-7 font-bold font-inter text-center">
-            manage your clinic
-            <span className="text-primary-600">&nbsp;digitally</span>
+          <h1
+            className={`${GeneralSans_Regular.className} "xl:text-6xl text-5xl md:text-nowrap text-wrap mt-7 font-bold font-inter text-center"`}
+          >
+            Manage Your Clinic
+            <span className="text-primary-600">&nbsp;Digitally</span>
           </h1>
           <p className="md:text-2xl text-xl font-semibold text-gray-100 mt-6">
             A comprehensive healthcare management platform designed for modern

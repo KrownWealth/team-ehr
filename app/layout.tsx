@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { MaxWidthWrapper, cn, ThemeProvider } from "@/lib";
+import { MaxWidthWrapper, cn, ThemeProvider, GeneralSans_Regular } from "@/lib";
 import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -28,6 +28,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
+          GeneralSans_Regular.className,
           "m-auto min-h-screen bg-background bg-center bg-no-repeat scroll-smooth antialiased"
         )}
       >
