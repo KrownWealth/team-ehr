@@ -19,6 +19,14 @@
 
 # production
 /build
+.env
+.env.*
+!.env.example
+.env.production
+.env.staging
+.env.development
+.env.test
+
 
 # misc
 .DS_Store
