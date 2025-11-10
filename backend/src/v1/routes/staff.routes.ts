@@ -6,6 +6,7 @@ import {
   updateStaff,
   deactivateStaff,
   activateStaff,
+  updateProfile,
 } from "../../controllers/admin.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
@@ -16,20 +17,45 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantIsolation);
-router.use(authorize(["ADMIN"]));
 
-router.post("/create", staffValidator, validate, createStaff);
+// ✅ FIX: Allow all authenticated users to view their own profile
+router.get("/me", updateProfile);
 
-router.get("/", getAllStaff);
+// Admin-only routes
+router.post(
+  "/create",
+  authorize(["ADMIN"]),
+  staffValidator,
+  validate,
+  createStaff
+);
 
-router.get("/:id", getStaffById);
+router.get("/", authorize(["ADMIN"]), getAllStaff);
 
-router.patch("/:id", updateStaff);
+router.get(
+  "/:id",
+  async (req, res, next) => {
+    const { id } = req.params;
+    const userId = (req as any).user?.id;
 
-router.patch("/:id/deactivate", deactivateStaff);
+    if (userId === id || (req as any).user?.role === "ADMIN") {
+      return next();
+    }
 
-router.patch("/:id/activate", activateStaff);
+    return res.status(403).json({
+      status: "error",
+      message: "You can only view your own profile",
+    });
+  },
+  getStaffById
+);
 
-router.delete("/:id", deactivateStaff);
+router.patch("/:id", authorize(["ADMIN"]), updateStaff);
+
+router.patch("/:id/deactivate", authorize(["ADMIN"]), deactivateStaff);
+
+router.patch("/:id/activate", authorize(["ADMIN"]), activateStaff);
+
+router.delete("/:id", authorize(["ADMIN"]), deactivateStaff);
 
 export default router;

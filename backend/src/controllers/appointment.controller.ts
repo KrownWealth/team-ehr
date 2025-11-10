@@ -2,39 +2,16 @@ import { Response } from "express";
 import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { QueueService } from "../services/queue.service";
-import { EmailService } from "../services/email.service";
+import { pubsubService } from "../services/pubsub.service";
 import logger from "../utils/logger.utils";
 
 const queueService = new QueueService();
-const emailService = new EmailService();
 
-// Extended EmailService methods for appointments
-declare module "../services/email.service" {
-  interface EmailService {
-    sendAppointmentConfirmation(
-      to: string,
-      firstName: string,
-      appointmentDate: Date,
-      reason?: string
-    ): Promise<void>;
-    sendAppointmentCancellation(
-      to: string,
-      firstName: string,
-      appointmentDate: Date,
-      reason?: string
-    ): Promise<void>;
-  }
-}
-
-/**
- * Create a new appointment
- */
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, appointmentDate, reason, notes } = req.body;
     const { clinicId } = req;
 
-    // Verify patient belongs to clinic
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       select: {
@@ -90,19 +67,15 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Send appointment confirmation email
+    // ✅ Publish appointment scheduled event to Pub/Sub
     if (patient.email) {
-      try {
-        await emailService.sendAppointmentConfirmation(
-          patient.email,
-          patient.firstName,
-          new Date(appointmentDate),
-          reason
-        );
-      } catch (emailError) {
-        logger.error("Failed to send appointment confirmation:", emailError);
-        // Don't fail the request if email fails
-      }
+      await pubsubService.publishAppointmentScheduled({
+        appointmentId: appointment.id,
+        patientEmail: patient.email,
+        patientFirstName: patient.firstName,
+        appointmentDate: new Date(appointmentDate),
+        reason,
+      });
     }
 
     logger.info(`Appointment created: ${appointment.id}`);
@@ -132,7 +105,6 @@ export const getAllAppointments = async (req: AuthRequest, res: Response) => {
       patient: { clinicId },
     };
 
-    // Filter by date
     if (date) {
       const targetDate = new Date(date as string);
       const nextDay = new Date(targetDate);
@@ -144,12 +116,10 @@ export const getAllAppointments = async (req: AuthRequest, res: Response) => {
       };
     }
 
-    // Filter by status
     if (status) {
       where.status = status;
     }
 
-    // Filter by patient
     if (patientId) {
       where.patientId = patientId;
     }
@@ -242,11 +212,15 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
     const updateData = req.body;
 
-    // Verify appointment belongs to clinic
     const existingAppointment = await prisma.appointment.findFirst({
       where: {
         id,
         patient: { clinicId },
+      },
+      include: {
+        patient: {
+          select: { email: true, firstName: true },
+        },
       },
     });
 
@@ -257,7 +231,6 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Convert date if provided
     if (updateData.appointmentDate) {
       updateData.appointmentDate = new Date(updateData.appointmentDate);
     }
@@ -317,19 +290,17 @@ export const checkInAppointment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Update appointment status
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: "CHECKED_IN" },
       include: { patient: true },
     });
 
-    // Add patient to queue
     await queueService.addToQueue(
       appointment.patientId,
       `${appointment.patient.firstName} ${appointment.patient.lastName}`,
       clinicId!,
-      1 // Priority 1 for scheduled appointments
+      1
     );
 
     logger.info(`Patient checked in for appointment: ${id}`);
@@ -478,18 +449,15 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Send cancellation email
+    // ✅ Publish appointment cancelled event to Pub/Sub
     if (appointment.patient.email) {
-      try {
-        await emailService.sendAppointmentCancellation(
-          appointment.patient.email,
-          appointment.patient.firstName,
-          appointment.appointmentDate,
-          reason
-        );
-      } catch (emailError) {
-        logger.error("Failed to send cancellation email:", emailError);
-      }
+      await pubsubService.publishAppointmentCancelled({
+        appointmentId: appointment.id,
+        patientEmail: appointment.patient.email,
+        patientFirstName: appointment.patient.firstName,
+        appointmentDate: appointment.appointmentDate,
+        reason,
+      });
     }
 
     logger.info(`Appointment cancelled: ${id}`);
