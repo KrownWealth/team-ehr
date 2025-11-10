@@ -14,6 +14,7 @@ import aiRoutes from "./ai.routes";
 import systemRoutes from "./system.routes";
 import tenantRoutes from "./tenant.routes";
 import patientPortalRoutes from "./patient-portal.routes";
+import appointmentRoutes from "./appointment.routes";
 
 // Initialize router
 const router = express.Router();
@@ -33,5 +34,6 @@ router.use("/ai", aiRoutes);
 router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
 router.use("/patient-portal", patientPortalRoutes);
+router.use("/appointment", appointmentRoutes);
 
 export default router;
