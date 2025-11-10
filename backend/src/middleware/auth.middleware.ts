@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/env";
 import logger from "../utils/logger.utils";
-import db from "../services/database.service";
+import prisma from "../config/database";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -28,13 +28,39 @@ export const authenticate = async (
 
     const decoded = jwt.verify(token, config.jwt.secret) as any;
 
-    // Fetch user from Firestore
-    const user = await db.getUser(decoded.userId);
+    // ✅ FIX: Fetch user from Prisma (PostgreSQL) instead of Firestore
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        licenseId: true,
+        photoUrl: true,
+        isActive: true,
+        isVerified: true,
+        clinicId: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     if (!user || !user.isActive) {
       return res.status(401).json({
         status: "error",
         message: "Invalid token or user deactivated",
+      });
+    }
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      return res.status(403).json({
+        status: "error",
+        message: "Please verify your email first",
       });
     }
 
