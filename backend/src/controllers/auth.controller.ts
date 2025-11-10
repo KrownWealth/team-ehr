@@ -1,62 +1,217 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { config } from "../config/env";
-import logger from "../utils/logger.utils";
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import { AuthRequest } from "../middleware/auth.middleware";
 import prisma from "../config/database";
+import { EmailService } from "../services/email.service";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt.utils";
+import { generateOTP } from "../utils/helpers.utils";
+import logger from "../utils/logger.utils";
 
-export interface AuthRequest extends Request {
-  user?: any;
-  clinicId?: string;
-}
+const emailService = new EmailService();
 
-export const authenticate = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
+/**
+ * Register Admin User (First-time clinic setup)
+ */
+export const registerAdmin = async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
+    const { firstName, lastName, email, phone, password } = req.body;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
         status: "error",
-        message: "No token provided",
+        message: "Email already registered",
       });
     }
 
-    const token = authHeader.substring(7);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const decoded = jwt.verify(token, config.jwt.secret) as any;
+    // Generate OTP
+    const otpCode = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // ✅ FIX: Fetch user from Prisma (PostgreSQL) instead of Firestore
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+    // Create OTP record
+    await prisma.oTP.create({
+      data: {
+        email,
+        code: otpCode,
+        expiresAt: otpExpiry,
+      },
+    });
+
+    // Create user with pending clinic status
+    const user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        password: hashedPassword,
+        role: "ADMIN",
+        clinicId: "pending", // Temporary until clinic onboarding
+        isVerified: false,
+      },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        phone: true,
         role: true,
-        licenseId: true,
-        photoUrl: true,
-        isActive: true,
-        isVerified: true,
-        clinicId: true,
-        lastLogin: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({
+    // Send OTP email
+    await emailService.sendOTPEmail(email, otpCode);
+
+    logger.info(`Admin registered: ${email}`);
+
+    res.status(201).json({
+      status: "success",
+      message: "Registration successful. Please verify your email.",
+      data: user,
+    });
+  } catch (error: any) {
+    logger.error("Register admin error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Register Regular User (Staff)
+ */
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, phone, password, role } = req.body;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
         status: "error",
-        message: "Invalid token or user deactivated",
+        message: "Email already registered",
       });
     }
 
-    // Check if user is verified
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const otpCode = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.oTP.create({
+      data: {
+        email,
+        code: otpCode,
+        expiresAt: otpExpiry,
+      },
+    });
+
+    const user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        password: hashedPassword,
+        role: role || "CLERK",
+        isVerified: false,
+      },
+    });
+
+    await emailService.sendOTPEmail(email, otpCode);
+
+    logger.info(`User registered: ${email}`);
+
+    res.status(201).json({
+      status: "success",
+      message: "Registration successful. Please verify your email.",
+      data: { id: user.id, email: user.email },
+    });
+  } catch (error: any) {
+    logger.error("Register error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Verify OTP
+ */
+export const verifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+
+    const otp = await prisma.oTP.findFirst({
+      where: {
+        email,
+        code,
+        verified: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!otp) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    // Mark OTP as verified
+    await prisma.oTP.update({
+      where: { id: otp.id },
+      data: { verified: true },
+    });
+
+    // Mark user as verified
+    await prisma.user.update({
+      where: { email },
+      data: { isVerified: true },
+    });
+
+    logger.info(`OTP verified for: ${email}`);
+
+    res.json({
+      status: "success",
+      message: "Email verified successfully",
+    });
+  } catch (error: any) {
+    logger.error("Verify OTP error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Login
+ */
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user || !user.password) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid credentials",
+      });
+    }
+
     if (!user.isVerified) {
       return res.status(403).json({
         status: "error",
@@ -64,51 +219,241 @@ export const authenticate = async (
       });
     }
 
-    req.user = user;
-    req.clinicId = user.clinicId ?? undefined;
+    if (!user.isActive) {
+      return res.status(403).json({
+        status: "error",
+        message: "Account is deactivated",
+      });
+    }
 
-    logger.debug(`User authenticated: ${user.email}`);
-    next();
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid credentials",
+      });
+    }
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    logger.info(`User logged in: ${email}`);
+
+    res.json({
+      status: "success",
+      data: {
+        token: accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          clinicId: user.clinicId,
+          mustChangePassword: user.mustChangePassword,
+        },
+      },
+    });
   } catch (error: any) {
-    logger.error("Authentication error:", error);
+    logger.error("Login error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
 
-    if (error.name === "JsonWebTokenError") {
+/**
+ * Change Password
+ */
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user!.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.password) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    const isValid = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Current password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+      },
+    });
+
+    logger.info(`Password changed for user: ${userId}`);
+
+    res.json({
+      status: "success",
+      message: "Password changed successfully",
+    });
+  } catch (error: any) {
+    logger.error("Change password error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Refresh Token
+ */
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    if (!token) {
+      return res.status(401).json({
+        status: "error",
+        message: "Refresh token required",
+      });
+    }
+
+    const { verifyRefreshToken } = await import("../utils/jwt.utils");
+    const decoded = verifyRefreshToken(token);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user || !user.isActive) {
       return res.status(401).json({
         status: "error",
         message: "Invalid token",
       });
     }
 
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        status: "error",
-        message: "Token expired",
-      });
-    }
+    const newAccessToken = generateAccessToken(user.id);
 
-    return res.status(500).json({
+    res.json({
+      status: "success",
+      data: {
+        token: newAccessToken,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Refresh token error:", error);
+    res.status(401).json({
       status: "error",
-      message: "Authentication failed",
+      message: "Invalid refresh token",
     });
   }
 };
 
-export const authorize = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({
-        status: "error",
-        message: "Unauthorized",
+/**
+ * Forgot Password
+ */
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if email exists
+      return res.json({
+        status: "success",
+        message: "If the email exists, a reset link has been sent",
       });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        status: "error",
-        message: "Permissions Denied",
-      });
-    }
+    const resetToken = generateAccessToken(user.id);
+    await emailService.sendPasswordResetEmail(email, resetToken);
 
-    next();
-  };
+    logger.info(`Password reset requested for: ${email}`);
+
+    res.json({
+      status: "success",
+      message: "If the email exists, a reset link has been sent",
+    });
+  } catch (error: any) {
+    logger.error("Forgot password error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Reset Password
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const { verifyAccessToken } = await import("../utils/jwt.utils");
+    const decoded = verifyAccessToken(token);
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: decoded.userId },
+      data: { password: hashedPassword },
+    });
+
+    logger.info(`Password reset for user: ${decoded.userId}`);
+
+    res.json({
+      status: "success",
+      message: "Password reset successfully",
+    });
+  } catch (error: any) {
+    logger.error("Reset password error:", error);
+    res.status(401).json({
+      status: "error",
+      message: "Invalid or expired token",
+    });
+  }
+};
+
+/**
+ * Google OAuth (Placeholder)
+ */
+export const googleAuth = async (req: Request, res: Response) => {
+  res.status(501).json({
+    status: "error",
+    message: "Google OAuth not implemented yet",
+  });
+};
+
+/**
+ * Google OAuth Callback (Placeholder)
+ */
+export const googleCallback = async (req: Request, res: Response) => {
+  res.status(501).json({
+    status: "error",
+    message: "Google OAuth not implemented yet",
+  });
 };
