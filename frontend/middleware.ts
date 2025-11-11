@@ -5,13 +5,27 @@ import { ROUTE_PERMISSIONS } from "./lib/constants/routes";
 import { AuthTokenPayload } from "./types";
 
 const PUBLIC_ROUTES = [
+  "/", // Landing page
   "/auth/login",
   "/auth/register",
   "/auth/verify-otp",
   "/auth/forgot-password",
+  "/auth/reset-password",
+  "/terms",
+  "/privacy",
+  "/about",
+  "/contact",
 ];
 
-const AUTH_ROUTES = ["/auth/login", "/auth/register"];
+const AUTH_ROUTES = ["/auth/login", "/auth/register", "/auth/verify-otp"];
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+}
+
+function isAuthRoute(pathname: string): boolean {
+  return AUTH_ROUTES.some((route) => pathname.startsWith(route));
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -54,14 +68,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (user && AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (user && isAuthRoute(pathname)) {
     const clinicId = user.clinicId;
     return NextResponse.redirect(
       new URL(`/${clinicId}/dashboard`, request.url)
     );
   }
 
-  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 

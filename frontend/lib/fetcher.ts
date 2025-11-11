@@ -1,7 +1,7 @@
 "use client";
 
 import { getCookie } from "cookies-next/client";
-import api from "./axios";
+import api from "./api/axios-instance";
 
 export async function fetcher<TResponse>(
   url: string,
