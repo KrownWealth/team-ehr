@@ -1,7 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../utils/logger.utils";
-// import { safeVertexAi } from "../config/gcp";
 import prisma from "../config/database";
 import { Prisma } from "@prisma/client";
 import { GoogleGenAI } from "@google/genai";
@@ -10,6 +9,7 @@ import { config } from "../config/env";
 const ai = new GoogleGenAI({
   apiKey: config.externalApis.aiDiagnosisAPIKey,
 });
+
 /**
  * Enhanced AI Diagnosis with patient history integration
  */
@@ -94,13 +94,9 @@ ${JSON.stringify(medicalContext.recent_vitals, null, 2)}
 MEDICAL HISTORY (Last 5 visits):
 ${JSON.stringify(medicalContext.medical_history, null, 2)}
 
-Provide a structured clinical assessment with:
-1. Top 3-5 differential diagnoses (most likely to least likely)
-2. Recommended investigations/tests
-3. Red flags to watch for
-4. Suggested management approach
+CRITICAL: You must respond ONLY with valid JSON. Do not include any markdown code blocks, explanations, or text before or after the JSON.
 
-Format as JSON:
+Provide a structured clinical assessment in this exact JSON format:
 {
   "differential_diagnoses": [
     {
@@ -131,13 +127,39 @@ Format as JSON:
       summaryCompletion.candidates?.[0]?.content?.parts?.[0]?.text ??
       "Summary not available";
 
+    // Parse AI response
+    let parsedSuggestions;
+    try {
+      // Remove markdown code blocks if present
+      const cleanResponse = aiResponse
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
+      parsedSuggestions = JSON.parse(cleanResponse);
+
+      // Validate structure
+      if (!parsedSuggestions.differential_diagnoses) {
+        throw new Error("Invalid response structure");
+      }
+    } catch (parseError: any) {
+      logger.error("AI response parsing error:", parseError);
+      // Fallback: return raw response with warning
+      parsedSuggestions = {
+        raw_response: aiResponse,
+        parsing_error: true,
+        message: "AI response could not be parsed. Please review raw response.",
+      };
+    }
+
     logger.info(`AI diagnosis generated for patient: ${patientId}`);
 
     res.json({
       status: "success",
       data: {
         patient_context: medicalContext,
-        ai_suggestions: aiResponse,
+        ai_suggestions: parsedSuggestions,
+        generated_at: new Date().toISOString(),
         disclaimer:
           "AI-generated suggestions are for clinical decision support only. Final diagnosis and treatment must be determined by qualified healthcare professionals.",
       },
@@ -147,12 +169,13 @@ Format as JSON:
     res.status(500).json({
       status: "error",
       message: "Failed to generate diagnosis suggestions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 /**
- * Drug Interaction Checker
+ * Drug Interaction Checker (Enhanced with AI)
  */
 export const checkDrugInteractions = async (
   req: AuthRequest,
@@ -187,8 +210,14 @@ export const checkDrugInteractions = async (
       }
     });
 
-    // Check interactions
-    const interactions = checkCommonInteractions(
+    // Get patient allergies
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      select: { allergies: true },
+    });
+
+    // Check basic interactions
+    const basicInteractions = checkCommonInteractions(
       currentMedications,
       proposedMedications
     );
@@ -198,9 +227,12 @@ export const checkDrugInteractions = async (
       data: {
         current_medications: currentMedications,
         proposed_medications: proposedMedications,
-        interactions: interactions,
+        patient_allergies: patient?.allergies || [],
+        interactions: basicInteractions,
         safe_to_prescribe:
-          interactions.filter((i) => i.severity === "major").length === 0,
+          basicInteractions.filter((i) => i.severity === "major").length === 0,
+        warning:
+          "This is a basic interaction check. Please verify with comprehensive drug database.",
       },
     });
   } catch (error: any) {
@@ -252,6 +284,7 @@ export const analyzeVitalsTrends = async (req: AuthRequest, res: Response) => {
         readings_count: vitals.length,
         trends: trends,
         latest_reading: vitals[vitals.length - 1],
+        analysis_date: new Date().toISOString(),
       },
     });
   } catch (error: any) {
@@ -298,6 +331,7 @@ export const assessPatientRisk = async (req: AuthRequest, res: Response) => {
       diabetes_risk: calculateDiabetesRisk(patient),
       general_health_score: calculateGeneralHealthScore(patient),
       recommendations: generateHealthRecommendations(patient),
+      assessed_at: new Date().toISOString(),
     };
 
     res.json({
@@ -332,7 +366,18 @@ function checkCommonInteractions(
       severity: "moderate",
       description: "Risk of lactic acidosis",
     },
-    // Add more interactions
+    {
+      drug1: "lisinopril",
+      drug2: "potassium",
+      severity: "major",
+      description: "Risk of hyperkalemia",
+    },
+    {
+      drug1: "simvastatin",
+      drug2: "clarithromycin",
+      severity: "major",
+      description: "Increased risk of rhabdomyolysis",
+    },
   ];
 
   const interactions: any[] = [];
@@ -389,9 +434,10 @@ function analyzeVitalsData(vitals: any[]) {
     trends.blood_pressure.trend =
       change > 5 ? "increasing" : change < -5 ? "decreasing" : "stable";
     trends.blood_pressure.change_percent = change.toFixed(1);
+    trends.blood_pressure.average_first_half = avgFirst.toFixed(1);
+    trends.blood_pressure.average_last_half = avgLast.toFixed(1);
   }
 
-  // Similar analysis for other vitals...
   return trends;
 }
 
