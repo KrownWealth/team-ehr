@@ -31,20 +31,20 @@ export function canAccessRoute(
 export function getDefaultRouteForRole(role: Role, clinicId: string): string {
   switch (role) {
     case "ADMIN":
-      return `/${clinicId}/dashboard`;
+      return `/clinic/${clinicId}/dashboard`;
     case "CLERK":
-      return `/${clinicId}/queue`;
+      return `/clinic/${clinicId}/queue`;
     case "NURSE":
-      return `/${clinicId}/queue`;
+      return `/clinic/${clinicId}/queue`;
     case "DOCTOR":
-      return `/${clinicId}/dashboard`;
+      return `/clinic/${clinicId}/dashboard`;
     case "LAB_TECH":
-      return `/${clinicId}/lab-orders`;
+      return `/clinic/${clinicId}/lab-orders`;
     case "CASHIER":
-      return `/${clinicId}/billing`;
+      return `/clinic/${clinicId}/billing`;
     case "PATIENT":
-      return `/${clinicId}/portal/dashboard`;
+      return `/clinic/${clinicId}/portal/dashboard`;
     default:
-      return `/${clinicId}/dashboard`;
+      return `/clinic/${clinicId}/dashboard`;
   }
 }

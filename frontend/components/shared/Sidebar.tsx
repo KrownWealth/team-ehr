@@ -116,7 +116,7 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-1">
           {allowedItems.map((item) => {
-            const href = `/${clinicId}${item.href}`;
+            const href = `/clinic/${clinicId}${item.href}`;
             const isActive = pathname.startsWith(href);
             const Icon = item.icon;
 

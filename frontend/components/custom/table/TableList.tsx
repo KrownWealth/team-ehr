@@ -14,9 +14,9 @@ import { ColumnToggle } from "./ColumnToggle";
 import { DataTable } from "@/components/custom/table/DataTable";
 import { useColumnVisibility } from "@/lib/hooks/useColumnVisibility";
 import { ReactNode, useState } from "react";
-import { useApiQuery } from "@/lib/api/use-api";
 import { Meta, ResponseSuccess } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { useApiQuery } from "@/lib/hooks/use-api";
 
 type ApiStatsType<TData> =
   | { data: TData[]; meta: Meta; exportButtonLabel: string }

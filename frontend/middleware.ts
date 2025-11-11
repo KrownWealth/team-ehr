@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
   if (user && isAuthRoute(pathname)) {
     const clinicId = user.clinicId;
     return NextResponse.redirect(
-      new URL(`/${clinicId}/dashboard`, request.url)
+      new URL(`/clinic/${clinicId}/dashboard`, request.url)
     );
   }
 

@@ -16,10 +16,6 @@ const emailSchema = z.object({
   email: z.email("Invalid email address"),
 });
 
-const otpSchema = z.object({
-  otp: z.string().length(5, "OTP must be 4 digits"),
-});
-
 const passwordSchema = z
   .object({
     password: z.string().min(8, "Password must be at least 8 characters"),
