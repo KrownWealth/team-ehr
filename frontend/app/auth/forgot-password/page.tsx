@@ -11,6 +11,7 @@ import { Eye, EyeOff, ArrowLeft, Mail, Lock, Check } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const emailSchema = z.object({
   email: z.email("Invalid email address"),
@@ -27,6 +28,7 @@ const passwordSchema = z
   });
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -63,7 +65,7 @@ export default function ForgotPasswordPage() {
       // TODO: Reset password API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success("Password reset successfully!");
-      window.location.href = "/auth/login";
+      router.replace("/auth/login");
     } catch (error) {
       toast.error("Failed to reset password");
     }

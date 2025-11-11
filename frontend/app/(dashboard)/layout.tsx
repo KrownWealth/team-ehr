@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
@@ -12,7 +12,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
@@ -23,8 +23,13 @@ export default function DashboardLayout({
       return;
     }
 
+    if (!user?.role) {
+      logout();
+      return;
+    }
+
     if (user && !canAccessRoute(user.role, pathname)) {
-      router.push("/404");
+      notFound();
       return;
     }
 

@@ -20,7 +20,9 @@ const PUBLIC_ROUTES = [
 const AUTH_ROUTES = ["/auth/login", "/auth/register", "/auth/verify-otp"];
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+  return PUBLIC_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  );
 }
 
 function isAuthRoute(pathname: string): boolean {
@@ -30,6 +32,7 @@ function isAuthRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip middleware for Next.js internals, API routes, and static files
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -41,14 +44,14 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get("auth_token")?.value;
   const userDataStr = request.cookies.get("user_data")?.value;
-
   let user: AuthTokenPayload | null = null;
 
+  // Validate token
   if (token) {
     try {
       user = jwtDecode<AuthTokenPayload>(token);
-
       const currentTime = Date.now() / 1000;
+
       if (user.exp < currentTime) {
         const response = NextResponse.redirect(
           new URL("/auth/login", request.url)
@@ -68,6 +71,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Redirect authenticated users away from auth pages
   if (user && isAuthRoute(pathname)) {
     const clinicId = user.clinicId;
     return NextResponse.redirect(
@@ -75,28 +79,36 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // Allow public routes
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
+  // Require authentication for protected routes
   if (!user || !token) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
+  // Parse the pathname - now clinicId is at the root
   const pathParts = pathname.split("/").filter(Boolean);
+
+  // If no parts, redirect to dashboard
+  if (pathParts.length === 0) {
+    return NextResponse.redirect(
+      new URL(`/clinic/${user.clinicId}/dashboard`, request.url)
+    );
+  }
+
   const clinicId = pathParts[0];
 
-  if (clinicId && clinicId !== user.clinicId) {
-    return NextResponse.rewrite(new URL("/404", request.url));
+  // Verify the user is accessing their own clinic
+  if (clinicId !== user.clinicId) {
+    // Let Next.js handle the 404 naturally
+    return NextResponse.next();
   }
 
   const routeParts = pathParts.slice(1);
   let baseRoute = "/" + routeParts.join("/");
-
-  baseRoute = baseRoute.replace(
-    /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
-    ""
-  );
 
   baseRoute = baseRoute.replace(/\/[a-zA-Z0-9-_]+$/, "");
 
@@ -110,7 +122,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return NextResponse.rewrite(new URL("/404", request.url));
+    return NextResponse.next();
   }
 
   const response = NextResponse.next();
@@ -126,13 +138,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

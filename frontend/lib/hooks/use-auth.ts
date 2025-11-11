@@ -28,13 +28,14 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await apiClient.post<ResponseSuccess<LoginResponse>>(
+      const response = await apiClient.post<LoginResponse>(
         "/v1/auth/login",
         credentials
       );
-      return response.data.data;
+      return response.data;
     },
     onSuccess: (data) => {
+      console.log("data", data);
       setAuth(data.token);
       toast.success("Login successful!");
 

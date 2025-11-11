@@ -10,18 +10,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const defaultRoute =
-        user.role === "PATIENT"
-          ? `/${user.clinicId}/portal/dashboard`
-          : `/${user.clinicId}/dashboard`;
-      router.push(defaultRoute);
-    }
-  }, [isAuthenticated, user, router]);
+  const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
     return (
