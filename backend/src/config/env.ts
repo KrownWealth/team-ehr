@@ -119,6 +119,7 @@ export const config = {
     ninApiUrl: process.env.NIN_API_URL,
     ninApiKey: process.env.NIN_API_KEY,
     aiDiagnosisUrl: process.env.AI_DIAGNOSIS_FUNCTION_URL,
+    aiDiagnosisAPIKey: process.env.AI_API_KEY,
   },
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
   rateLimit: {
