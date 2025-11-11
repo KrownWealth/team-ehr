@@ -5,9 +5,11 @@ import logger from "../utils/logger.utils";
 import prisma from "../config/database";
 import { Prisma } from "@prisma/client";
 import { GoogleGenAI } from "@google/genai";
+import { config } from "../config/env";
 
-const ai = new GoogleGenAI({ apiKey: process.env.AI_API_KEY });
-
+const ai = new GoogleGenAI({
+  apiKey: config.externalApis.aiDiagnosisAPIKey,
+});
 /**
  * Enhanced AI Diagnosis with patient history integration
  */
