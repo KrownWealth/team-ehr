@@ -27,6 +27,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
+import Loader from "@/components/shared/Loader";
 
 export default function SettingsPage() {
   const params = useParams();
@@ -104,11 +105,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[80svh] w-full">
-        <div className="text-center">
-          <div className="h-12 w-12 border-3 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        </div>
-      </div>
+      <Loader/>
     );
   }
 
@@ -154,7 +151,7 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="profile" className="mt-3">
-          <Card className="border-gray-200 shadow-sm">
+          <Card className="border-gray-200 shadow-sm bg-white">
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-xl">Clinic Information</CardTitle>
               <CardDescription className="text-[15px]">
@@ -254,10 +251,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-gray-100">
-                <Button
+                <button
                   onClick={handleClinicSubmit}
                   disabled={updateClinicMutation.isPending}
-                  className="h-11 px-6 bg-green-600 hover:bg-green-700"
+                  className="btn btn-block hover:opacity-80 text-lg"
                 >
                   {updateClinicMutation.isPending ? (
                     <>
@@ -266,11 +263,11 @@ export default function SettingsPage() {
                     </>
                   ) : (
                     <>
-                      <Save className="mr-2 h-4 w-4" />
+                      <Save className="mr-2 h-6 w-6" />
                       Save Changes
                     </>
                   )}
-                </Button>
+                </button>
               </div>
             </CardContent>
           </Card>

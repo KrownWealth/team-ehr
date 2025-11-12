@@ -99,12 +99,13 @@ export default function Sidebar() {
             width={409}
             height={142}
             className="w-40"
+            priority
           />
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-8 px-5">
-        <ul className="space-y-5">
+        <ul className="space-y-4">
           {allowedItems.map((item) => {
             const href = `/clinic/${clinicId}${item.href}`;
             const isActive = pathname.startsWith(href);
@@ -115,7 +116,7 @@ export default function Sidebar() {
                 <Link
                   href={href}
                   className={cn(
-                    "flex items-center gap-4 px-4 py-3 rounded-xl text-[17px] font-medium transition-all",
+                    "flex items-center gap-4 px-4 py-3 rounded-xl text-[19px] font-medium transition-all",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"

@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Inter, Manrope } from "next/font/google";
 import { cn, ThemeProvider } from "@/lib";
 import NextTopLoader from "nextjs-toploader";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
@@ -23,6 +24,18 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading",
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +43,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background antialiased")}>
+      <body
+        className={cn(
+          "min-h-screen bg-background antialiased",
+          inter.className,
+          manrope.variable
+        )}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

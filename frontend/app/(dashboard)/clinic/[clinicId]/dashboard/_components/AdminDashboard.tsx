@@ -88,7 +88,7 @@ export default function AdminDashboard() {
               Register Patient
             </button>
           </Link>
-          <Link href={`/clinic/${user?.clinicId}/staff/invite`}>
+          <Link href={`/clinic/${user?.clinicId}/staff?to=invite`}>
             <button className="btn btn-outline">
               <Users className="mr-2 h-5 w-5" />
               Invite Staff

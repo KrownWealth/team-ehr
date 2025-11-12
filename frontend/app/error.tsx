@@ -39,7 +39,7 @@ export default function Error({
 
           {/* Error Details (Only in development) */}
           {process.env.NODE_ENV === "development" && error.message && (
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left">
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-center">
               <p className="text-xs font-mono text-gray-700 break-all">
                 {error.message}
               </p>
@@ -59,14 +59,6 @@ export default function Error({
               Go to Dashboard
             </Button>
           </Link>
-        </div>
-
-        {/* Help Text */}
-        <div className="pt-6 border-t">
-          <p className="text-sm text-gray-500">
-            If this problem persists, please contact support with error code:{" "}
-            <span className="font-mono">{error.digest || "UNKNOWN"}</span>
-          </p>
         </div>
       </div>
     </div>

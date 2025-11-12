@@ -7,6 +7,7 @@ import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
 import { canAccessRoute } from "@/lib/constants/routes";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function DashboardLayout({
   children,
@@ -41,9 +42,16 @@ export default function DashboardLayout({
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-[80svh] w-full">
+      <div className="flex items-center justify-center min-h-[100svh] w-full">
         <div className="text-center">
-          <div className="h-12 w-12 border-3 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <Image
+            src={"/images/icon.png"}
+            width={142}
+            height={142}
+            priority
+            alt="WCE"
+            className="w-20 animate-pulse"
+          />
         </div>
       </div>
     );

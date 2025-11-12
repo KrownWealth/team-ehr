@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, User, Heart, Phone } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import PersonalInfoStep from "./_components/PersonalInfoStep";
 import MedicalInfoStep from "./_components/MedicalInfoStep";
@@ -14,9 +14,9 @@ import { toast } from "sonner";
 import { ResponseSuccess } from "@/types";
 
 const STEPS = [
-  { id: 1, name: "Personal Information", description: "Basic patient details" },
-  { id: 2, name: "Medical Information", description: "Health history & allergies" },
-  { id: 3, name: "Emergency Contact", description: "Emergency contact details" },
+  { id: 1, name: "Personal Info", icon: User },
+  { id: 2, name: "Medical Info", icon: Heart },
+  { id: 3, name: "Emergency Contact", icon: Phone },
 ];
 
 export default function RegisterPatientPage() {
@@ -26,7 +26,6 @@ export default function RegisterPatientPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({
-    // Step 1
     nationalId: "",
     firstName: "",
     lastName: "",
@@ -39,13 +38,9 @@ export default function RegisterPatientPage() {
     city: "",
     state: "",
     photoUrl: "",
-
-    // Step 2
     bloodGroup: "",
     allergies: [],
     chronicConditions: [],
-
-    // Step 3
     emergencyContact: "",
     emergencyPhone: "",
     emergencyRelation: "",
@@ -72,7 +67,6 @@ export default function RegisterPatientPage() {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Submit form
       registerMutation.mutate(formData);
     }
   };
@@ -90,111 +84,121 @@ export default function RegisterPatientPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-8 w-full max-w-3xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <Button variant="ghost" size="sm" className="w-fit" onClick={() => router.back()}>
+      <div className="space-y-4 justify-center flex flex-col">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="mx-auto text-center justify-center" 
+          onClick={() => router.back()}
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Register New Patient</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-4xl font-bold text-gray-900">Register New Patient</h1>
+          <p className="text-gray-600 mt-3 text-[15px]">
             Complete all steps to register a new patient
           </p>
         </div>
       </div>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-between">
-        {STEPS.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
-                  currentStep >= step.id
-                    ? "bg-green-600 border-green-600 text-white"
-                    : "border-gray-300 text-gray-500"
-                }`}
-              >
-                {currentStep > step.id ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  step.id
-                )}
-              </div>
-              <div className="text-center mt-2">
-                <p
+      <div className="flex items-center justify-between px-4">
+        {STEPS.map((step, idx) => {
+          const Icon = step.icon;
+          const isActive = currentStep === step.id;
+          const isCompleted = currentStep > step.id;
+
+          return (
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center gap-2">
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    isActive
+                      ? "bg-green-600 text-white shadow-lg shadow-green-200"
+                      : isCompleted
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check className="w-6 h-6" />
+                  ) : (
+                    <Icon className="w-6 h-6" />
+                  )}
+                </div>
+                <span
                   className={`text-sm font-medium ${
-                    currentStep >= step.id ? "text-green-600" : "text-gray-500"
+                    isActive || isCompleted ? "text-gray-900" : "text-gray-400"
                   }`}
                 >
                   {step.name}
-                </p>
-                <p className="text-xs text-gray-500">{step.description}</p>
+                </span>
               </div>
-            </div>
-            {index < STEPS.length - 1 && (
-              <div
-                className={`h-0.5 flex-1 mx-4 transition-colors ${
-                  currentStep > step.id ? "bg-green-600" : "bg-gray-300"
-                }`}
-              />
-            )}
-          </div>
-        ))}
+              {idx < STEPS.length - 1 && (
+                <div
+                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${
+                    isCompleted ? "bg-green-600" : "bg-gray-200"
+                  }`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {/* Form Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{STEPS[currentStep - 1].name}</CardTitle>
-          <CardDescription>{STEPS[currentStep - 1].description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentStep === 1 && (
-            <PersonalInfoStep
-              data={formData}
-              onChange={updateFormData}
-            />
-          )}
-          {currentStep === 2 && (
-            <MedicalInfoStep
-              data={formData}
-              onChange={updateFormData}
-            />
-          )}
-          {currentStep === 3 && (
-            <EmergencyContactStep
-              data={formData}
-              onChange={updateFormData}
-            />
-          )}
+      <Card className="border-gray-200 shadow-sm rounded-2xl">
+        <CardContent className="p-8">
+          <div className="animate-in fade-in duration-300">
+            {currentStep === 1 && (
+              <PersonalInfoStep data={formData} onChange={updateFormData} />
+            )}
+            {currentStep === 2 && (
+              <MedicalInfoStep data={formData} onChange={updateFormData} />
+            )}
+            {currentStep === 3 && (
+              <EmergencyContactStep data={formData} onChange={updateFormData} />
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
+            <Button 
+              variant="outline" 
+              onClick={handleBack}
+              className="flex-1 h-12 text-[15px]"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {currentStep === 1 ? "Cancel" : "Previous"}
+            </Button>
+            <Button 
+              onClick={handleNext} 
+              disabled={registerMutation.isPending}
+              className="flex-1 h-12 text-[15px]"
+            >
+              {registerMutation.isPending ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Registering...
+                </>
+              ) : currentStep === 3 ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Register Patient
+                </>
+              ) : (
+                <>
+                  Next
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={handleBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {currentStep === 1 ? "Cancel" : "Previous"}
-        </Button>
-        <Button onClick={handleNext} disabled={registerMutation.isPending}>
-          {registerMutation.isPending ? (
-            "Registering..."
-          ) : currentStep === 3 ? (
-            <>
-              <Check className="h-4 w-4 mr-2" />
-              Register Patient
-            </>
-          ) : (
-            <>
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 }
