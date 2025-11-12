@@ -3,6 +3,11 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { QueueService } from "../services/queue.service";
 import logger from "../utils/logger.utils";
 import prisma from "../config/database";
+import {
+  createdResponse,
+  serverErrorResponse,
+  successResponse,
+} from "../utils/response.utils";
 
 const queueService = new QueueService();
 
@@ -41,18 +46,18 @@ export const addToQueue = async (req: AuthRequest, res: Response) => {
     );
 
     logger.info(`Patient added to queue: ${patientId}`);
-
-    res.status(201).json({
-      status: "success",
-      data: queueItem,
-      message: "Patient added to queue successfully",
-    });
+    return createdResponse(
+      res,
+      queueItem,
+      "Patient added to queue successfully"
+    );
   } catch (error: any) {
     logger.error("Add to queue error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(
+      res,
+      "Failed to add patient to queue",
+      error.message
+    );
   }
 };
 
@@ -64,20 +69,10 @@ export const getClinicQueue = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
 
     const queue = await queueService.getClinicQueue(clinicId!);
-
-    res.json({
-      status: "success",
-      data: {
-        queue,
-        count: queue.length,
-      },
-    });
+    return successResponse(res, queue.length, "Queue Retrieved successfully");
   } catch (error: any) {
     logger.error("Get queue error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve queue", error);
   }
 };
 
@@ -101,19 +96,12 @@ export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Queue status updated: ${id} -> ${status}`);
 
-    res.json({
-      status: "success",
-      message: "Queue status updated successfully",
-    });
+    return successResponse(res, "Queue updated successfully");
   } catch (error: any) {
-    logger.error("Update queue status error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    logger.error("Queue update error:", error);
+    return serverErrorResponse(res, "Failed to update queue", error);
   }
 };
-
 /**
  * Remove patient from queue
  */

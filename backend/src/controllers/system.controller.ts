@@ -1,6 +1,11 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../utils/logger.utils";
+import {
+  successResponse,
+  serverErrorResponse,
+  notFoundResponse,
+} from "../utils/response.utils";
 
 export const getSystemRoles = async (req: AuthRequest, res: Response) => {
   try {
@@ -58,27 +63,17 @@ export const getSystemRoles = async (req: AuthRequest, res: Response) => {
       },
     ];
 
-    res.json({
-      status: "success",
-      data: roles,
-    });
+    return successResponse(res, roles, "System roles retrieved successfully");
   } catch (error: any) {
     logger.error("Get system roles error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve system roles", error);
   }
 };
 
-/**
- * Get ICD-10 codes (sample data - in production, integrate with ICD-10 API)
- */
 export const getICD10Codes = async (req: AuthRequest, res: Response) => {
   try {
     const { search, category } = req.query;
 
-    // Sample ICD-10 codes
     let codes = [
       { code: "A00", description: "Cholera", category: "Infectious diseases" },
       {
@@ -154,31 +149,25 @@ export const getICD10Codes = async (req: AuthRequest, res: Response) => {
       codes = codes.filter((code) => code.category === category);
     }
 
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         codes,
         total: codes.length,
         note: "Sample data - integrate with WHO ICD-10 API in production",
       },
-    });
+      "ICD-10 codes retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get ICD-10 codes error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve ICD-10 codes", error);
   }
 };
 
-/**
- * Get drug library
- */
 export const getDrugLibrary = async (req: AuthRequest, res: Response) => {
   try {
     const { search, category } = req.query;
 
-    // Sample drug library
     let drugs = [
       {
         name: "Paracetamol",
@@ -230,7 +219,6 @@ export const getDrugLibrary = async (req: AuthRequest, res: Response) => {
       },
     ];
 
-    // Filter by search term
     if (search) {
       const searchTerm = (search as string).toLowerCase();
       drugs = drugs.filter(
@@ -240,31 +228,25 @@ export const getDrugLibrary = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Filter by category
     if (category) {
       drugs = drugs.filter((drug) => drug.category === category);
     }
 
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         drugs,
         total: drugs.length,
         note: "Sample data - integrate with comprehensive drug database in production",
       },
-    });
+      "Drug library retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get drug library error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve drug library", error);
   }
 };
 
-/**
- * Get lab reference ranges
- */
 export const getReferenceRanges = async (req: AuthRequest, res: Response) => {
   try {
     const { testCode } = req.query;
@@ -345,45 +327,39 @@ export const getReferenceRanges = async (req: AuthRequest, res: Response) => {
     if (testCode) {
       const range = (referenceRanges as any)[testCode as string];
       if (!range) {
-        return res.status(404).json({
-          status: "error",
-          message: "Test code not found",
-        });
+        return notFoundResponse(res, "Test code not found");
       }
 
-      return res.json({
-        status: "success",
-        data: range,
-      });
+      return successResponse(
+        res,
+        range,
+        `Reference ranges for ${testCode} retrieved successfully`
+      );
     }
 
-    res.json({
-      status: "success",
-      data: referenceRanges,
-    });
+    return successResponse(
+      res,
+      referenceRanges,
+      "Lab reference ranges retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get reference ranges error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(
+      res,
+      "Failed to retrieve reference ranges",
+      error
+    );
   }
 };
 
-/**
- * Get audit logs (simplified version)
- */
 export const getAuditLogs = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
     const { startDate, endDate, userId, action, limit = 50 } = req.query;
 
-    // In production, you would have a dedicated audit_logs table
-    // This is a simplified demonstration
-
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         logs: [],
         message: "Audit logging not yet implemented",
         note: "In production, implement with dedicated audit_logs table tracking all CRUD operations",
@@ -400,12 +376,10 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
           "timestamp",
         ],
       },
-    });
+      "Audit logs feature coming soon"
+    );
   } catch (error: any) {
     logger.error("Get audit logs error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve audit logs", error);
   }
 };

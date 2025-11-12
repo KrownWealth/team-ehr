@@ -5,14 +5,12 @@ import prisma from "../config/database";
 import { Prisma } from "@prisma/client";
 import { GoogleGenAI } from "@google/genai";
 import { config } from "../config/env";
+import { notFoundResponse, serverErrorResponse } from "../utils/response.utils";
 
 const ai = new GoogleGenAI({
   apiKey: config.externalApis.aiDiagnosisAPIKey,
 });
 
-/**
- * Enhanced AI Diagnosis with patient history integration
- */
 export const getDiagnosisSuggestions = async (
   req: AuthRequest,
   res: Response
@@ -21,7 +19,6 @@ export const getDiagnosisSuggestions = async (
     const { patientId, symptoms, chiefComplaint } = req.body;
     const { clinicId } = req;
 
-    // Fetch patient's medical history
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       include: {
@@ -42,13 +39,9 @@ export const getDiagnosisSuggestions = async (
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found",
-      });
+      return notFoundResponse(res, "Patient");
     }
 
-    // Build comprehensive medical context
     const medicalContext = {
       demographics: {
         age:
@@ -72,7 +65,6 @@ export const getDiagnosisSuggestions = async (
       })),
     };
 
-    // Construct AI prompt
     const prompt = `
 You are a medical AI assistant helping with clinical decision support.
 
@@ -127,10 +119,8 @@ Provide a structured clinical assessment in this exact JSON format:
       summaryCompletion.candidates?.[0]?.content?.parts?.[0]?.text ??
       "Summary not available";
 
-    // Parse AI response
     let parsedSuggestions;
     try {
-      // Remove markdown code blocks if present
       const cleanResponse = aiResponse
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
@@ -138,13 +128,12 @@ Provide a structured clinical assessment in this exact JSON format:
 
       parsedSuggestions = JSON.parse(cleanResponse);
 
-      // Validate structure
       if (!parsedSuggestions.differential_diagnoses) {
         throw new Error("Invalid response structure");
       }
     } catch (parseError: any) {
       logger.error("AI response parsing error:", parseError);
-      // Fallback: return raw response with warning
+
       parsedSuggestions = {
         raw_response: aiResponse,
         parsing_error: true,
@@ -166,17 +155,14 @@ Provide a structured clinical assessment in this exact JSON format:
     });
   } catch (error: any) {
     logger.error("AI diagnosis error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to generate diagnosis suggestions",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    return serverErrorResponse(
+      res,
+      "Failed to generate diagnosis suggestions",
+      error
+    );
   }
 };
 
-/**
- * Drug Interaction Checker (Enhanced with AI)
- */
 export const checkDrugInteractions = async (
   req: AuthRequest,
   res: Response
@@ -185,7 +171,6 @@ export const checkDrugInteractions = async (
     const { patientId, proposedMedications } = req.body;
     const { clinicId } = req;
 
-    // Fetch patient's current medications
     const recentConsultations = await prisma.consultation.findMany({
       where: {
         patientId,
