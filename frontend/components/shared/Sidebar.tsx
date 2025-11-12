@@ -46,7 +46,7 @@ const navigation: NavItem[] = [
     title: "Queue",
     href: "/queue",
     icon: ListChecks,
-    roles: ["CLERK", "NURSE", "DOCTOR"],
+    roles: ["CLERK", "NURSE", "DOCTOR", "ADMIN"],
   },
   {
     title: "Vitals",
@@ -104,7 +104,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-8 px-5">
-        <ul className="space-y-2">
+        <ul className="space-y-5">
           {allowedItems.map((item) => {
             const href = `/clinic/${clinicId}${item.href}`;
             const isActive = pathname.startsWith(href);
@@ -115,9 +115,9 @@ export default function Sidebar() {
                 <Link
                   href={href}
                   className={cn(
-                    "flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all",
+                    "flex items-center gap-4 px-4 py-3 rounded-xl text-[17px] font-medium transition-all",
                     isActive
-                      ? "bg-green-600 text-white shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >

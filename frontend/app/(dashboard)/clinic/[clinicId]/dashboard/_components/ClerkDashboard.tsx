@@ -33,7 +33,7 @@ export default function ClerkDashboard() {
             registrations.
           </p>
         </div>
-        <Link href={`/${user?.clinicId}/patients/register`}>
+        <Link href={`/clinic/${user?.clinicId}/patients/register`}>
           <Button size="lg">
             <UserPlus className="mr-2 h-5 w-5" />
             Register New Patient
@@ -76,7 +76,7 @@ export default function ClerkDashboard() {
             <CardTitle className="text-sm font-medium text-gray-600">
               Total Patients
             </CardTitle>
-            <Users className="h-5 w-5 text-blue-600" />
+            <Users className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
@@ -92,13 +92,13 @@ export default function ClerkDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href={`/${user?.clinicId}/patients`}>
+          <Link href={`/clinic/${user?.clinicId}/patients`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Users className="mr-2 h-6 w-6" />
               View All Patients
             </Button>
           </Link>
-          <Link href={`/${user?.clinicId}/queue`}>
+          <Link href={`/clinic/${user?.clinicId}/queue`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Clock className="mr-2 h-6 w-6" />
               Manage Queue

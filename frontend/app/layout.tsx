@@ -1,11 +1,11 @@
 import "./globals.css";
 import { cn, ThemeProvider } from "@/lib";
-import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { ReactQueryProvider } from "./provider";
 import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@/lib/siteConfig";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: {

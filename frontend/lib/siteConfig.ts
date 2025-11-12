@@ -15,27 +15,18 @@ export const siteConfig = {
 
   roles: {
     ADMIN: "ADMIN",
-    CLERK: "CLERK",
-    NURSE: "NURSE",
     DOCTOR: "DOCTOR",
-    LAB_TECH: "LAB_TECH",
-    CASHIER: "CASHIER",
+    NURSE: "NURSE",
+    CLERK: "CLERK",
     PATIENT: "PATIENT",
-
-    RECEPTIONIST: "RECEPTIONIST",
-    STAFF: "STAFF",
   } as const,
 
   roleLabels: {
     ADMIN: "Administrator",
-    CLERK: "Front Desk Clerk",
-    NURSE: "Nurse",
     DOCTOR: "Doctor",
-    LAB_TECH: "Lab Technician",
-    CASHIER: "Cashier",
+    NURSE: "Nurse",
+    CLERK: "Front Desk Clerk",
     PATIENT: "Patient",
-    RECEPTIONIST: "Receptionist",
-    STAFF: "Staff",
   },
 
   features: {

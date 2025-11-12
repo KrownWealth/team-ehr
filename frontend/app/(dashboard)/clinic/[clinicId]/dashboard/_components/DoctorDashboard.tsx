@@ -32,7 +32,7 @@ export default function DoctorDashboard() {
             Welcome, Dr. {user?.lastName}! Here are your pending consultations.
           </p>
         </div>
-        <Link href={`/${user?.clinicId}/queue`}>
+        <Link href={`/clinic/${user?.clinicId}/queue`}>
           <Button size="lg">
             <Stethoscope className="mr-2 h-5 w-5" />
             Start Consultation
@@ -62,7 +62,7 @@ export default function DoctorDashboard() {
             <CardTitle className="text-sm font-medium text-gray-600">
               Today's Consultations
             </CardTitle>
-            <FileText className="h-5 w-5 text-blue-600" />
+            <FileText className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
@@ -94,19 +94,19 @@ export default function DoctorDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href={`/${user?.clinicId}/consultations`}>
+          <Link href={`/clinic/${user?.clinicId}/consultations`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Stethoscope className="mr-2 h-6 w-6" />
               Consultations
             </Button>
           </Link>
-          <Link href={`/${user?.clinicId}/prescriptions`}>
+          <Link href={`/clinic/${user?.clinicId}/prescriptions`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Pill className="mr-2 h-6 w-6" />
               Prescriptions
             </Button>
           </Link>
-          <Link href={`/${user?.clinicId}/patients`}>
+          <Link href={`/clinic/${user?.clinicId}/patients`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <FileText className="mr-2 h-6 w-6" />
               Patient Records

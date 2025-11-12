@@ -32,7 +32,7 @@ export default function NurseDashboard() {
             Welcome, {user?.firstName}! Monitor vitals and patient queue.
           </p>
         </div>
-        <Link href={`/${user?.clinicId}/queue`}>
+        <Link href={`/clinic/${user?.clinicId}/queue`}>
           <Button size="lg">
             <Heart className="mr-2 h-5 w-5" />
             View Queue
@@ -94,13 +94,13 @@ export default function NurseDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href={`/${user?.clinicId}/queue`}>
+          <Link href={`/clinic/${user?.clinicId}/queue`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Clock className="mr-2 h-6 w-6" />
               Patient Queue
             </Button>
           </Link>
-          <Link href={`/${user?.clinicId}/vitals`}>
+          <Link href={`/clinic/${user?.clinicId}/vitals`}>
             <Button variant="outline" className="w-full h-20 text-lg">
               <Heart className="mr-2 h-6 w-6" />
               Record Vitals

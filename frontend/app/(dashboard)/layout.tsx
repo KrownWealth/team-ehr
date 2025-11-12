@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
 import { canAccessRoute } from "@/lib/constants/routes";
+import { toast } from "sonner";
 
 export default function DashboardLayout({
   children,
@@ -23,6 +24,8 @@ export default function DashboardLayout({
       return;
     }
 
+    console.log("user", user);
+
     if (!user?.role) {
       logout();
       return;
@@ -38,17 +41,16 @@ export default function DashboardLayout({
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center min-h-[80svh] w-full">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="h-12 w-12 border-3 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-[#fcfcfc] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />

@@ -16,7 +16,7 @@ import {
 import { formatCurrency } from "@/lib/utils/formatters";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@/components/shared/loading/CardSkeleton";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -36,9 +36,9 @@ export default function AdminDashboard() {
       title: "Total Patients",
       value: statsData?.totalPatients || 0,
       icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      href: `/${user?.clinicId}/patients`,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      href: `/clinic/${user?.clinicId}/patients`,
     },
     {
       title: "Today's Check-ins",
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
       icon: UserPlus,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      href: `/${user?.clinicId}/queue`,
+      href: `/clinic/${user?.clinicId}/queue`,
     },
     {
       title: "Queue Length",
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      href: `/${user?.clinicId}/queue`,
+      href: `/clinic/${user?.clinicId}/queue`,
     },
     {
       title: "Staff Members",
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
       icon: Activity,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      href: `/${user?.clinicId}/staff`,
+      href: `/clinic/${user?.clinicId}/staff`,
     },
     {
       title: "Revenue (Today)",
@@ -70,7 +70,8 @@ export default function AdminDashboard() {
       icon: DollarSign,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      href: `/${user?.clinicId}/billing`,
+      // href: `/clinic/${user?.clinicId}/billing`,
+      href: "#",
     },
     {
       title: "Pending Consultations",
@@ -78,65 +79,53 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       color: "text-red-600",
       bgColor: "bg-red-50",
-      href: `/${user?.clinicId}/queue`,
+      href: `/clinic/${user?.clinicId}/queue`,
     },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-base text-gray-600 mt-1">
             Welcome back, {user?.firstName}! Here's your clinic overview.
           </p>
         </div>
         <div className="flex gap-3">
-          <Link href={`/${user?.clinicId}/patients/register`}>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
+          <Link href={`/clinic/${user?.clinicId}/patients/register`}>
+            <button className="btn btn-outline btn-block">
+              <UserPlus className="mr-2 h-5 w-5" />
               Register Patient
-            </Button>
+            </button>
           </Link>
-          <Link href={`/${user?.clinicId}/staff/invite`}>
-            <Button variant="outline">
-              <Users className="mr-2 h-4 w-4" />
+          <Link href={`/clinic/${user?.clinicId}/staff/invite`}>
+            <button className="btn btn-outline">
+              <Users className="mr-2 h-5 w-5" />
               Invite Staff
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
-
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-16" />
-                </CardContent>
-              </Card>
-            ))
+          ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton />)
           : statCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <Link href={stat.href} key={index}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">
+                      <CardTitle className="text-xl font-medium text-gray-600">
                         {stat.title}
                       </CardTitle>
-                      <div className={`${stat.bgColor} p-2 rounded-lg`}>
-                        <Icon className={`h-5 w-5 ${stat.color}`} />
+                      <div className={`bg-primary/4 p-2 rounded-lg`}>
+                        <Icon className={`h-10 w-10 text-primary`} />
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-4xl font-bold text-gray-900">
                         {stat.value}
                       </div>
                     </CardContent>
@@ -145,16 +134,6 @@ export default function AdminDashboard() {
               );
             })}
       </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600">Activity feed coming soon...</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

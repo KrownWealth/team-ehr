@@ -60,14 +60,19 @@ export default function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-3 h-10 px-3 hover:bg-gray-50 rounded-xl"
+              className="flex items-center gap-3 h-10 px-1 cursor-pointer hover:bg-gray-50 rounded-xl"
             >
-              <div className="h-9 w-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
+              <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
                 {user && getInitials(user.firstName, user.lastName)}
               </div>
-              <span className="text-[15px] font-medium text-gray-900 hidden md:block">
-                {user?.firstName} {user?.lastName}
-              </span>
+              <div className="flex-col hidden md:flex items-start">
+                <span className="text-[15px] font-medium text-gray-900 block">
+                  {user?.firstName} {user?.lastName}
+                </span>
+                <p className="text-xs text-gray-500 font-normal mt-0.5">
+                  {user?.email}
+                </p>
+              </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64 mt-2">

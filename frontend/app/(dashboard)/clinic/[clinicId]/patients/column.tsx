@@ -72,7 +72,7 @@ const patientColumns: ColumnDef<Patient>[] = [
 
       return (
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
             {photoUrl ? (
               <img
                 src={photoUrl}
@@ -80,7 +80,7 @@ const patientColumns: ColumnDef<Patient>[] = [
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-sm font-semibold text-blue-600">
+              <span className="text-sm font-semibold text-green-600">
                 {initials}
               </span>
             )}

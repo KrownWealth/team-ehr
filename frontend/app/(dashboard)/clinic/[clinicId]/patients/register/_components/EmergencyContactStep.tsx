@@ -18,8 +18,8 @@ export default function EmergencyContactStep({
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-green-50 border border-green-200 rounded-md p-4">
+        <p className="text-sm text-green-800">
           Please provide emergency contact information. This person will be
           contacted in case of medical emergencies.
         </p>

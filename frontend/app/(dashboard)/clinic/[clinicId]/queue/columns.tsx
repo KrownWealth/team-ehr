@@ -55,7 +55,7 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={() =>
-            router.push(`/${clinicId}/patients/${queue.patientId}`)
+            router.push(`/clinic/${clinicId}/patients/${queue.patientId}`)
           }
         >
           <Eye className="mr-2 h-4 w-4" />
@@ -98,7 +98,7 @@ const queueColumns: ColumnDef<QueueItem>[] = [
     header: "Queue #",
     accessorKey: "queueNumber",
     cell: ({ row }) => (
-      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white font-bold">
+      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-green-600 text-white font-bold">
         {row.original.queueNumber}
       </div>
     ),
@@ -128,7 +128,7 @@ const queueColumns: ColumnDef<QueueItem>[] = [
     accessorKey: "visitType",
     cell: ({ row }) => {
       const colors: Record<string, string> = {
-        New: "bg-blue-100 text-blue-700",
+        New: "bg-green-100 text-green-700",
         "Follow-up": "bg-green-100 text-green-700",
         Emergency: "bg-red-100 text-red-700",
       };
@@ -171,7 +171,7 @@ const queueColumns: ColumnDef<QueueItem>[] = [
     cell: ({ row }) => {
       const colors: Record<string, string> = {
         Waiting: "bg-yellow-100 text-yellow-700",
-        Vitals: "bg-blue-100 text-blue-700",
+        Vitals: "bg-green-100 text-green-700",
         Consultation: "bg-purple-100 text-purple-700",
         Completed: "bg-green-100 text-green-700",
         Cancelled: "bg-gray-100 text-gray-700",

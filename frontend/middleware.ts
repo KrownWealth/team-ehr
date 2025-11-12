@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtDecode } from "jwt-decode";
 import { ROUTE_PERMISSIONS } from "./lib/constants/routes";
 import { AuthTokenPayload } from "./types";
+import { parseCookieValue } from "./lib/helper";
 
 const PUBLIC_ROUTES = [
   "/", // Landing page
@@ -46,7 +47,6 @@ export async function middleware(request: NextRequest) {
   const userDataStr = request.cookies.get("user_data")?.value;
   let user: AuthTokenPayload | null = null;
 
-  // Validate token
   if (token) {
     try {
       user = jwtDecode<AuthTokenPayload>(token);
@@ -71,7 +71,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users away from auth pages
+  user = parseCookieValue(userDataStr);
+
   if (user && isAuthRoute(pathname)) {
     const clinicId = user.clinicId;
     return NextResponse.redirect(
@@ -79,29 +80,24 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Allow public routes
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // Require authentication for protected routes
   if (!user || !token) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Parse the pathname - now clinicId is at the root
   const pathParts = pathname.split("/").filter(Boolean);
-
-  // If no parts, redirect to dashboard
+  
   if (pathParts.length === 0) {
     return NextResponse.redirect(
       new URL(`/clinic/${user.clinicId}/dashboard`, request.url)
     );
   }
 
-  const clinicId = pathParts[0];
+  const clinicId = pathParts[1];
 
-  // Verify the user is accessing their own clinic
   if (clinicId !== user.clinicId) {
     // Let Next.js handle the 404 naturally
     return NextResponse.next();
@@ -127,11 +123,11 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  if (userDataStr) {
-    response.headers.set("x-user-data", userDataStr);
-  }
-  response.headers.set("x-user-role", user.role);
-  response.headers.set("x-clinic-id", user.clinicId);
+  // if (userDataStr) {
+  //   response.headers.set("x-user-data", userDataStr);
+  // }
+  // response.headers.set("x-user-role", user.role);
+  // response.headers.set("x-clinic-id", user.clinicId);
 
   return response;
 }

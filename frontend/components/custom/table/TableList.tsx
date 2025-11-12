@@ -23,7 +23,6 @@ type ApiStatsType<TData> =
   | TData[];
 
 function TableList<TData, TValue>({
-  title,
   querykey,
   endpoint,
   columns,
@@ -32,7 +31,6 @@ function TableList<TData, TValue>({
   tabs,
   noSearch,
 }: {
-  title: string;
   querykey: string;
   filter?: {
     value: string;
@@ -119,16 +117,16 @@ function TableList<TData, TValue>({
     <div className="sheet space-y-6">
       <div className="space-y-4">
         <div className="flex gap-4 justify-between items-center flex-wrap">
-          <span className="block text-lg capitalize">{title}</span>
+          <div className="w-fit">{tabs?.component}</div>
 
           <div className="flex gap-3">
             {!noSearch && (
-              <div className="search-input h-10 relative w-full max-w-sm xl:max-w-lg 2xl:max-w-xl">
+              <div className="search-input h-12 relative w-xs">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2">
                   <SearchSvg />
                 </div>
                 <Input
-                  className="size-full pl-10 border-neutral-300 rounded-[6px]"
+                  className="size-full pl-12 border-neutral-300 rounded-[6px]"
                   placeholder="Search"
                   value={search}
                   onChange={(e) => setSearch(e.currentTarget.value)}
@@ -144,23 +142,21 @@ function TableList<TData, TValue>({
                 />
               )} */}
             {extraUi?.component}
+            <div className="flex gap-3 items-center justify-end">
+              {filter?.component}
+              <Button
+                variant={"outline"}
+                onClick={handleHardReload}
+                className="rounded-sm h-12 w-12 border-neutral-300"
+              >
+                <RefreshCcw />
+              </Button>
+
+              <ColumnToggle table={table} />
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 items-center justify-end">
-          {filter?.component}
-          <Button
-            variant={"outline"}
-            onClick={handleHardReload}
-            className="rounded-sm h-10 border-neutral-300"
-          >
-            <RefreshCcw />
-          </Button>
-
-          <ColumnToggle table={table} />
-        </div>
       </div>
-
-      {tabs?.component}
 
       <DataTable
         table={table}

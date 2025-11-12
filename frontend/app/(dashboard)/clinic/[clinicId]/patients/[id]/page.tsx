@@ -56,7 +56,7 @@ export default function PatientDetailsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/${clinicId}/patients`)}
+            onClick={() => router.push(`/clinic/${clinicId}/patients`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -64,7 +64,7 @@ export default function PatientDetailsPage() {
 
           <div className="flex items-start gap-4">
             {/* Patient Photo */}
-            <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+            <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
               {patient.photoUrl ? (
                 <img
                   src={patient.photoUrl}
@@ -72,7 +72,7 @@ export default function PatientDetailsPage() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <span className="text-2xl font-bold text-blue-600">
+                <span className="text-2xl font-bold text-green-600">
                   {patient.firstName[0]}
                   {patient.lastName[0]}
                 </span>
@@ -97,12 +97,12 @@ export default function PatientDetailsPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => router.push(`/${clinicId}/queue?add=${patientId}`)}
+            onClick={() => router.push(`/clinic/${clinicId}/queue?add=${patientId}`)}
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Add to Queue
           </Button>
-          <Button onClick={() => router.push(`/${clinicId}/patients/${patientId}?edit=true`)}>
+          <Button onClick={() => router.push(`/clinic/${clinicId}/patients/${patientId}?edit=true`)}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Patient
           </Button>

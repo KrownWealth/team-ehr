@@ -61,7 +61,7 @@ export default function RegisterPatientPage() {
     },
     onSuccess: (data) => {
       toast.success("Patient registered successfully!");
-      router.push(`/${clinicId}/patients/${data.data.id}`);
+      router.push(`/clinic/${clinicId}/patients/${data.data.id}`);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Registration failed");
@@ -92,12 +92,12 @@ export default function RegisterPatientPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+      <div className="flex flex-col gap-4">
+        <Button variant="ghost" size="sm" className="w-fit" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div>
+        <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">Register New Patient</h1>
           <p className="text-sm text-gray-600 mt-1">
             Complete all steps to register a new patient
@@ -113,7 +113,7 @@ export default function RegisterPatientPage() {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
                   currentStep >= step.id
-                    ? "bg-blue-600 border-blue-600 text-white"
+                    ? "bg-green-600 border-green-600 text-white"
                     : "border-gray-300 text-gray-500"
                 }`}
               >
@@ -126,7 +126,7 @@ export default function RegisterPatientPage() {
               <div className="text-center mt-2">
                 <p
                   className={`text-sm font-medium ${
-                    currentStep >= step.id ? "text-blue-600" : "text-gray-500"
+                    currentStep >= step.id ? "text-green-600" : "text-gray-500"
                   }`}
                 >
                   {step.name}
@@ -137,7 +137,7 @@ export default function RegisterPatientPage() {
             {index < STEPS.length - 1 && (
               <div
                 className={`h-0.5 flex-1 mx-4 transition-colors ${
-                  currentStep > step.id ? "bg-blue-600" : "bg-gray-300"
+                  currentStep > step.id ? "bg-green-600" : "bg-gray-300"
                 }`}
               />
             )}

@@ -18,7 +18,7 @@ export function ColumnToggle<TData>({ table }: ColumnToggleProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="py-5">
+        <Button variant="outline" className="w-12 h-12">
           <span className="">
             <svg
               width="18"

@@ -1,17 +1,17 @@
 import { Role } from "./roles";
 
 export const ROUTE_PERMISSIONS: Record<string, Role[]> = {
-  "/dashboard": ["ADMIN", "CLERK", "NURSE", "DOCTOR", "LAB_TECH", "CASHIER"],
+  "/dashboard": ["ADMIN", "CLERK", "NURSE", "DOCTOR"],
   "/patients": ["ADMIN", "CLERK", "NURSE", "DOCTOR"],
   "/patients/register": ["ADMIN", "CLERK"],
   "/queue": ["CLERK", "NURSE", "DOCTOR"],
   "/vitals": ["NURSE", "DOCTOR"],
   "/consultations": ["DOCTOR"],
   "/prescriptions": ["DOCTOR"],
-  "/lab-orders": ["DOCTOR", "LAB_TECH"],
+  "/lab-orders": ["DOCTOR"],
   "/staff": ["ADMIN"],
   "/settings": ["ADMIN"],
-  "/billing": ["ADMIN", "CASHIER"],
+  "/billing": ["ADMIN"],
 };
 
 export function canAccessRoute(
@@ -38,10 +38,6 @@ export function getDefaultRouteForRole(role: Role, clinicId: string): string {
       return `/clinic/${clinicId}/queue`;
     case "DOCTOR":
       return `/clinic/${clinicId}/dashboard`;
-    case "LAB_TECH":
-      return `/clinic/${clinicId}/lab-orders`;
-    case "CASHIER":
-      return `/clinic/${clinicId}/billing`;
     case "PATIENT":
       return `/clinic/${clinicId}/portal/dashboard`;
     default:

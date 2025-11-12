@@ -18,15 +18,15 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    const userDataStr = getCookie("user_data");
-    if (userDataStr) {
-      try {
-        const userData = JSON.parse(userDataStr as string);
-        config.headers["x-clinic-id"] = userData.clinicId;
-      } catch (error) {
-        console.error("Failed to parse user data:", error);
-      }
-    }
+    // const userDataStr = getCookie("user_data");
+    // if (userDataStr) {
+    //   try {
+    //     const userData = JSON.parse(userDataStr as string);
+    //     config.headers["x-clinic-id"] = userData.clinicId;
+    //   } catch (error) {
+    //     console.error("Failed to parse user data:", error);
+    //   }
+    // }
 
     return config;
   },

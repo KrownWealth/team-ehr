@@ -28,7 +28,7 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await apiClient.post<LoginResponse>(
+      const response = await apiClient.post<{ data: LoginResponse }>(
         "/v1/auth/login",
         credentials
       );
@@ -36,12 +36,13 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       console.log("data", data);
-      setAuth(data.token);
+      setAuth(data.data.token);
+      updateUser(data.data.user);
       toast.success("Login successful!");
 
       const redirectUrl = getDefaultRouteForRole(
-        data.user.role,
-        data.user.clinicId
+        data.data.user.role,
+        data.data.user.clinicId
       );
 
       router.replace(redirectUrl);

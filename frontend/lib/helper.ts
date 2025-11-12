@@ -196,3 +196,14 @@ export function abbreviateDirection(input: string): string {
 
   return abbreviation;
 }
+
+export function parseCookieValue<T>(value: string | undefined | null): T | null {
+  if (!value || typeof value !== "string") return null;
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed as T;
+  } catch {
+    return null;
+  }
+}
