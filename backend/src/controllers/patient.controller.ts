@@ -1,32 +1,20 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import prisma from "../config/database";
 import { EmailService } from "../services/email.service";
 import { QueueService } from "../services/queue.service";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { generatePatientNumber } from "../utils/helpers.utils";
 import logger from "../utils/logger.utils";
+import {
+  successResponse,
+  createdResponse,
+  notFoundResponse,
+  serverErrorResponse,
+  paginatedResponse,
+} from "../utils/response.utils";
 
 const emailService = new EmailService();
 const queueService = new QueueService();
-
-// export const validateNIN = async (req: Request, res: Response) => {
-//   try {
-//     const { nin } = req.body;
-
-//     const result = await ninService.validateNIN(nin);
-
-//     res.json({
-//       status: "success",
-//       data: result,
-//     });
-//   } catch (error: any) {
-//     logger.error("NIN validation error:", error);
-//     res.status(500).json({
-//       status: "error",
-//       message: error.message,
-//     });
-//   }
-// };
 
 export const registerPatient = async (req: AuthRequest, res: Response) => {
   try {
@@ -55,14 +43,6 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
       0
     );
 
-    // Publish event
-    // await pubsubService.publishPatientRegistered({
-    //   patientId: patient.id,
-    //   patientNumber: patient.patientNumber,
-    //   email: patient.email,
-    //   clinicId,
-    // });
-
     // Send welcome email
     if (patient.email) {
       await emailService.sendWelcomeEmail(
@@ -74,16 +54,10 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Patient registered: ${patient.patientNumber}`);
 
-    res.status(201).json({
-      status: "success",
-      data: patient,
-    });
+    return createdResponse(res, patient, "Patient registered successfully");
   } catch (error: any) {
     logger.error("Register patient error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to register patient", error);
   }
 };
 
@@ -113,24 +87,19 @@ export const getAllPatients = async (req: AuthRequest, res: Response) => {
       prisma.patient.count({ where }),
     ]);
 
-    res.json({
-      status: "success",
-      data: {
-        patients,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
+    return paginatedResponse(
+      res,
+      patients,
+      {
+        page: Number(page),
+        limit: Number(limit),
+        total,
       },
-    });
+      "Patients retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get all patients error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve patients", error);
   }
 };
 
@@ -168,22 +137,13 @@ export const getPatientById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found",
-      });
+      return notFoundResponse(res, "Patient");
     }
 
-    res.json({
-      status: "success",
-      data: patient,
-    });
+    return successResponse(res, patient, "Patient retrieved successfully");
   } catch (error: any) {
     logger.error("Get patient by ID error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve patient", error);
   }
 };
 
@@ -193,22 +153,25 @@ export const updatePatient = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
     const updateData = req.body;
 
-    const patient = await prisma.patient.updateMany({
+    const result = await prisma.patient.updateMany({
       where: { id, clinicId },
       data: updateData,
     });
 
-    if (patient.count === 0) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found",
-      });
+    if (result.count === 0) {
+      return notFoundResponse(res, "Patient");
     }
-  } catch (error: any) {
-    logger.error("Patient updated error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
+
+    // Fetch updated patient
+    const patient = await prisma.patient.findFirst({
+      where: { id, clinicId },
     });
+
+    logger.info(`Patient updated: ${id}`);
+
+    return successResponse(res, patient, "Patient updated successfully");
+  } catch (error: any) {
+    logger.error("Patient update error:", error);
+    return serverErrorResponse(res, "Failed to update patient", error);
   }
 };

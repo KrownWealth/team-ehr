@@ -2,23 +2,21 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { SyncService, SyncAction } from "../services/sync.service";
 import logger from "../utils/logger.utils";
+import {
+  badRequestResponse,
+  serverErrorResponse,
+  successResponse,
+} from "../utils/response.utils";
 
 const syncService = new SyncService();
 
-/**
- * Main synchronization endpoint
- * Processes offline actions and returns server updates
- */
 export const syncData = async (req: AuthRequest, res: Response) => {
   try {
     const { lastSyncTimestamp, pendingActions } = req.body;
     const { clinicId, user } = req;
 
     if (!Array.isArray(pendingActions)) {
-      return res.status(400).json({
-        status: "error",
-        message: "pendingActions must be an array",
-      });
+      return badRequestResponse(res, "pendingActions must be an array");
     }
 
     logger.info(
@@ -41,46 +39,42 @@ export const syncData = async (req: AuthRequest, res: Response) => {
       `Sync completed: ${successful} successful, ${failed} failed, ${conflicts} conflicts`
     );
 
-    res.json({
-      status: "success",
-      data: result,
-      summary: {
-        totalActions: pendingActions.length,
-        successful,
-        failed,
-        conflicts,
-      },
-    });
+    return successResponse(
+      res,
+      result,
+      "Synchronization completed successfully"
+      // {
+      //   summary: {
+      //     totalActions: pendingActions.length,
+      //     successful,
+      //     failed,
+      //     conflicts,
+      //   },
+      // }
+    );
   } catch (error: any) {
     logger.error("Sync error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Synchronization failed",
-      error: error.message,
-    });
+    return serverErrorResponse(res, "Synchronization failed", error);
   }
 };
 
-/**
- * Get sync status for debugging
- */
 export const getSyncStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
     const { lastSyncTimestamp } = req.query;
 
     if (!lastSyncTimestamp) {
-      return res.status(400).json({
-        status: "error",
-        message: "lastSyncTimestamp query parameter is required",
-      });
+      return badRequestResponse(
+        res,
+        "lastSyncTimestamp query parameter is required"
+      );
     }
 
     const result = await syncService.processSync(
       clinicId!,
       req.user!.id,
       lastSyncTimestamp as string,
-      [] // No pending actions, just check for updates
+      []
     );
 
     const totalUpdates =
@@ -90,9 +84,9 @@ export const getSyncStatus = async (req: AuthRequest, res: Response) => {
       result.serverUpdates.bills.length +
       result.serverUpdates.appointments.length;
 
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         hasUpdates: totalUpdates > 0,
         updateCounts: {
           patients: result.serverUpdates.patients.length,
@@ -103,43 +97,30 @@ export const getSyncStatus = async (req: AuthRequest, res: Response) => {
         },
         lastSyncTimestamp: result.lastSyncTimestamp,
       },
-    });
+      "Sync status retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get sync status error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to get sync status", error);
   }
 };
 
-/**
- * Force full sync (redownload all data)
- */
 export const fullSync = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
 
     logger.info(`Full sync requested for clinic: ${clinicId}`);
 
-    // Fetch all data for clinic (no timestamp filter)
     const result = await syncService.processSync(
       clinicId!,
       req.user!.id,
-      null, // No last sync timestamp = get everything
-      [] // No pending actions
+      null,
+      []
     );
 
-    res.json({
-      status: "success",
-      data: result,
-      message: "Full sync completed",
-    });
+    return successResponse(res, result, "Full synchronization completed");
   } catch (error: any) {
     logger.error("Full sync error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Full synchronization failed", error);
   }
 };

@@ -4,18 +4,22 @@ import prisma from "../config/database";
 import { EmailService } from "../services/email.service";
 import logger from "../utils/logger.utils";
 import { Prisma } from "@prisma/client";
+import {
+  successResponse,
+  createdResponse,
+  notFoundResponse,
+  badRequestResponse,
+  serverErrorResponse,
+  paginatedResponse,
+} from "../utils/response.utils";
 
 const emailService = new EmailService();
 
-/**
- * Create prescription (standalone or part of consultation)
- */
 export const createPrescription = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, consultationId, prescriptions, notes } = req.body;
     const { clinicId, user } = req;
 
-    // Verify patient belongs to clinic
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       select: {
@@ -29,13 +33,9 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found in this clinic",
-      });
+      return notFoundResponse(res, "Patient not found in this clinic");
     }
 
-    // Check for drug allergies
     if (prescriptions && prescriptions.length > 0 && patient.allergies) {
       const allergyConflicts = prescriptions.filter((med: any) =>
         patient.allergies!.some((allergy: string) =>
@@ -44,26 +44,20 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
       );
 
       if (allergyConflicts.length > 0) {
-        return res.status(400).json({
-          status: "error",
-          message: "Drug allergy conflict detected",
+        return badRequestResponse(res, "Drug allergy conflict detected", {
           conflicts: allergyConflicts,
           allergies: patient.allergies,
         });
       }
     }
 
-    // If consultationId provided, update consultation
     if (consultationId) {
       const consultation = await prisma.consultation.findFirst({
         where: { id: consultationId, clinicId, doctorId: user!.id },
       });
 
       if (!consultation) {
-        return res.status(404).json({
-          status: "error",
-          message: "Consultation not found or unauthorized",
-        });
+        return notFoundResponse(res, "Consultation not found or unauthorized");
       }
 
       await prisma.consultation.update({
@@ -74,7 +68,6 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Send prescription email
     if (patient.email && prescriptions && prescriptions.length > 0) {
       await emailService.sendPrescriptionEmail(
         patient.email,
@@ -85,28 +78,22 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Prescription created for patient: ${patientId}`);
 
-    res.status(201).json({
-      status: "success",
-      data: {
+    return createdResponse(
+      res,
+      {
         patientId,
         consultationId,
         prescriptions,
         notes,
       },
-      message: "Prescription created successfully",
-    });
+      "Prescription created successfully"
+    );
   } catch (error: any) {
     logger.error("Create prescription error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to create prescription", error);
   }
 };
 
-/**
- * Get patient prescriptions
- */
 export const getPatientPrescriptions = async (
   req: AuthRequest,
   res: Response
@@ -116,76 +103,64 @@ export const getPatientPrescriptions = async (
     const { clinicId } = req;
     const { limit = 20, page = 1 } = req.query;
 
-    // Verify patient belongs to clinic
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found in this clinic",
-      });
+      return notFoundResponse(res, "Patient not found in this clinic");
     }
 
-    // Get consultations with prescriptions
-    const consultations = await prisma.consultation.findMany({
-      where: {
-        patientId,
-        clinicId,
-        prescriptions: { not: Prisma.JsonNull },
-      },
-      select: {
-        id: true,
-        prescriptions: true,
-        createdAt: true,
-        doctor: {
-          select: {
-            firstName: true,
-            lastName: true,
-            licenseId: true,
+    const [consultations, total] = await Promise.all([
+      prisma.consultation.findMany({
+        where: {
+          patientId,
+          clinicId,
+          prescriptions: { not: Prisma.JsonNull },
+        },
+        select: {
+          id: true,
+          prescriptions: true,
+          createdAt: true,
+          doctor: {
+            select: {
+              firstName: true,
+              lastName: true,
+              licenseId: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-    });
-
-    const total = await prisma.consultation.count({
-      where: {
-        patientId,
-        clinicId,
-        prescriptions: {
-          not: Prisma.JsonNull,
+        orderBy: { createdAt: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      }),
+      prisma.consultation.count({
+        where: {
+          patientId,
+          clinicId,
+          prescriptions: {
+            not: Prisma.JsonNull,
+          },
         },
-      },
-    });
+      }),
+    ]);
 
-    res.json({
-      status: "success",
-      data: {
-        prescriptions: consultations,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
+    return paginatedResponse(
+      res,
+      consultations,
+      {
+        page: Number(page),
+        limit: Number(limit),
+        total,
       },
-    });
+      "Prescriptions retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get patient prescriptions error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve prescriptions", error);
   }
 };
 
-/**
- * Get prescription by ID
- */
 export const getPrescriptionById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -215,28 +190,20 @@ export const getPrescriptionById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        status: "error",
-        message: "Prescription not found",
-      });
+      return notFoundResponse(res, "Prescription not found");
     }
 
-    res.json({
-      status: "success",
-      data: consultation,
-    });
+    return successResponse(
+      res,
+      consultation,
+      "Prescription retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get prescription error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve prescription", error);
   }
 };
 
-/**
- * Update prescription
- */
 export const updatePrescription = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -248,36 +215,42 @@ export const updatePrescription = async (req: AuthRequest, res: Response) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        status: "error",
-        message: "Consultation not found or unauthorized",
-      });
+      return notFoundResponse(res, "Consultation not found or unauthorized");
     }
 
     const updated = await prisma.consultation.update({
       where: { id },
       data: { prescriptions },
+      select: {
+        id: true,
+        prescriptions: true,
+        createdAt: true,
+        patient: {
+          select: {
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        doctor: {
+          select: {
+            firstName: true,
+            lastName: true,
+            licenseId: true,
+          },
+        },
+      },
     });
 
     logger.info(`Prescription updated: ${id}`);
 
-    res.json({
-      status: "success",
-      data: updated,
-      message: "Prescription updated successfully",
-    });
+    return successResponse(res, updated, "Prescription updated successfully");
   } catch (error: any) {
     logger.error("Update prescription error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to update prescription", error);
   }
 };
 
-/**
- * Check drug allergies
- */
 export const checkAllergies = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, drugs } = req.body;
@@ -285,14 +258,11 @@ export const checkAllergies = async (req: AuthRequest, res: Response) => {
 
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
-      select: { allergies: true },
+      select: { allergies: true, firstName: true, lastName: true },
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found",
-      });
+      return notFoundResponse(res, "Patient");
     }
 
     const conflicts: any[] = [];
@@ -311,19 +281,20 @@ export const checkAllergies = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         hasConflicts: conflicts.length > 0,
         conflicts,
         allergies: patient.allergies || [],
+        patientName: `${patient.firstName} ${patient.lastName}`,
       },
-    });
+      conflicts.length > 0
+        ? "Allergy conflicts detected"
+        : "No allergy conflicts found"
+    );
   } catch (error: any) {
     logger.error("Check allergies error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to check allergies", error);
   }
 };
