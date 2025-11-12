@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import prisma from "../config/database";
 import logger from "../utils/logger.utils";
+import {
+  badRequestResponse,
+  conflictResponse,
+  createdResponse,
+  notFoundResponse,
+  serverErrorResponse,
+  successResponse,
+} from "../utils/response.utils";
 
 export const registerClinic = async (req: Request, res: Response) => {
   try {
@@ -28,10 +36,7 @@ export const registerClinic = async (req: Request, res: Response) => {
       !phone ||
       !email
     ) {
-      return res.status(400).json({
-        status: "error",
-        message: "All required fields must be provided.",
-      });
+      return badRequestResponse(res, "All required fields must be provided");
     }
 
     // Check if clinic already exists
@@ -40,10 +45,7 @@ export const registerClinic = async (req: Request, res: Response) => {
     });
 
     if (existingClinic) {
-      return res.status(400).json({
-        status: "error",
-        message: "Clinic already registered with this email.",
-      });
+      return conflictResponse(res, "Clinic already registered with this email");
     }
 
     // Create new clinic
@@ -66,51 +68,41 @@ export const registerClinic = async (req: Request, res: Response) => {
 
     logger.info(`Clinic registered successfully: ${clinic.email}`);
 
-    return res.status(201).json({
-      status: "success",
-      message: "Clinic registered successfully.",
-      data: clinic,
-    });
+    return createdResponse(res, clinic, "Clinic registered successfully");
   } catch (error: any) {
     logger.error("Error registering clinic:", error);
-    return res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to register clinic", error);
   }
 };
 
-// Fetch all clinics
 export const getClinics = async (req: Request, res: Response) => {
   try {
     const clinics = await prisma.clinic.findMany({
       orderBy: { createdAt: "desc" },
     });
-    res.json({ status: "success", data: clinics });
+    return successResponse(res, clinics, "Clinics retrieved successfully");
   } catch (error: any) {
-    res.status(500).json({ status: "error", message: error.message });
+    logger.error("Get clinics error:", error);
+    return serverErrorResponse(res, "Failed to retrieve clinics", error);
   }
 };
 
-// Fetch clinic by ID
 export const getClinicById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const clinic = await prisma.clinic.findUnique({ where: { id } });
 
     if (!clinic) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Clinic not found" });
+      return notFoundResponse(res, "Clinic");
     }
 
-    res.json({ status: "success", data: clinic });
+    return successResponse(res, clinic, "Clinic retrieved successfully");
   } catch (error: any) {
-    res.status(500).json({ status: "error", message: error.message });
+    logger.error("Get clinic by ID error:", error);
+    return serverErrorResponse(res, "Failed to retrieve clinic", error);
   }
 };
 
-// Update clinic
 export const updateClinic = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -121,12 +113,9 @@ export const updateClinic = async (req: Request, res: Response) => {
       data: updateData,
     });
 
-    res.json({
-      status: "success",
-      message: "Clinic updated successfully.",
-      data: clinic,
-    });
+    return successResponse(res, clinic, "Clinic updated successfully");
   } catch (error: any) {
-    res.status(500).json({ status: "error", message: error.message });
+    logger.error("Update clinic error:", error);
+    return serverErrorResponse(res, "Failed to update clinic", error);
   }
 };

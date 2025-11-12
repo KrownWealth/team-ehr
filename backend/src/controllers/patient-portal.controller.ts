@@ -4,19 +4,20 @@ import prisma from "../config/database";
 import logger from "../utils/logger.utils";
 import { checkVitalFlags } from "../utils/helpers.utils";
 import { Prisma } from "@prisma/client";
+import {
+  createdResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  serverErrorResponse,
+  successResponse,
+} from "../utils/response.utils";
 
-/**
- * Get patient's own health dashboard
- */
 export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
   try {
-    const patientId = req.user!.patientId; // Assuming patient users have patientId
+    const patientId = req.user!.patientId;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied. Patient account required.",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
     const [patient, upcomingAppointments, recentVitals, recentConsultations] =
@@ -72,23 +73,18 @@ export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
       ]);
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient record not found",
-      });
+      return notFoundResponse(res, "Patient record not found");
     }
 
-    // Calculate age
     const age =
       new Date().getFullYear() - new Date(patient.birthDate).getFullYear();
 
-    // Health summary
     const latestVital = recentVitals[0];
     const healthAlerts = latestVital?.flags || [];
 
-    res.json({
-      status: "success",
-      data: {
+    return successResponse(
+      res,
+      {
         patient_info: { ...patient, age },
         health_summary: {
           latest_vitals: latestVital,
@@ -101,19 +97,14 @@ export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
         recent_vitals: recentVitals,
         recent_consultations: recentConsultations,
       },
-    });
+      "Patient dashboard retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Patient dashboard error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve dashboard", error);
   }
 };
 
-/**
- * Patient self-records vitals (for remote monitoring)
- */
 export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
   try {
     const patientId = req.user!.patientId;
@@ -121,13 +112,9 @@ export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
       req.body;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied. Patient account required.",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
-    // Validate inputs
     const vitalsData: any = {};
     if (bloodPressure) vitalsData.bloodPressure = bloodPressure;
     if (temperature) vitalsData.temperature = parseFloat(temperature);
@@ -136,19 +123,17 @@ export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
     if (bloodGlucose) vitalsData.bloodGlucose = parseFloat(bloodGlucose);
     if (notes) vitalsData.notes = notes;
 
-    // Check for abnormal values
     const flags = checkVitalFlags(vitalsData);
 
     const vitals = await prisma.vitals.create({
       data: {
         patientId,
-        recordedById: patientId, // Self-recorded
+        recordedById: patientId,
         ...vitalsData,
         flags,
       },
     });
 
-    // If critical flags, notify clinic staff
     const criticalFlags = flags.filter((f: string) => f.startsWith("CRITICAL"));
     if (criticalFlags.length > 0) {
       // TODO: Send notification to clinic staff
@@ -161,31 +146,27 @@ export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Patient ${patientId} self-recorded vitals`);
 
-    res.status(201).json({
-      status: "success",
-      data: vitals,
-      alerts:
-        criticalFlags.length > 0
-          ? {
+    return createdResponse(
+      res,
+      vitals,
+      "Vitals recorded successfully",
+      criticalFlags.length > 0
+        ? {
+            alerts: {
               critical: true,
               message:
                 "Critical readings detected. Your healthcare provider has been notified.",
               flags: criticalFlags,
-            }
-          : null,
-    });
+            },
+          }
+        : undefined
+    );
   } catch (error: any) {
     logger.error("Self-record vitals error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to record vitals", error);
   }
 };
 
-/**
- * Get patient's medication reminders
- */
 export const getMedicationReminders = async (
   req: AuthRequest,
   res: Response
@@ -194,19 +175,14 @@ export const getMedicationReminders = async (
     const patientId = req.user!.patientId;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
-
-    // Get active prescriptions from recent consultations
     const recentConsultations = await prisma.consultation.findMany({
       where: {
         patientId,
         prescriptions: { not: Prisma.JsonNull },
         createdAt: {
-          gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Last 90 days
+          gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
         },
       },
       orderBy: { createdAt: "desc" },
@@ -217,7 +193,6 @@ export const getMedicationReminders = async (
       },
     });
 
-    // Extract active medications
     const activeMedications: any[] = [];
     recentConsultations.forEach((consultation) => {
       const prescriptions = consultation.prescriptions as any[];
@@ -249,19 +224,13 @@ export const getMedicationReminders = async (
   }
 };
 
-/**
- * Request appointment
- */
 export const requestAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const patientId = req.user!.patientId;
     const { preferredDate, reason, notes } = req.body;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
     const appointment = await prisma.appointment.create({
@@ -291,19 +260,13 @@ export const requestAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * View medical records
- */
 export const getMyMedicalRecords = async (req: AuthRequest, res: Response) => {
   try {
     const patientId = req.user!.patientId;
     const { type, limit = 20, page = 1 } = req.query;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
     let records: any = {};
@@ -362,9 +325,6 @@ export const getMyMedicalRecords = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get health education content based on patient's conditions
- */
 export const getPersonalizedHealthTips = async (
   req: AuthRequest,
   res: Response
@@ -373,10 +333,7 @@ export const getPersonalizedHealthTips = async (
     const patientId = req.user!.patientId;
 
     if (!patientId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Access denied",
-      });
+      return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
     const patient = await prisma.patient.findUnique({
