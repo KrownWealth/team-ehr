@@ -31,7 +31,6 @@ export default function PrescriptionsPage() {
       </div>
 
       <TableList
-        title="All Prescriptions"
         querykey="prescriptions"
         endpoint="/prescription"
         columns={prescriptionColumns}
