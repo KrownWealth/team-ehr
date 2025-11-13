@@ -78,10 +78,7 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-          {/* Slow filesystem detected. The benchmark took 804ms. If
-          C:\Users\USER\healthcare-app\team-ehr\frontend\.next is a network
-          drive, consider moving it to a local folder. If you have an antivirus
-          enabled, consider excluding your project directory. */}
+
           {/* Contact */}
           <div>
             <h3 className="font-semibold text-gray-800 mb-3">Contact</h3>
