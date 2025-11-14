@@ -67,18 +67,16 @@ export const Carousel = React.forwardRef<HTMLDivElement, CarouselProps>(
 
 Carousel.displayName = "Carousel"
 
+/* CONTENT WRAPPER */
 export const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex", className)}
-    {...props}
-  />
+  <div ref={ref} className={cn("flex", className)} {...props} />
 ))
 CarouselContent.displayName = "CarouselContent"
 
+/* SLIDE ITEM */
 export const CarouselItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -93,10 +91,46 @@ export const CarouselItem = React.forwardRef<
 ))
 CarouselItem.displayName = "CarouselItem"
 
-export const CarouselPrevious = () => {
-  return <button className="absolute left-2 top-1/2 -translate-y-1/2">Prev</button>
-}
+/* BUTTON PROPS TYPE */
+export interface CarouselButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> { }
 
-export const CarouselNext = () => {
-  return <button className="absolute right-2 top-1/2 -translate-y-1/2">Next</button>
-}
+/* PREVIOUS BUTTON */
+export const CarouselPrevious = React.forwardRef<
+  HTMLButtonElement,
+  CarouselButtonProps
+>(({ className, ...props }, ref) => {
+  return (
+    <button
+      ref={ref}
+      className={cn(
+        "absolute left-2 top-1/2 -translate-y-1/2",
+        className
+      )}
+      {...props}
+    >
+      Prev
+    </button>
+  )
+})
+CarouselPrevious.displayName = "CarouselPrevious"
+
+/* NEXT BUTTON */
+export const CarouselNext = React.forwardRef<
+  HTMLButtonElement,
+  CarouselButtonProps
+>(({ className, ...props }, ref) => {
+  return (
+    <button
+      ref={ref}
+      className={cn(
+        "absolute right-2 top-1/2 -translate-y-1/2",
+        className
+      )}
+      {...props}
+    >
+      Next
+    </button>
+  )
+})
+CarouselNext.displayName = "CarouselNext"
