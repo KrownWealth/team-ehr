@@ -45,7 +45,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background antialiased",
+          "min-h-screen bg-linear-to-br from-white via-green-50 to-green-100 antialiased",
           inter.className,
           manrope.variable
         )}
@@ -55,6 +55,7 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem={false}
           disableTransitionOnChange
+          forcedTheme="light"
         >
           <ReactQueryProvider>
             <NextTopLoader
@@ -63,7 +64,9 @@ export default function RootLayout({
               easing="ease"
               height={3}
             />
-            {children}
+            <main className="min-h-screen bg-linear-to-br from-white via-green-50 to-green-100 dark:from-gray-900 dark:via-gray-800 dark:to-black">
+              {children}
+            </main>
           </ReactQueryProvider>
 
           <Toaster
