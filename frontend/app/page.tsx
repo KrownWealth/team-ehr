@@ -5,12 +5,11 @@ import { Button, Link } from "@heroui/react";
 import { User } from "@heroui/react";
 import {
   Carousel,
-  CarouselContent,
   CarouselItem,
+  CarouselContent,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
-
+} from "@/components/ui/carousels";
 import {
   Calendar,
   MoveRight,
@@ -21,7 +20,7 @@ import {
 } from "lucide-react";
 
 import Footer from "@/components/reusables/footer/Footer";
-import { GeneralSans_Regular } from "@/lib";
+import AppNavbar from "@/components/reusables/customUI/header";
 
 export default function LandingPage() {
   const features = [
@@ -106,16 +105,15 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col">
+      <AppNavbar />
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center mt-10 gap-4 py-8 px-6 md:py-16 text-foreground">
         <div className="inline-block max-w-4xl text-center justify-center">
-          <h1
-            className={`${GeneralSans_Regular.className} "xl:text-6xl text-5xl md:text-nowrap text-wrap mt-7 font-bold font-inter text-center"`}
-          >
+          <h1 className="xl:text-6xl text-5xl md:text-nowrap text-wrap mt-7 font-extrabold text-center">
             Manage Your Clinic
-            <span className="text-primary-600">&nbsp;Digitally</span>
+            <span className="text-[#3d7e46]">&nbsp;Digitally</span>
           </h1>
-          <p className="md:text-2xl text-xl font-semibold text-gray-100 mt-6">
+          <p className="md:text-2xl text-xl font-semibold text-stone-700 mt-6">
             A comprehensive healthcare management platform designed for modern
             hospitals and clinics. Streamline operations, improve patient care,
             and boost efficiency.
@@ -126,6 +124,7 @@ export default function LandingPage() {
               as={Link}
               className="flex items-center justify-center font-semibold text-white md:text-xl text-lg py-6"
               color="primary"
+              href="/auth/register"
               variant="shadow"
             >
               Start free trial <MoveRight />
@@ -133,9 +132,10 @@ export default function LandingPage() {
 
             <Button
               as={Link}
-              className="flex items-center justify-center font-semibold text-white md:text-xl text-lg py-6"
+              href="/auth/login"
+              className="border-green-700 text-green-700 hover:bg-green-50 font-semibold md:text-xl text-lg py-6"
               color="default"
-              variant="shadow"
+              variant="bordered"
             >
               Watch Demo
             </Button>
@@ -149,7 +149,7 @@ export default function LandingPage() {
           <h2 className="md:text-5xl text-4xl mt-7 font-bold">
             Powerful Features
           </h2>
-          <p className="sm:text-xl text-lg font-semibold text-gray-100 mt-6">
+          <p className="sm:text-xl text-lg font-semibold text-stone-700 mt-6">
             Everything you need to run your healthcare facility efficiently
           </p>
 
@@ -164,7 +164,7 @@ export default function LandingPage() {
                   <div className="flex flex-col">
                     <Icon
                       size={70}
-                      className="text-primary-400 font-extrabold mb-4"
+                      className="text-[#0d5117] font-extrabold mb-4"
                     />
                     <span className="font-bold text-xl text-zinc-800">
                       {feature.title}
@@ -184,7 +184,7 @@ export default function LandingPage() {
           <h2 className="md:text-5xl text-4xl mt-7 font-bold">
             Why Choose HealthCare+
           </h2>
-          <div className="grid md:grid-cols-3 grid-cols-2 md:grid-rows-2 grid-rows-3 py-5 mt-9 gap-y-5 md:gap-x-10 gap-x-4">
+          <div className="grid md:grid-cols-3 grid-cols-2 md:grid-rows-2 grid-rows-3 py-5 mt-9 gap-y-5 font-semibold text-stone-700 md:gap-x-10 gap-x-4">
             <div className="flex space-x-3.5 text-left">
               <CheckCircle size={30} className="text-emerald-600" />{" "}
               <span>HIPAA Compliant & Secure</span>
@@ -219,12 +219,13 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="flex flex-col items-center justify-center gap-4 py-8 px-6 md:py-10 overflow-hidden text-foreground">
+      <section className="flex flex-col items-center justify-center gap-4 py-8 px-6 md:py-10 text-foreground">
         <div className="text-center">
           <h2 className="md:text-5xl text-4xl mt-7 font-bold">
             What Our Users Say
           </h2>
         </div>
+
         <div className="flex items-center justify-center w-full mt-8 py-6">
           <Carousel className="max-w-md md:max-w-3xl w-full">
             <CarouselContent>
@@ -263,9 +264,9 @@ export default function LandingPage() {
 
       {/* CTA */}
 
-      <section className="flex flex-col items-center justify-center gap-4 py-8 px-6 md:py-10 text-foreground bg-blue-600">
+      <section className="flex flex-col items-center justify-center gap-4 py-8 px-6 md:py-10 text-foreground bg-[#0d5117]">
         <div className="text-center py-7">
-          <h2 className="capitalize md:text-5xl text-4xl mt-7 font-bold">
+          <h2 className="capitalize md:text-5xl text-4xl mt-7 font-bold text-white">
             ready to get started?
           </h2>
           <p className="sm:text-xl text-lg font-semibold text-gray-100 mt-6">
@@ -276,8 +277,8 @@ export default function LandingPage() {
           <div className="mx-auto pt-7 sm:w-[30%] w-[40%]">
             <Button
               as={Link}
-              href="/signup"
-              className="flex items-center justify-center bg-white font-semibold text-primary-200 md:text-xl text-lg py-6"
+              href="/auth/register"
+              className="flex items-center justify-center bg-white font-semibold text-[#0d5117] md:text-xl text-lg py-6"
               variant="shadow"
               radius="md"
             >
