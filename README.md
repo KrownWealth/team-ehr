@@ -3,6 +3,7 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ installed
 - GCP account with $300 credits activated
 - PostgreSQL database (Cloud SQL or local)
@@ -11,6 +12,7 @@
 ### Environment Setup
 
 1. **Clone and Install**
+
 ```bash
 git clone <repository-url>
 cd wecareehr/backend
@@ -20,6 +22,7 @@ npm install
 2. **Configure Environment Variables**
 
 Create `.env` file:
+
 ```env
 # Server
 NODE_ENV=development
@@ -127,6 +130,7 @@ bq mk --table YOUR_PROJECT_ID:wecareehr_analytics.vitals_trends \
 ## 📦 Local Development
 
 ### Run Development Server
+
 ```bash
 npm run dev
 ```
@@ -134,6 +138,7 @@ npm run dev
 Server runs on `http://localhost:8080`
 
 ### Run Tests
+
 ```bash
 # Unit tests
 npm run test
@@ -146,6 +151,7 @@ npm run test:e2e
 ```
 
 ### Database Management
+
 ```bash
 # Create migration
 npx prisma migrate dev --name add_new_field
@@ -164,6 +170,7 @@ npx prisma migrate reset
 ### 1. Build Docker Image
 
 Create `Dockerfile`:
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -185,6 +192,7 @@ CMD ["npm", "start"]
 ```
 
 Create `.dockerignore`:
+
 ```
 node_modules
 npm-debug.log
@@ -244,6 +252,7 @@ gcloud run services update wecareehr-backend \
 ## 🔧 Cost Optimization
 
 ### Budget Alerts
+
 ```bash
 # Set billing alert at $50
 gcloud alpha billing budgets create \
@@ -256,12 +265,14 @@ gcloud alpha billing budgets create \
 ```
 
 ### Resource Limits
+
 - Cloud Run: max 10 instances, scale to zero enabled
 - Cloud SQL: db-f1-micro (smallest instance)
 - Storage: Lifecycle rules to delete old files after 90 days
 - Firestore: Limit document reads with pagination
 
 ### Monitoring
+
 ```bash
 # Enable Cloud Monitoring
 gcloud services enable monitoring.googleapis.com
@@ -289,6 +300,7 @@ gcloud monitoring uptime-checks create https://YOUR_CLOUD_RUN_URL/health \
 ## 📊 Monitoring & Logging
 
 ### View Logs
+
 ```bash
 # Cloud Run logs
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=wecareehr-backend" --limit 50
@@ -298,6 +310,7 @@ gcloud logging read "resource.type=cloud_run_revision AND severity=ERROR" --limi
 ```
 
 ### Metrics to Monitor
+
 - Request count per minute
 - Error rate (5xx responses)
 - Response latency (p50, p95, p99)
@@ -311,6 +324,7 @@ gcloud logging read "resource.type=cloud_run_revision AND severity=ERROR" --limi
 ## 🆘 Troubleshooting
 
 ### Issue: Database Connection Fails
+
 ```bash
 # Test Cloud SQL connection
 gcloud sql connect wecareehr-db --user=wecareehr-user
@@ -320,17 +334,20 @@ gcloud projects get-iam-policy YOUR_PROJECT_ID
 ```
 
 ### Issue: Cloud Run Out of Memory
+
 ```bash
 # Increase memory allocation
 gcloud run services update wecareehr-backend --memory 1Gi
 ```
 
 ### Issue: Too Many Firestore Reads
+
 - Enable client-side caching
 - Implement pagination on list endpoints
 - Use Cloud Functions for background tasks instead of polling
 
 ### Issue: High Costs
+
 ```bash
 # Check current spending
 gcloud billing accounts list
@@ -345,16 +362,19 @@ gcloud logging read "protoPayload.serviceName:*" --format=json | jq '.[] | selec
 ## 📝 Post-Deployment Tasks
 
 1. **Test All Critical Endpoints**
+
    - Run integration test suite against production
    - Verify sync endpoint works offline → online
    - Test multi-tenancy isolation
 
 2. **Set Up Monitoring Alerts**
+
    - Error rate > 5%
    - Response latency > 2s
    - Daily cost > $5
 
 3. **Create Backup Schedule**
+
    ```bash
    # Automated Cloud SQL backups
    gcloud sql instances patch wecareehr-db \
@@ -372,6 +392,7 @@ gcloud logging read "protoPayload.serviceName:*" --format=json | jq '.[] | selec
 ## 🎯 Success Criteria
 
 Your deployment is successful when:
+
 - ✅ Health check returns 200 OK
 - ✅ User can register → verify → login
 - ✅ Clinic can be onboarded
@@ -386,9 +407,12 @@ Your deployment is successful when:
 ## 📞 Support
 
 For deployment issues:
+
 1. Check Cloud Run logs: `gcloud logging read`
 2. Verify environment variables are set
 3. Test database connectivity
 4. Review GCP IAM permissions
 
-**Remember**: The system must work offline-first. Test disconnecting network during critical workflows!
+# **Remember**: The system must work offline-first. Test disconnecting network during critical workflows!
+
+---
