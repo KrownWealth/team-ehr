@@ -14,12 +14,12 @@ import { ColumnToggle } from "./ColumnToggle";
 import { DataTable } from "@/components/custom/table/DataTable";
 import { useColumnVisibility } from "@/lib/hooks/useColumnVisibility";
 import { ReactNode, useState } from "react";
-import { Meta, ResponseSuccess } from "@/types";
+import { PaginationMeta, ApiResponse } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiQuery } from "@/lib/hooks/use-api";
 
 type ApiStatsType<TData> =
-  | { data: TData[]; meta: Meta; exportButtonLabel: string }
+  | { data: TData[]; meta: PaginationMeta; exportButtonLabel: string }
   | TData[];
 
 function TableList<TData, TValue>({
@@ -74,7 +74,7 @@ function TableList<TData, TValue>({
     error,
     isLoading,
     refetch,
-  } = useApiQuery<ResponseSuccess<ApiStatsType<TData>>>(queryKeys, queryUrl);
+  } = useApiQuery<ApiResponse<ApiStatsType<TData>>>(queryKeys, queryUrl);
 
   const [columnVisibility, setColumnVisibility] = useColumnVisibility(querykey);
 
@@ -82,18 +82,12 @@ function TableList<TData, TValue>({
     ? res.data
     : res?.data?.data || [];
 
-  const meta: Meta | undefined = Array.isArray(res?.data)
+  const meta: PaginationMeta | undefined = Array.isArray(res?.data)
     ? {
-        size: normalizedData.length,
+        page: page,
         limit: normalizedData.length,
-        hasNext: false,
-        hasPrev: false,
-        totalPages: 1,
-        currentPage: 1,
-        offset: 0,
-        totalItems: normalizedData.length,
-        nextPage: null,
-        previousPage: null,
+        total: normalizedData.length,
+        pages: 1,
       }
     : res?.data?.meta;
 
@@ -105,7 +99,7 @@ function TableList<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
-    pageCount: meta?.totalPages || 1,
+    pageCount: meta?.total || 1,
   });
 
   const handleHardReload = () => {
@@ -138,7 +132,7 @@ function TableList<TData, TValue>({
               res.data.exportButtonLabel && (
                 <ExportDialogButton
                   label={res.data.exportButtonLabel}
-                  endpoint={`${endpoint}/export`}
+                  endpoint={`/v1/${endpoint}/export`}
                 />
               )} */}
             {extraUi?.component}
@@ -162,16 +156,10 @@ function TableList<TData, TValue>({
         table={table}
         meta={
           meta || {
-            size: limit,
+            page: page,
             limit: limit,
-            hasNext: false,
-            hasPrev: false,
-            totalPages: 1,
-            currentPage: page,
-            offset: 0,
-            totalItems: limit,
-            nextPage: null,
-            previousPage: null,
+            total: limit,
+            pages: 1,
           }
         }
         isLoading={isLoading}

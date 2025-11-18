@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess } from "@/types";
+import { ApiResponse, DashboardStats } from "@/types";
 import { UserPlus, Users, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -12,10 +12,10 @@ import { CardSkeleton } from "@/components/shared/loading/CardSkeleton";
 export default function ClerkDashboard() {
   const { user } = useAuth();
 
-  const { data: stats, isLoading } = useQuery<ResponseSuccess<any>>({
+  const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["clerk-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/admin/dashboard/stats");
       return response.data;
     },
   });
@@ -24,15 +24,9 @@ export default function ClerkDashboard() {
 
   const statCards = [
     {
-      title: "Today's Check-ins",
-      value: statsData?.todayCheckIns || 0,
+      title: "Today's Appointments",
+      value: statsData?.todayAppointments || 0,
       icon: CheckCircle,
-      href: `/clinic/${user?.clinicId}/queue`,
-    },
-    {
-      title: "Queue Length",
-      value: statsData?.queueLength || 0,
-      icon: Clock,
       href: `/clinic/${user?.clinicId}/queue`,
     },
     {
@@ -41,11 +35,16 @@ export default function ClerkDashboard() {
       icon: Users,
       href: `/clinic/${user?.clinicId}/patients`,
     },
+    {
+      title: "Staff Members",
+      value: statsData?.totalStaff || 0,
+      icon: Users,
+      href: `/clinic/${user?.clinicId}/staff`,
+    },
   ];
 
   return (
     <div className="space-y-7">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Front Desk</h1>
@@ -62,7 +61,6 @@ export default function ClerkDashboard() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
@@ -90,7 +88,6 @@ export default function ClerkDashboard() {
             })}
       </div>
 
-      {/* Quick Actions */}
       <Card className="w-fit">
         <CardHeader>
           <CardTitle className="text-xl">Quick Actions</CardTitle>

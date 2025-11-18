@@ -2,7 +2,13 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
@@ -13,7 +19,10 @@ interface MedicalInfoStepProps {
   onChange: (data: any) => void;
 }
 
-export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps) {
+export default function MedicalInfoStep({
+  data,
+  onChange,
+}: MedicalInfoStepProps) {
   const [allergyInput, setAllergyInput] = useState("");
   const [conditionInput, setConditionInput] = useState("");
 
@@ -36,23 +45,30 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
 
   const addCondition = () => {
     if (conditionInput.trim()) {
-      const conditions = [...(data.chronicConditions || []), conditionInput.trim()];
+      const conditions = [
+        ...(data.chronicConditions || []),
+        conditionInput.trim(),
+      ];
       handleChange("chronicConditions", conditions);
       setConditionInput("");
     }
   };
 
   const removeCondition = (index: number) => {
-    const conditions = data.chronicConditions.filter((_: any, i: number) => i !== index);
+    const conditions = data.chronicConditions.filter(
+      (_: any, i: number) => i !== index
+    );
     handleChange("chronicConditions", conditions);
   };
 
   return (
     <div className="space-y-6">
-      {/* Blood Group */}
       <div className="space-y-2">
         <Label htmlFor="bloodGroup">Blood Group</Label>
-        <Select value={data.bloodGroup} onValueChange={(val) => handleChange("bloodGroup", val)}>
+        <Select
+          value={data.bloodGroup}
+          onValueChange={(val) => handleChange("bloodGroup", val)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select blood group" />
           </SelectTrigger>
@@ -69,7 +85,6 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
         </Select>
       </div>
 
-      {/* Allergies */}
       <div className="space-y-2">
         <Label>Known Allergies</Label>
         <div className="flex gap-2">
@@ -77,7 +92,9 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
             placeholder="Enter allergy (e.g., Penicillin)"
             value={allergyInput}
             onChange={(e) => setAllergyInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addAllergy())}
+            onKeyPress={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addAllergy())
+            }
           />
           <Button type="button" onClick={addAllergy}>
             Add
@@ -86,7 +103,11 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
         {data.allergies && data.allergies.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {data.allergies.map((allergy: string, index: number) => (
-              <Badge key={index} variant="destructive" className="flex items-center gap-1">
+              <Badge
+                key={index}
+                variant="destructive"
+                className="flex items-center gap-1"
+              >
                 {allergy}
                 <X
                   className="h-3 w-3 cursor-pointer"
@@ -98,7 +119,6 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
         )}
       </div>
 
-      {/* Chronic Conditions */}
       <div className="space-y-2">
         <Label>Chronic Conditions</Label>
         <div className="flex gap-2">
@@ -106,7 +126,9 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
             placeholder="Enter condition (e.g., Hypertension)"
             value={conditionInput}
             onChange={(e) => setConditionInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCondition())}
+            onKeyPress={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addCondition())
+            }
           />
           <Button type="button" onClick={addCondition}>
             Add
@@ -115,7 +137,11 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
         {data.chronicConditions && data.chronicConditions.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {data.chronicConditions.map((condition: string, index: number) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
+              <Badge
+                key={index}
+                variant="secondary"
+                className="flex items-center gap-1"
+              >
                 {condition}
                 <X
                   className="h-3 w-3 cursor-pointer"
@@ -129,8 +155,9 @@ export default function MedicalInfoStep({ data, onChange }: MedicalInfoStepProps
 
       <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
         <p className="text-sm text-yellow-800">
-          <strong>Note:</strong> Allergy and chronic condition information is critical for safe treatment. 
-          Please ensure all known allergies and conditions are recorded.
+          <strong>Note:</strong> Allergy and chronic condition information is
+          critical for safe treatment. Please ensure all known allergies and
+          conditions are recorded.
         </p>
       </div>
     </div>

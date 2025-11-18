@@ -3,8 +3,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Patient } from "@/types";
-import { calculateAge, formatDate, formatPhoneNumber } from "@/lib/utils/formatters";
-import { User, Phone, Mail, MapPin, Heart, Activity, Calendar } from "lucide-react";
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Heart,
+  Activity,
+  Calendar,
+} from "lucide-react";
+import {
+  calculateAge,
+  formatDate,
+  formatPhoneNumber,
+} from "@/lib/utils/formatters";
 
 interface PatientOverviewProps {
   patient: Patient;
@@ -15,7 +27,6 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      {/* Personal Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -28,12 +39,12 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
             <div>
               <p className="text-sm text-gray-600">Full Name</p>
               <p className="font-medium">
-                {patient.firstName} {patient.otherNames} {patient.lastName}
+                {patient.firstName} {patient.lastName}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Patient ID</p>
-              <p className="font-mono font-medium">{patient.upi}</p>
+              <p className="font-mono font-medium">{patient.patientNumber}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Gender</p>
@@ -57,7 +68,6 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
         </CardContent>
       </Card>
 
-      {/* Contact Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -71,7 +81,9 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
               <Phone className="h-4 w-4 text-gray-500" />
               <div>
                 <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-medium">{formatPhoneNumber(patient.phone)}</p>
+                <p className="font-medium">
+                  {formatPhoneNumber(patient.phone)}
+                </p>
               </div>
             </div>
 
@@ -85,24 +97,17 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
               </div>
             )}
 
-            {patient.addressLine && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600">Address</p>
-                  <p className="font-medium">
-                    {patient.addressLine}
-                    {patient.city && `, ${patient.city}`}
-                    {patient.state && `, ${patient.state}`}
-                  </p>
-                </div>
+            <div className="flex items-start gap-3">
+              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600">Address</p>
+                <p className="font-medium">{patient.address}</p>
               </div>
-            )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Medical Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -128,7 +133,8 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
 
           <div>
             <p className="text-sm text-gray-600 mb-2">Chronic Conditions</p>
-            {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
+            {patient.chronicConditions &&
+            patient.chronicConditions.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {patient.chronicConditions.map((condition, index) => (
                   <Badge key={index} variant="secondary">
@@ -143,7 +149,6 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
         </CardContent>
       </Card>
 
-      {/* Emergency Contact */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -152,30 +157,10 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {patient.emergencyContact ? (
-            <>
-              <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="font-medium">{patient.emergencyContact}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-medium">
-                  {patient.emergencyPhone ? formatPhoneNumber(patient.emergencyPhone) : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Relationship</p>
-                <p className="font-medium">{patient.emergencyRelation || "N/A"}</p>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-gray-500">No emergency contact on file</p>
-          )}
+          <p className="text-sm text-gray-500">Not recorded</p>
         </CardContent>
       </Card>
 
-      {/* Registration Info */}
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -187,20 +172,14 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-600">Registration Date</p>
-              <p className="font-medium">{formatDate(patient.registrationDate)}</p>
+              <p className="font-medium">{formatDate(patient.createdAt)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
-              <Badge variant={patient.status === "active" ? "default" : "secondary"}>
-                {patient.status}
+              <Badge variant={patient.isActive ? "default" : "secondary"}>
+                {patient.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
-            {patient.nationalId && (
-              <div>
-                <p className="text-sm text-gray-600">National ID</p>
-                <p className="font-mono font-medium">{patient.nationalId}</p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

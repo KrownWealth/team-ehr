@@ -166,7 +166,7 @@
 	}
 
 	.btn {
-		@apply flex items-center rounded-sm px-5 py-2 cursor-pointer gap-1;
+		@apply flex items-center rounded-sm px-5 py-2 cursor-pointer gap-1 justify-center;
 	}
 
 	.btn-outline {

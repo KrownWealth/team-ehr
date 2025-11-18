@@ -3,18 +3,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess, Vitals } from "@/types";
+import { ApiResponse, Vitals } from "@/types";
 import {
   formatDateTime,
-  formatBloodPressure,
   formatTemperature,
 } from "@/lib/utils/formatters";
 
 export default function PatientVitals({ patientId }: { patientId: string }) {
-  const { data, isLoading } = useQuery<ResponseSuccess<Vitals[]>>({
+  const { data, isLoading } = useQuery<ApiResponse<Vitals[]>>({
     queryKey: ["vitals", patientId],
     queryFn: async () => {
-      const response = await apiClient.get(`/vitals/patient/${patientId}`);
+      const response = await apiClient.get(`/v1/vitals/patient/${patientId}`);
       return response.data;
     },
   });
@@ -42,18 +41,15 @@ export default function PatientVitals({ patientId }: { patientId: string }) {
           <CardContent className="pt-6">
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm text-gray-600">
-                {formatDateTime(vital.recordedAt)}
+                {formatDateTime(vital.createdAt)}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {vital.bloodPressureSystolic && vital.bloodPressureDiastolic && (
+              {vital.bloodPressure && (
                 <div>
                   <p className="text-xs text-gray-600">Blood Pressure</p>
                   <p className="font-semibold">
-                    {formatBloodPressure(
-                      vital.bloodPressureSystolic,
-                      vital.bloodPressureDiastolic
-                    )}
+                    {vital.bloodPressure}
                   </p>
                 </div>
               )}
@@ -83,10 +79,10 @@ export default function PatientVitals({ patientId }: { patientId: string }) {
                   <p className="font-semibold">{vital.bmi}</p>
                 </div>
               )}
-              {vital.oxygenSaturation && (
+              {vital.spo2 && (
                 <div>
                   <p className="text-xs text-gray-600">SpO₂</p>
-                  <p className="font-semibold">{vital.oxygenSaturation}%</p>
+                  <p className="font-semibold">{vital.spo2}%</p>
                 </div>
               )}
             </div>

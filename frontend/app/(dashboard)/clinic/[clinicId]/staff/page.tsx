@@ -27,7 +27,7 @@ export default function StaffPage() {
 
       <TableList
         querykey="staff"
-        endpoint="/staff"
+        endpoint="/v1/staff"
         columns={staffColumns}
       />
 

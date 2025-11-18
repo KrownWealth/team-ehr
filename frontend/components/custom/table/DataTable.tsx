@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/helper";
-import { Meta } from "@/types";
+import { PaginationMeta } from "@/types";
 import CustomPagination from "./Pagination";
 
 interface DataTableProps<TData> {
   table: ReactTable<TData>;
-  meta: Meta;
+  meta: PaginationMeta;
   isLoading?: boolean;
   error?: Error | null;
   onPageChange: (page: number) => void;
@@ -41,6 +41,10 @@ export function DataTable<TData>({
   onLimitChange,
 }: DataTableProps<TData>) {
   const columns = table.getVisibleLeafColumns();
+  
+  // Helper to determine if the current page has a previous or next page
+  const hasPrev = meta.page > 1;
+  const hasNext = meta.page < meta.pages;
 
   return (
     <div className="w-full">
@@ -146,7 +150,7 @@ export function DataTable<TData>({
         <p className="text-sm">
           Total:{" "}
           <span className="font-semibold">
-            {meta.totalItems.toLocaleString()}
+            {meta.total}
           </span>{" "}
           records
         </p>
@@ -177,18 +181,19 @@ export function DataTable<TData>({
               variant="outline"
               size="sm"
               className="border-none bg-transparent text-black shadow-none"
-              onClick={() => meta.hasPrev && onPageChange(meta.currentPage - 1)}
-              disabled={!meta.hasPrev}
+              onClick={() => hasPrev && onPageChange(meta.page - 1)}
+              disabled={!hasPrev}
             >
               Previous
             </Button>
+            {/* CustomPagination component should handle its own logic using the meta object */}
             <CustomPagination meta={meta} onPageChange={onPageChange} />
             <Button
               className="border-none bg-transparent text-black shadow-none"
               variant="outline"
               size="sm"
-              onClick={() => meta.hasNext && onPageChange(meta.currentPage + 1)}
-              disabled={!meta.hasNext}
+              onClick={() => hasNext && onPageChange(meta.page + 1)}
+              disabled={!hasNext}
             >
               Next
             </Button>

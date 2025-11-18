@@ -68,12 +68,13 @@ const prescriptionColumns: ColumnDef<Prescription>[] = [
     accessorKey: "patient",
     cell: ({ row }) => {
       const patient = row.original.patient;
+      if (!patient) return <p className="text-gray-500">N/A</p>;
       return (
         <div>
           <p className="font-medium text-gray-900">
             {patient.firstName} {patient.lastName}
           </p>
-          <p className="text-xs text-gray-500">{patient.upi}</p>
+          <p className="text-xs text-gray-500">{patient.patientNumber}</p>
         </div>
       );
     },
@@ -84,6 +85,7 @@ const prescriptionColumns: ColumnDef<Prescription>[] = [
     accessorKey: "doctor",
     cell: ({ row }) => {
       const doctor = row.original.doctor;
+      if (!doctor) return <p className="text-gray-500">N/A</p>;
       return (
         <p className="text-sm">
           Dr. {doctor.firstName} {doctor.lastName}
@@ -92,16 +94,16 @@ const prescriptionColumns: ColumnDef<Prescription>[] = [
     },
   },
   {
-    id: "medications",
+    id: "prescriptions",
     header: "Medications",
-    accessorKey: "medications",
+    accessorKey: "prescriptions",
     cell: ({ row }) => {
-      const meds = row.original.medications;
+      const meds = row.original.prescriptions;
       return (
         <div className="space-y-1">
           {meds.slice(0, 2).map((med, i) => (
             <p key={i} className="text-sm text-gray-700">
-              • {med.drugName} {med.strength}
+              • {med.drug} ({med.dosage})
             </p>
           ))}
           {meds.length > 2 && (
@@ -112,31 +114,12 @@ const prescriptionColumns: ColumnDef<Prescription>[] = [
     },
   },
   {
-    id: "prescribedDate",
+    id: "createdAt",
     header: "Date Prescribed",
-    accessorKey: "prescribedDate",
+    accessorKey: "createdAt",
     cell: ({ row }) => (
-      <span className="text-sm">
-        {formatDateTime(row.original.prescribedDate)}
-      </span>
+      <span className="text-sm">{formatDateTime(row.original.createdAt)}</span>
     ),
-  },
-  {
-    id: "status",
-    header: "Status",
-    accessorKey: "status",
-    cell: ({ row }) => {
-      const colors: Record<string, string> = {
-        Active: "bg-green-100 text-green-700",
-        Completed: "bg-gray-100 text-gray-700",
-        Cancelled: "bg-red-100 text-red-700",
-      };
-      return (
-        <Badge className={colors[row.original.status]}>
-          {row.original.status}
-        </Badge>
-      );
-    },
   },
   {
     id: "actions",

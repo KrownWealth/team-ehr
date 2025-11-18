@@ -9,6 +9,7 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   DOCTOR: 90,
   NURSE: 80,
   CLERK: 60,
+  CASHIER: 40,
   PATIENT: 10,
 };
 

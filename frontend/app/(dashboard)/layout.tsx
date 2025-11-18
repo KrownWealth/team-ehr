@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
 import { canAccessRoute } from "@/lib/constants/routes";
-import { toast } from "sonner";
 import Image from "next/image";
+import { OnboardingStatus } from "@/types";
 
 export default function DashboardLayout({
   children,
@@ -25,10 +25,22 @@ export default function DashboardLayout({
       return;
     }
 
-    console.log("user", user);
-
     if (!user?.role) {
       logout();
+      return;
+    }
+
+    const isPendingOnboarding =
+      user.onboardingStatus === OnboardingStatus.PENDING;
+    const isOnboardingPage = pathname === "/onboarding";
+
+    if (isPendingOnboarding && !isOnboardingPage) {
+      router.push("/onboarding");
+      return;
+    }
+
+    if (isPendingOnboarding && isOnboardingPage) {
+      setIsLoading(false);
       return;
     }
 
@@ -38,7 +50,7 @@ export default function DashboardLayout({
     }
 
     setIsLoading(false);
-  }, [isAuthenticated, user, pathname, router]);
+  }, [isAuthenticated, user, pathname, router, logout]);
 
   if (isLoading || !isAuthenticated) {
     return (

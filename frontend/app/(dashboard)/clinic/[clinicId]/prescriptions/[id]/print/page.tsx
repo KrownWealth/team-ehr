@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess, Prescription, Clinic } from "@/types";
+import { ApiResponse, Prescription, Clinic } from "@/types";
 import { useParams } from "next/navigation";
 import { formatDate, calculateAge } from "@/lib/utils/formatters";
 import { Printer } from "lucide-react";
@@ -12,21 +12,22 @@ import { Button } from "@/components/ui/button";
 export default function PrintPrescriptionPage() {
   const params = useParams();
   const prescriptionId = params.id as string;
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  // Fetch prescription
-  const { data: prescriptionData } = useQuery<ResponseSuccess<Prescription>>({
+  const { data: prescriptionData } = useQuery<ApiResponse<Prescription>>({
     queryKey: ["prescription", prescriptionId],
     queryFn: async () => {
-      const response = await apiClient.get(`/prescription/${prescriptionId}`);
+      const response = await apiClient.get(
+        `/v1/prescription/${prescriptionId}`
+      );
       return response.data;
     },
   });
 
-  // Fetch clinic data
-  const { data: clinicData } = useQuery<ResponseSuccess<Clinic>>({
+  const { data: clinicData } = useQuery<ApiResponse<Clinic>>({
     queryKey: ["clinic"],
     queryFn: async () => {
-      const response = await apiClient.get("/clinic/profile");
+      const response = await apiClient.get("/v1/clinic/profile");
       return response.data;
     },
   });
@@ -34,13 +35,14 @@ export default function PrintPrescriptionPage() {
   const prescription = prescriptionData?.data;
   const clinic = clinicData?.data;
 
-  // Auto-print on load
   useEffect(() => {
-    if (prescription && clinic) {
-      // Small delay to ensure rendering is complete
-      setTimeout(() => {
+    if (prescription && clinic && !isPrinting) {
+      const timer = setTimeout(() => {
+        setIsPrinting(true);
         window.print();
+        setIsPrinting(false);
       }, 500);
+      return () => clearTimeout(timer);
     }
   }, [prescription, clinic]);
 
@@ -54,11 +56,19 @@ export default function PrintPrescriptionPage() {
 
   const patient = prescription.patient;
   const doctor = prescription.doctor;
+
+  if (!patient || !doctor) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Incomplete prescription data.</p>
+      </div>
+    );
+  }
+
   const age = calculateAge(patient.birthDate);
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Print Button (hidden when printing) */}
       <div className="print:hidden fixed top-4 right-4 z-50">
         <Button onClick={() => window.print()}>
           <Printer className="mr-2 h-4 w-4" />
@@ -66,19 +76,10 @@ export default function PrintPrescriptionPage() {
         </Button>
       </div>
 
-      {/* Printable Prescription */}
       <div className="max-w-3xl mx-auto p-8 space-y-6">
-        {/* Header */}
         <div className="border-b-2 border-gray-300 pb-6">
           <div className="flex justify-between items-start">
             <div>
-              {clinic.logoUrl && (
-                <img
-                  src={clinic.logoUrl}
-                  alt={clinic.name}
-                  className="h-16 mb-2"
-                />
-              )}
               <h1 className="text-2xl font-bold text-gray-900">
                 {clinic.name}
               </h1>
@@ -93,7 +94,7 @@ export default function PrintPrescriptionPage() {
             <div className="text-right">
               <p className="text-lg font-semibold">PRESCRIPTION</p>
               <p className="text-sm text-gray-600">
-                Date: {formatDate(prescription.prescribedDate)}
+                Date: {formatDate(prescription.createdAt)}
               </p>
               <p className="text-xs text-gray-500 font-mono">
                 Ref: {prescription.id.slice(0, 8).toUpperCase()}
@@ -102,7 +103,6 @@ export default function PrintPrescriptionPage() {
           </div>
         </div>
 
-        {/* Patient Information */}
         <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded">
           <div>
             <p className="text-xs text-gray-600 uppercase">Patient Name</p>
@@ -112,7 +112,7 @@ export default function PrintPrescriptionPage() {
           </div>
           <div>
             <p className="text-xs text-gray-600 uppercase">Patient ID</p>
-            <p className="font-semibold font-mono">{patient.upi}</p>
+            <p className="font-semibold font-mono">{patient.patientNumber}</p>
           </div>
           <div>
             <p className="text-xs text-gray-600 uppercase">Age / Gender</p>
@@ -126,7 +126,6 @@ export default function PrintPrescriptionPage() {
           </div>
         </div>
 
-        {/* Allergies Warning */}
         {patient.allergies && patient.allergies.length > 0 && (
           <div className="bg-red-50 border-2 border-red-300 p-3 rounded">
             <p className="text-sm font-bold text-red-900">⚠️ ALLERGIES:</p>
@@ -136,33 +135,27 @@ export default function PrintPrescriptionPage() {
           </div>
         )}
 
-        {/* Rx Symbol */}
         <div className="flex items-center gap-2 my-4">
           <span className="text-4xl font-serif">℞</span>
           <div className="flex-1 border-t-2 border-gray-300" />
         </div>
 
-        {/* Medications */}
         <div className="space-y-4">
-          {prescription.medications.map((med, index) => (
+          {prescription.prescriptions.map((med, index) => (
             <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
               <p className="font-bold text-lg">
-                {index + 1}. {med.drugName} {med.strength}
+                {index + 1}. {med.drug}
               </p>
               <div className="text-sm text-gray-700 space-y-1 mt-2">
                 <p>
-                  <span className="font-medium">Form:</span> {med.form}
+                  <span className="font-medium">Dosage:</span> {med.dosage}
                 </p>
                 <p>
-                  <span className="font-medium">Dosage:</span> {med.frequency} (
-                  {med.route})
+                  <span className="font-medium">Frequency:</span>{" "}
+                  {med.frequency}
                 </p>
                 <p>
-                  <span className="font-medium">Duration:</span> {med.duration}{" "}
-                  days
-                </p>
-                <p>
-                  <span className="font-medium">Quantity:</span> {med.quantity}
+                  <span className="font-medium">Duration:</span> {med.duration}
                 </p>
                 {med.instructions && (
                   <p>
@@ -175,7 +168,6 @@ export default function PrintPrescriptionPage() {
           ))}
         </div>
 
-        {/* Additional Notes */}
         {prescription.notes && (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
             <p className="text-sm font-semibold text-gray-900 mb-1">
@@ -185,7 +177,6 @@ export default function PrintPrescriptionPage() {
           </div>
         )}
 
-        {/* Doctor's Signature */}
         <div className="mt-12 pt-6 border-t-2 border-gray-300">
           <div className="flex justify-between items-end">
             <div>
@@ -193,15 +184,11 @@ export default function PrintPrescriptionPage() {
               <p className="text-lg font-bold">
                 Dr. {doctor.firstName} {doctor.lastName}
               </p>
-              {/* TODO: add these */}
-              {/* {doctor.specialization && (
-                <p className="text-sm text-gray-600">{doctor.specialization}</p>
-              )}
-              {doctor.licenseNumber && (
+              {doctor.licenseId && (
                 <p className="text-xs text-gray-500">
-                  License: {doctor.licenseNumber}
+                  License: {doctor.licenseId}
                 </p>
-              )} */}
+              )}
             </div>
             <div className="text-right">
               <div className="border-t-2 border-gray-400 w-48 pt-2">
@@ -211,7 +198,6 @@ export default function PrintPrescriptionPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t">
           <p>
             This is a computer-generated prescription and does not require a

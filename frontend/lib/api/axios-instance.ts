@@ -1,7 +1,7 @@
 import axios from "axios";
 import { toast } from "sonner";
 import { siteConfig } from "../siteConfig";
-import { getCookie, deleteCookie } from "cookies-next";
+import { getCookie, setCookie, deleteCookie } from "cookies-next";
 
 const apiClient = axios.create({
   baseURL: siteConfig.api.baseUrl,
@@ -11,22 +11,30 @@ const apiClient = axios.create({
   },
 });
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = getCookie("auth_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // const userDataStr = getCookie("user_data");
-    // if (userDataStr) {
-    //   try {
-    //     const userData = JSON.parse(userDataStr as string);
-    //     config.headers["x-clinic-id"] = userData.clinicId;
-    //   } catch (error) {
-    //     console.error("Failed to parse user data:", error);
-    //   }
-    // }
 
     return config;
   },
@@ -35,27 +43,98 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      deleteCookie("auth_token");
-      deleteCookie("user_data");
-      toast.error("Session expired. Please login again.");
+  async (error) => {
+    const originalRequest = error.config;
+    const isAuthPage =
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/auth");
 
-      if (typeof window !== "undefined") {
-        window.location.href = "/auth/login";
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthPage
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
-    } else if (error.response?.status === 403) {
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = getCookie("refresh_token");
+
+      if (!refreshToken) {
+        deleteCookie("auth_token");
+        deleteCookie("refresh_token");
+        deleteCookie("user_data");
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/login";
+        }
+        return Promise.reject(error);
+      }
+
+      try {
+        const response = await axios.post(
+          `${siteConfig.api.baseUrl}/v1/auth/refresh-token`,
+          {
+            refreshToken,
+          }
+        );
+
+        const newToken = response.data.data.token;
+
+        setCookie("auth_token", newToken, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+        });
+
+        if (typeof window !== "undefined" && (window as any).updateAuthToken) {
+          (window as any).updateAuthToken(newToken);
+        }
+
+        processQueue(null, newToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        deleteCookie("auth_token");
+        deleteCookie("refresh_token");
+        deleteCookie("user_data");
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/login";
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    if (error.response?.status === 403) {
       toast.error("Access denied");
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && !isAuthPage) {
         window.location.href = "/404";
       }
-    } else {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status !== 401 || isAuthPage) {
       const message =
         error.response?.data?.message ||
         error.message ||
         "Something went wrong";
       toast.error(message);
     }
+
     return Promise.reject(error);
   }
 );

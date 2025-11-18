@@ -53,8 +53,9 @@ export const registerAdmin = async (req: Request, res: Response) => {
         phone,
         password: hashedPassword,
         role: "ADMIN",
-        clinicId: "pending", // Temporary until clinic onboarding
+        clinicId: null,
         isVerified: false,
+        onboardingStatus: "PENDING",
       },
       select: {
         id: true,
@@ -259,6 +260,12 @@ export const login = async (req: Request, res: Response) => {
           role: user.role,
           clinicId: user.clinicId,
           mustChangePassword: user.mustChangePassword,
+          onboardingStatus: user.onboardingStatus,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          isActive: user.isActive,
+          phone: user.phone,
+          photoUrl: user.photoUrl
         },
       },
     });

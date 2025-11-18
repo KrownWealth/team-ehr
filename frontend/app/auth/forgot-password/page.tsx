@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, Check } from "lucide-react";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useAuth, useForgotPassword } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { forgotPassword, isLoading } = useAuth();
+  const { mutate: forgotPassword, isPending } = useForgotPassword();
 
   const emailForm = useForm({
     resolver: zodResolver(emailSchema),
@@ -163,8 +163,8 @@ export default function ForgotPasswordPage() {
             )}
           </div>
 
-          <Button type="submit" className="w-full h-12" disabled={isLoading}>
-            {isLoading ? "Sending..." : "Send Reset Code"}
+          <Button type="submit" className="w-full h-12" disabled={isPending}>
+            {isPending ? "Sending..." : "Send Reset Code"}
           </Button>
         </form>
       )}
@@ -281,8 +281,8 @@ export default function ForgotPasswordPage() {
             </ul>
           </div>
 
-          <Button type="submit" className="w-full h-12" disabled={isLoading}>
-            {isLoading ? "Resetting..." : "Reset Password"}
+          <Button type="submit" className="w-full h-12" disabled={isPending}>
+            {isPending ? "Resetting..." : "Reset Password"}
           </Button>
         </form>
       )}

@@ -1,13 +1,16 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Meta } from "@/types";
+import { PaginationMeta } from "@/types";
 
 interface CustomPaginationProps {
-  meta: Meta;
+  meta: PaginationMeta;
   onPageChange: (page: number) => void;
 }
 
 const CustomPagination = ({ meta, onPageChange }: CustomPaginationProps) => {
-  const { currentPage, totalPages } = meta;
+  // Use the correct field names from PaginationMeta
+  const { page: currentPage, pages: totalPages } = meta;
 
   if (totalPages < 7) {
     return (

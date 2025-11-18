@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useLogin } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,53 +26,68 @@ const countries = [
   { name: "UK", code: "+44" },
 ];
 
-const staffSchema = z.object({
-  email: z.email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-const patientSchema = z.object({
-  phone: z.string().min(4, "Phone number is required"),
-});
-
-type StaffFormData = z.infer<typeof staffSchema>;
-type PatientFormData = z.infer<typeof patientSchema>;
-
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState<"staff" | "patient">("staff");
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
-  const { login, isLoading } = useAuth();
   const router = useRouter();
 
-  const staffForm = useForm<StaffFormData>({
-    resolver: zodResolver(staffSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+  // Staff login state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-  const patientForm = useForm<PatientFormData>({
-    resolver: zodResolver(patientSchema),
-    defaultValues: {
-      phone: "",
-    },
-  });
+  // Patient login state
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
-  const handleStaffLogin = (data: StaffFormData) => {
-    login({
-      email: data.email,
-      password: data.password,
+  const loginMutation = useLogin();
+
+  const handleStaffLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Clear previous errors
+    setEmailError("");
+    setPasswordError("");
+
+    // Simple validation
+    let hasError = false;
+
+    if (!email || !email.includes("@")) {
+      setEmailError("Please enter a valid email");
+      hasError = true;
+    }
+
+    if (!password || password.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    // Submit
+    loginMutation.mutate({
+      email: email,
+      password: password,
     });
   };
 
-  const handlePatientOtp = async (data: PatientFormData) => {
+  const handlePatientOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setPhoneError("");
+
+    if (!phone || phone.length < 4) {
+      setPhoneError("Please enter a valid phone number");
+      return;
+    }
+
     try {
-      const fullPhone = `${selectedCountry.code}${data.phone}`;
-
+      const fullPhone = `${selectedCountry.code}${phone}`;
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       toast.success("OTP sent to your phone!");
       router.push(
         `/auth/verify-otp?phone=${encodeURIComponent(fullPhone)}&type=patient`
@@ -108,10 +120,7 @@ export default function LoginPage() {
         </TabsList>
 
         <TabsContent value="staff" className="space-y-4 mt-6">
-          <form
-            onSubmit={staffForm.handleSubmit(handleStaffLogin)}
-            className="space-y-4"
-          >
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -119,12 +128,11 @@ export default function LoginPage() {
                 type="email"
                 placeholder="admin@clinic.com"
                 className="h-12"
-                {...staffForm.register("email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              {staffForm.formState.errors.email && (
-                <p className="text-sm text-red-600">
-                  {staffForm.formState.errors.email.message}
-                </p>
+              {emailError && (
+                <p className="text-sm text-red-600">{emailError}</p>
               )}
             </div>
 
@@ -136,7 +144,8 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   className="h-12 pr-10"
-                  {...staffForm.register("password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -150,10 +159,8 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              {staffForm.formState.errors.password && (
-                <p className="text-sm text-red-600">
-                  {staffForm.formState.errors.password.message}
-                </p>
+              {passwordError && (
+                <p className="text-sm text-red-600">{passwordError}</p>
               )}
             </div>
 
@@ -176,10 +183,15 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login"}
+            <Button
+              type="button"
+              onClick={handleStaffLogin}
+              className="w-full h-12"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? "Logging in..." : "Login"}
             </Button>
-          </form>
+          </div>
 
           <div className="text-center text-sm text-gray-600">
             Don't have an account?{" "}
@@ -193,10 +205,7 @@ export default function LoginPage() {
         </TabsContent>
 
         <TabsContent value="patient" className="space-y-4 mt-6">
-          <form
-            onSubmit={patientForm.handleSubmit(handlePatientOtp)}
-            className="space-y-4"
-          >
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <div className="flex gap-2">
@@ -206,7 +215,7 @@ export default function LoginPage() {
                     setSelectedCountry(countries.find((c) => c.code === value)!)
                   }
                 >
-                  <SelectTrigger className="w-28 h-12!">
+                  <SelectTrigger className="w-28 h-12">
                     <SelectValue>{selectedCountry.code}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -227,20 +236,23 @@ export default function LoginPage() {
                   type="tel"
                   placeholder="8012345678"
                   className="flex-1 h-12"
-                  {...patientForm.register("phone")}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              {patientForm.formState.errors.phone && (
-                <p className="text-sm text-red-600">
-                  {patientForm.formState.errors.phone.message}
-                </p>
+              {phoneError && (
+                <p className="text-sm text-red-600">{phoneError}</p>
               )}
             </div>
 
-            <Button type="submit" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? "Sending OTP..." : "Send OTP"}
+            <Button
+              type="button"
+              onClick={handlePatientOtp}
+              className="w-full h-12"
+            >
+              Send OTP
             </Button>
-          </form>
+          </div>
 
           <div className="text-center text-sm text-gray-600">
             Need help?{" "}

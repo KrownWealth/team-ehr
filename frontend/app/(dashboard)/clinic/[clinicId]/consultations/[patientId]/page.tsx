@@ -8,51 +8,54 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, CheckCircle, AlertTriangle, X } from "lucide-react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { ResponseSuccess, Patient, Vitals } from "@/types";
 import {
-  calculateAge,
-  formatDateTime,
-  formatBloodPressure,
-} from "@/lib/utils/formatters";
+  ApiResponse,
+  Patient,
+  Vitals,
+  CreateConsultationData,
+  Medication,
+} from "@/types";
+import { calculateAge, formatDateTime } from "@/lib/utils/formatters";
 
 export default function ConsultationPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const patientId = params.patientId as string;
   const clinicId = params.clinicId as string;
   const queryClient = useQueryClient();
 
-  const [consultationData, setConsultationData] = useState({
-    subjective: "",
-    objective: "",
-    assessment: "",
-    plan: "",
-    diagnosis: [] as string[],
-    followUpDate: "",
-  });
+  const [consultationData, setConsultationData] =
+    useState<CreateConsultationData>({
+      patientId,
+      subjective: "",
+      objective: "",
+      assessment: "",
+      plan: "",
+      prescriptions: [],
+      labOrders: [],
+      followUpDate: "",
+    });
 
   const [diagnosisInput, setDiagnosisInput] = useState("");
+  const [diagnosisList, setDiagnosisList] = useState<string[]>([]);
 
-  // Fetch patient data
-  const { data: patientData } = useQuery<ResponseSuccess<Patient>>({
+  const { data: patientData } = useQuery<ApiResponse<Patient>>({
     queryKey: ["patient", patientId],
     queryFn: async () => {
-      const response = await apiClient.get(`/patient/${patientId}`);
+      const response = await apiClient.get(`/v1/patient/${patientId}`);
       return response.data;
     },
   });
 
-  // Fetch latest vitals
-  const { data: vitalsData } = useQuery<ResponseSuccess<Vitals[]>>({
+  const { data: vitalsData } = useQuery<ApiResponse<Vitals[]>>({
     queryKey: ["vitals", patientId],
     queryFn: async () => {
       const response = await apiClient.get(
-        `/vitals/patient/${patientId}?limit=1`
+        `/v1/vitals/patient/${patientId}?limit=1`
       );
       return response.data;
     },
@@ -61,10 +64,9 @@ export default function ConsultationPage() {
   const patient = patientData?.data;
   const latestVitals = vitalsData?.data?.[0];
 
-  // Save consultation mutation
   const saveConsultationMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiClient.post("/consultation", data);
+    mutationFn: async (data: CreateConsultationData) => {
+      await apiClient.post("/v1/consultation", data);
     },
     onSuccess: () => {
       toast.success("Consultation saved successfully!");
@@ -79,37 +81,37 @@ export default function ConsultationPage() {
     },
   });
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof CreateConsultationData, value: string) => {
     setConsultationData({ ...consultationData, [field]: value });
   };
 
   const addDiagnosis = () => {
     if (diagnosisInput.trim()) {
-      setConsultationData({
-        ...consultationData,
-        diagnosis: [...consultationData.diagnosis, diagnosisInput.trim()],
-      });
+      setDiagnosisList([...diagnosisList, diagnosisInput.trim()]);
       setDiagnosisInput("");
     }
   };
 
   const removeDiagnosis = (index: number) => {
-    setConsultationData({
-      ...consultationData,
-      diagnosis: consultationData.diagnosis.filter((_, i) => i !== index),
-    });
+    setDiagnosisList(diagnosisList.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (completed: boolean) => {
+  const handleSubmit = () => {
     if (!consultationData.subjective || !consultationData.assessment) {
       toast.error("Please fill subjective and assessment sections");
       return;
     }
 
+    const finalAssessment =
+      diagnosisList.length > 0
+        ? `${consultationData.assessment}\n\nDiagnosis: ${diagnosisList.join(
+            ", "
+          )}`
+        : consultationData.assessment;
+
     saveConsultationMutation.mutate({
-      patientId,
       ...consultationData,
-      status: completed ? "Completed" : "In Progress",
+      assessment: finalAssessment,
     });
   };
 
@@ -138,7 +140,7 @@ export default function ConsultationPage() {
               Consultation - {fullName}
             </h1>
             <p className="text-sm text-gray-600">
-              {patient.gender} · {age} years · UPI: {patient.upi}
+              {patient.gender} · {age} years · UPI: {patient.patientNumber}
             </p>
           </div>
         </div>
@@ -196,22 +198,19 @@ export default function ConsultationPage() {
               <CardHeader>
                 <CardTitle className="text-base">Latest Vitals</CardTitle>
                 <p className="text-xs text-gray-500">
-                  {formatDateTime(latestVitals.recordedAt)}
+                  {formatDateTime(latestVitals.createdAt)}
                 </p>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {latestVitals.bloodPressureSystolic &&
-                  latestVitals.bloodPressureDiastolic && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">BP:</span>
-                      <span className="font-medium">
-                        {formatBloodPressure(
-                          latestVitals.bloodPressureSystolic,
-                          latestVitals.bloodPressureDiastolic
-                        )}
-                      </span>
-                    </div>
-                  )}
+                {/* bloodPressure is a string in format "120/80" */}
+                {latestVitals.bloodPressure && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">BP:</span>
+                    <span className="font-medium">
+                      {latestVitals.bloodPressure} mmHg
+                    </span>
+                  </div>
+                )}
                 {latestVitals.temperature && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Temp:</span>
@@ -240,6 +239,28 @@ export default function ConsultationPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">BMI:</span>
                     <span className="font-medium">{latestVitals.bmi}</span>
+                  </div>
+                )}
+                {latestVitals.respiratoryRate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Resp. Rate:</span>
+                    <span className="font-medium">
+                      {latestVitals.respiratoryRate} /min
+                    </span>
+                  </div>
+                )}
+                {latestVitals.spo2 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">SpO2:</span>
+                    <span className="font-medium">{latestVitals.spo2}%</span>
+                  </div>
+                )}
+                {latestVitals.bloodGlucose && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Blood Glucose:</span>
+                    <span className="font-medium">
+                      {latestVitals.bloodGlucose} mg/dL
+                    </span>
                   </div>
                 )}
               </CardContent>
@@ -317,9 +338,9 @@ export default function ConsultationPage() {
                     Add
                   </Button>
                 </div>
-                {consultationData.diagnosis.length > 0 && (
+                {diagnosisList.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {consultationData.diagnosis.map((diag, index) => (
+                    {diagnosisList.map((diag, index) => (
                       <Badge key={index} className="flex items-center gap-1">
                         {diag}
                         <X
@@ -371,15 +392,7 @@ export default function ConsultationPage() {
               Cancel
             </Button>
             <Button
-              variant="outline"
-              onClick={() => handleSubmit(false)}
-              disabled={saveConsultationMutation.isPending}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Save Draft
-            </Button>
-            <Button
-              onClick={() => handleSubmit(true)}
+              onClick={handleSubmit}
               disabled={saveConsultationMutation.isPending}
             >
               <CheckCircle className="mr-2 h-4 w-4" />

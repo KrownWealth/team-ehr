@@ -28,7 +28,9 @@ const ActionsComponent = ({ patient }: { patient: Patient }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onClick={() => router.push(`/clinic/${clinicId}/patients/${patient.id}`)}
+          onClick={() =>
+            router.push(`/clinic/${clinicId}/patients/${patient.id}`)
+          }
         >
           <Eye className="mr-2 h-4 w-4" />
           View Details
@@ -42,7 +44,9 @@ const ActionsComponent = ({ patient }: { patient: Patient }) => {
           Edit Patient
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => router.push(`/clinic/${clinicId}/queue?add=${patient.id}`)}
+          onClick={() =>
+            router.push(`/clinic/${clinicId}/queue?add=${patient.id}`)
+          }
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Add to Queue
@@ -54,11 +58,13 @@ const ActionsComponent = ({ patient }: { patient: Patient }) => {
 
 const patientColumns: ColumnDef<Patient>[] = [
   {
-    id: "upi",
+    id: "patientNumber",
     header: "Patient ID",
-    accessorKey: "upi",
+    accessorKey: "patientNumber",
     cell: ({ row }) => (
-      <span className="font-mono text-sm font-medium">{row.original.upi}</span>
+      <span className="font-mono text-sm font-medium">
+        {row.original.patientNumber}
+      </span>
     ),
   },
   {
@@ -67,23 +73,14 @@ const patientColumns: ColumnDef<Patient>[] = [
     accessorKey: "firstName",
     cell: ({ row }) => {
       const fullName = `${row.original.firstName} ${row.original.lastName}`;
-      const photoUrl = row.original.photoUrl;
       const initials = `${row.original.firstName[0]}${row.original.lastName[0]}`;
 
       return (
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
-            {photoUrl ? (
-              <img
-                src={photoUrl}
-                alt={fullName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-sm font-semibold text-green-600">
-                {initials}
-              </span>
-            )}
+            <span className="text-sm font-semibold text-green-600">
+              {initials}
+            </span>
           </div>
           <span className="font-medium text-gray-900">{fullName}</span>
         </div>
@@ -124,13 +121,13 @@ const patientColumns: ColumnDef<Patient>[] = [
     ),
   },
   {
-    id: "registrationDate",
+    id: "createdAt",
     header: "Registered",
-    accessorKey: "registrationDate",
+    accessorKey: "createdAt",
     cell: ({ row }) => {
       return (
         <div className="text-sm">
-          <div>{formatDate(row.original.registrationDate)}</div>
+          <div>{formatDate(row.original.createdAt)}</div>
         </div>
       );
     },
@@ -138,9 +135,9 @@ const patientColumns: ColumnDef<Patient>[] = [
   {
     id: "status",
     header: "Status",
-    accessorKey: "status",
+    accessorKey: "isActive",
     cell: ({ row }) => {
-      const isActive = row.original.status === "active";
+      const isActive = row.original.isActive;
       return (
         <Badge variant={isActive ? "default" : "secondary"}>
           {isActive ? "Active" : "Inactive"}

@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess, Patient } from "@/types";
+import { ApiResponse, Patient } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, UserPlus } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
@@ -19,10 +19,10 @@ export default function PatientDetailsPage() {
   const patientId = params.id as string;
   const clinicId = params.clinicId as string;
 
-  const { data, isLoading } = useQuery<ResponseSuccess<Patient>>({
+  const { data, isLoading } = useQuery<ApiResponse<Patient>>({
     queryKey: ["patient", patientId],
     queryFn: async () => {
-      const response = await apiClient.get(`/patient/${patientId}`);
+      const response = await apiClient.get(`/v1/patient/${patientId}`);
       return response.data;
     },
   });
@@ -46,11 +46,10 @@ export default function PatientDetailsPage() {
     );
   }
 
-  const fullName = `${patient.firstName} ${patient.otherNames || ""} ${patient.lastName}`;
+  const fullName = `${patient.firstName} ${patient.lastName}`;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex items-start gap-4">
           <Button
@@ -63,27 +62,17 @@ export default function PatientDetailsPage() {
           </Button>
 
           <div className="flex items-start gap-4">
-            {/* Patient Photo */}
             <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
-              {patient.photoUrl ? (
-                <img
-                  src={patient.photoUrl}
-                  alt={fullName}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl font-bold text-green-600">
-                  {patient.firstName[0]}
-                  {patient.lastName[0]}
-                </span>
-              )}
+              <span className="text-2xl font-bold text-green-600">
+                {patient.firstName[0]}
+                {patient.lastName[0]}
+              </span>
             </div>
 
-            {/* Patient Info */}
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
               <p className="text-sm text-gray-600 mt-1">
-                UPI: {patient.upi} · {patient.gender}
+                ID: {patient.patientNumber} · {patient.gender}
               </p>
               {patient.allergies && patient.allergies.length > 0 && (
                 <p className="text-xs text-red-600 mt-1 font-medium">
@@ -97,19 +86,24 @@ export default function PatientDetailsPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => router.push(`/clinic/${clinicId}/queue?add=${patientId}`)}
+            onClick={() =>
+              router.push(`/clinic/${clinicId}/queue?add=${patientId}`)
+            }
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Add to Queue
           </Button>
-          <Button onClick={() => router.push(`/clinic/${clinicId}/patients/${patientId}?edit=true`)}>
+          <Button
+            onClick={() =>
+              router.push(`/clinic/${clinicId}/patients/${patientId}?edit=true`)
+            }
+          >
             <Edit className="mr-2 h-4 w-4" />
             Edit Patient
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

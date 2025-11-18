@@ -23,8 +23,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { toast } from "sonner";
+import { useRegister } from "@/lib/hooks/use-auth";
 import Link from "next/link";
 
 const countries = [
@@ -48,12 +47,7 @@ const registerSchema = z
     phone: z
       .string()
       .min(4, "Phone number is required")
-      .regex(/^\+?[1-9]\d{1,14}$/, "Valid phone number is required"),
-    clinicName: z.string().min(3, "Clinic name must be at least 3 characters"),
-    addressLine: z.string().min(5, "Address is required"),
-    city: z.string().min(2, "City is required"),
-    state: z.string().min(2, "State is required"),
-    logo: z.any().optional(),
+      .regex(/^\d{7,14}$/, "Enter phone number without country code"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -72,9 +66,8 @@ type FormData = z.infer<typeof registerSchema>;
 
 const STEPS = [
   { number: 1, title: "Personal Info", icon: User },
-  { number: 2, title: "Clinic Info", icon: Building2 },
-  { number: 3, title: "Location", icon: MapPin },
-  { number: 4, title: "Security", icon: Mail },
+  { number: 2, title: "Contact", icon: Phone },
+  { number: 3, title: "Security", icon: Mail },
 ];
 
 export default function RegisterPage() {
@@ -82,15 +75,13 @@ export default function RegisterPage() {
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const { register: registerClinic, isLoading } = useAuth();
+
+  const { mutate: registerAdmin, isPending } = useRegister();
 
   const {
     register,
     handleSubmit,
     trigger,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(registerSchema),
@@ -98,15 +89,14 @@ export default function RegisterPage() {
   });
 
   const stepFields: Record<number, (keyof FormData)[]> = {
-    1: ["firstName", "lastName", "email"],
-    2: ["clinicName", "phone"],
-    3: ["addressLine", "city", "state"],
-    4: ["password", "confirmPassword"],
+    1: ["firstName", "lastName"],
+    2: ["email", "phone"],
+    3: ["password", "confirmPassword"],
   };
 
   const nextStep = async () => {
     const valid = await trigger(stepFields[step]);
-    if (valid && step < 4) {
+    if (valid && step < 3) {
       setStep(step + 1);
     }
   };
@@ -116,18 +106,19 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    // Only send what backend expects (firstName, lastName, email, phone, password)
-    const backendData = {
+    // Format phone with country code
+    const formattedPhone = `${selectedCountry.code}${data.phone}`;
+
+    // Send data matching API spec: firstName, lastName, email, phone, password
+    const registerData = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
-      phone: `${selectedCountry.code}${data.phone}`,
+      phone: formattedPhone,
       password: data.password,
     };
 
-    // Note: clinicName, addressLine, city, state, and logo are kept in form but not sent
-    // These can be added to backend later
-    registerClinic(backendData as any);
+    registerAdmin(registerData);
   };
 
   return (
@@ -141,6 +132,7 @@ export default function RegisterPage() {
         </p>
       </div>
 
+      {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8">
         {STEPS.map((s, idx) => {
           const Icon = s.icon;
@@ -182,6 +174,7 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Step 1: Personal Info */}
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
@@ -214,6 +207,19 @@ export default function RegisterPage() {
               )}
             </div>
 
+            <Button
+              type="button"
+              onClick={nextStep}
+              className="w-full h-12 mt-6"
+            >
+              Continue
+            </Button>
+          </div>
+        )}
+
+        {/* Step 2: Contact Info */}
+        {step === 2 && (
+          <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
               <Input
@@ -228,35 +234,8 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <Button
-              type="button"
-              onClick={nextStep}
-              className="w-full h-12 mt-6"
-            >
-              Continue
-            </Button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
-              <Label htmlFor="clinicName">Clinic Name *</Label>
-              <Input
-                id="clinicName"
-                placeholder="e.g. St. Mary's Medical Center"
-                className="h-12"
-                {...register("clinicName")}
-              />
-              {errors.clinicName && (
-                <p className="text-sm text-red-600">
-                  {errors.clinicName.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Contact Phone Number *</Label>
+              <Label htmlFor="phone">Phone Number *</Label>
               <div className="flex gap-2">
                 <Select
                   value={selectedCountry.code}
@@ -264,7 +243,7 @@ export default function RegisterPage() {
                     setSelectedCountry(countries.find((c) => c.code === value)!)
                   }
                 >
-                  <SelectTrigger className="w-24 h-12!">
+                  <SelectTrigger className="w-28 h-12">
                     <SelectValue>{selectedCountry.code}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -286,6 +265,9 @@ export default function RegisterPage() {
               {errors.phone && (
                 <p className="text-sm text-red-600">{errors.phone.message}</p>
               )}
+              <p className="text-xs text-gray-500">
+                Enter phone number without country code
+              </p>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -304,91 +286,8 @@ export default function RegisterPage() {
           </div>
         )}
 
+        {/* Step 3: Security */}
         {step === 3 && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="space-y-2">
-              <Label htmlFor="addressLine">Street Address *</Label>
-              <Input
-                id="addressLine"
-                placeholder="123 Medical Drive"
-                className="h-12"
-                {...register("addressLine")}
-              />
-              {errors.addressLine && (
-                <p className="text-sm text-red-600">
-                  {errors.addressLine.message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  placeholder="Lagos"
-                  className="h-12"
-                  {...register("city")}
-                />
-                {errors.city && (
-                  <p className="text-sm text-red-600">{errors.city.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
-                  placeholder="Lagos State"
-                  className="h-12"
-                  {...register("state")}
-                />
-                {errors.state && (
-                  <p className="text-sm text-red-600">{errors.state.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="logo">Clinic Logo (Optional)</Label>
-              <Input
-                id="logo"
-                type="file"
-                accept="image/*"
-                className="h-12"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setValue("logo", file);
-                    setLogoPreview(URL.createObjectURL(file));
-                  }
-                }}
-              />
-              {logoPreview && (
-                <img
-                  src={logoPreview}
-                  alt="Logo preview"
-                  className="mt-2 w-20 h-20 object-cover rounded-lg border"
-                />
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                className="flex-1 h-12"
-              >
-                Back
-              </Button>
-              <Button type="button" onClick={nextStep} className="flex-1 h-12">
-                Continue
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
@@ -469,9 +368,9 @@ export default function RegisterPage() {
               <Button
                 type="submit"
                 className="flex-1 h-12"
-                disabled={isLoading}
+                disabled={isPending}
               >
-                {isLoading ? "Creating Account..." : "Complete Registration"}
+                {isPending ? "Creating Account..." : "Complete Registration"}
               </Button>
             </div>
           </div>

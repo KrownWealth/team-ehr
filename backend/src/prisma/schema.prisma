@@ -36,6 +36,11 @@ enum BillStatus {
   CANCELLED
 }
 
+enum OnboardingStatus {
+  PENDING
+  COMPLETED
+}
+
 model Clinic {
   id                   String   @id @default(cuid())
   name                 String
@@ -82,6 +87,8 @@ model User {
   //clinic        Clinic         @relation(fields: [clinicId], references: [id])
   consultations Consultation[]
   vitals        Vitals[]
+
+  onboardingStatus OnboardingStatus @default(PENDING)
 
   @@index([clinicId])
   @@index([email])

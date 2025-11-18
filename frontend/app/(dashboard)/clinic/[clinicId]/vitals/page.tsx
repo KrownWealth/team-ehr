@@ -16,7 +16,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { ResponseSuccess, Patient } from "@/types";
+import { ApiResponse, Patient, RecordVitalsData } from "@/types";
 import { calculateBMI, getBMICategory } from "@/lib/utils/formatters";
 import {
   Heart,
@@ -28,6 +28,20 @@ import {
   Ruler,
 } from "lucide-react";
 
+// Local type for form state to handle string inputs before conversion
+interface VitalsFormState {
+  systolic: string;
+  diastolic: string;
+  temperature: string; // Celsius
+  pulse: string; // bpm
+  respiratoryRate: string; // breaths/min
+  weight: string; // kg
+  height: string; // cm
+  spo2: string; // Oxygen saturation %
+  bloodGlucose: string; // mg/dL
+  notes: string;
+}
+
 export default function VitalsPage() {
   const router = useRouter();
   const params = useParams();
@@ -36,20 +50,19 @@ export default function VitalsPage() {
 
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [vitalsData, setVitalsData] = useState({
-    bloodPressureSystolic: "",
-    bloodPressureDiastolic: "",
+  const [vitalsData, setVitalsData] = useState<VitalsFormState>({
+    systolic: "",
+    diastolic: "",
     temperature: "",
     pulse: "",
-    respirationRate: "",
+    respiratoryRate: "",
     weight: "",
     height: "",
-    oxygenSaturation: "",
+    spo2: "",
     bloodGlucose: "",
     notes: "",
   });
 
-  // Search patient
   const searchPatient = async () => {
     if (!patientSearch.trim()) {
       toast.error("Please enter patient ID or name");
@@ -57,10 +70,10 @@ export default function VitalsPage() {
     }
 
     try {
-      const response = await apiClient.get<ResponseSuccess<Patient[]>>(
-        `/patient?search=${patientSearch}&limit=1`
+      const response = await apiClient.get<ApiResponse<Patient[]>>(
+        `/v1/patient?search=${patientSearch}&limit=1`
       );
-      if (response.data.data.length > 0) {
+      if (response.data.data?.length === 1) {
         setSelectedPatient(response.data.data[0]);
       } else {
         toast.error("Patient not found");
@@ -70,39 +83,33 @@ export default function VitalsPage() {
     }
   };
 
-  // Calculate BMI when weight or height changes
-  const bmi =
-    vitalsData.weight && vitalsData.height
-      ? calculateBMI(
-          parseFloat(vitalsData.weight),
-          parseFloat(vitalsData.height)
-        )
-      : null;
+  const weight = parseFloat(vitalsData.weight);
+  const height = parseFloat(vitalsData.height);
+
+  const bmi = weight > 0 && height > 0 ? calculateBMI(weight, height) : null;
 
   const bmiCategory = bmi ? getBMICategory(bmi) : null;
 
-  // Record vitals mutation
   const recordVitalsMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiClient.post("/vitals", data);
+    mutationFn: async (data: RecordVitalsData) => {
+      await apiClient.post("/v1/vitals", data);
     },
     onSuccess: () => {
       toast.success("Vitals recorded successfully!");
       queryClient.invalidateQueries({ queryKey: ["vitals"] });
       queryClient.invalidateQueries({ queryKey: ["queue"] });
 
-      // Reset form
       setSelectedPatient(null);
       setPatientSearch("");
       setVitalsData({
-        bloodPressureSystolic: "",
-        bloodPressureDiastolic: "",
+        systolic: "",
+        diastolic: "",
         temperature: "",
         pulse: "",
-        respirationRate: "",
+        respiratoryRate: "",
         weight: "",
         height: "",
-        oxygenSaturation: "",
+        spo2: "",
         bloodGlucose: "",
         notes: "",
       });
@@ -122,38 +129,39 @@ export default function VitalsPage() {
       return;
     }
 
-    // Convert empty strings to null, parse numbers
-    const payload = {
+    // Validate required BP fields if either is present
+    const hasSystolic = !!vitalsData.systolic;
+    const hasDiastolic = !!vitalsData.diastolic;
+    const bloodPressure =
+      hasSystolic || hasDiastolic
+        ? `${vitalsData.systolic || "N/A"}/${vitalsData.diastolic || "N/A"}`
+        : undefined;
+
+    // Convert strings to number or undefined
+    const parseNum = (val: string) => (val ? parseFloat(val) : undefined);
+
+    const payload: RecordVitalsData = {
       patientId: selectedPatient.id,
-      bloodPressureSystolic: vitalsData.bloodPressureSystolic
-        ? parseFloat(vitalsData.bloodPressureSystolic)
-        : undefined,
-      bloodPressureDiastolic: vitalsData.bloodPressureDiastolic
-        ? parseFloat(vitalsData.bloodPressureDiastolic)
-        : undefined,
-      temperature: vitalsData.temperature
-        ? parseFloat(vitalsData.temperature)
-        : undefined,
-      pulse: vitalsData.pulse ? parseFloat(vitalsData.pulse) : undefined,
-      respirationRate: vitalsData.respirationRate
-        ? parseFloat(vitalsData.respirationRate)
-        : undefined,
-      weight: vitalsData.weight ? parseFloat(vitalsData.weight) : undefined,
-      height: vitalsData.height ? parseFloat(vitalsData.height) : undefined,
-      bmi: bmi || undefined,
-      oxygenSaturation: vitalsData.oxygenSaturation
-        ? parseFloat(vitalsData.oxygenSaturation)
-        : undefined,
-      bloodGlucose: vitalsData.bloodGlucose
-        ? parseFloat(vitalsData.bloodGlucose)
-        : undefined,
+      bloodPressure: bloodPressure || "", // bloodPressure is required in RecordVitalsData but can be empty if not measured
+      temperature: parseNum(vitalsData.temperature),
+      pulse: parseNum(vitalsData.pulse),
+      respiratoryRate: parseNum(vitalsData.respiratoryRate),
+      weight: parseNum(vitalsData.weight),
+      height: parseNum(vitalsData.height),
+      spo2: parseNum(vitalsData.spo2),
+      bloodGlucose: parseNum(vitalsData.bloodGlucose),
       notes: vitalsData.notes || undefined,
     };
+
+    if (!payload.bloodPressure || payload.bloodPressure === "N/A/N/A") {
+      toast.error("Blood Pressure is required.");
+      return;
+    }
 
     recordVitalsMutation.mutate(payload);
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof VitalsFormState, value: string) => {
     setVitalsData({ ...vitalsData, [field]: value });
   };
 
@@ -168,13 +176,12 @@ export default function VitalsPage() {
         </p>
       </div>
 
-      {/* Patient Search */}
       {!selectedPatient && (
         <Card>
           <CardHeader>
             <CardTitle>Select Patient</CardTitle>
             <CardDescription>
-              Search by patient ID (UPI) or name to record vitals
+              Search by patient ID or name to record vitals
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -191,7 +198,6 @@ export default function VitalsPage() {
         </Card>
       )}
 
-      {/* Selected Patient Info */}
       {selectedPatient && (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="pt-6">
@@ -201,8 +207,8 @@ export default function VitalsPage() {
                   {selectedPatient.firstName} {selectedPatient.lastName}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  UPI: {selectedPatient.upi} · {selectedPatient.gender} ·{" "}
-                  {selectedPatient.phone}
+                  ID: {selectedPatient.patientNumber} · {selectedPatient.gender}{" "}
+                  · {selectedPatient.phone}
                 </p>
                 {selectedPatient.allergies &&
                   selectedPatient.allergies.length > 0 && (
@@ -223,7 +229,6 @@ export default function VitalsPage() {
         </Card>
       )}
 
-      {/* Vitals Form */}
       {selectedPatient && (
         <form onSubmit={handleSubmit}>
           <Card>
@@ -234,23 +239,21 @@ export default function VitalsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Blood Pressure */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Heart className="h-4 w-4" />
-                  Blood Pressure (mmHg)
+                  Blood Pressure (mmHg) <span className="text-red-500">*</span>
                 </Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Input
                       type="number"
                       placeholder="Systolic (e.g., 120)"
-                      value={vitalsData.bloodPressureSystolic}
-                      onChange={(e) =>
-                        handleChange("bloodPressureSystolic", e.target.value)
-                      }
+                      value={vitalsData.systolic}
+                      onChange={(e) => handleChange("systolic", e.target.value)}
                       min="50"
                       max="300"
+                      required
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Systolic (upper)
@@ -260,12 +263,13 @@ export default function VitalsPage() {
                     <Input
                       type="number"
                       placeholder="Diastolic (e.g., 80)"
-                      value={vitalsData.bloodPressureDiastolic}
+                      value={vitalsData.diastolic}
                       onChange={(e) =>
-                        handleChange("bloodPressureDiastolic", e.target.value)
+                        handleChange("diastolic", e.target.value)
                       }
                       min="30"
                       max="200"
+                      required
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Diastolic (lower)
@@ -274,7 +278,6 @@ export default function VitalsPage() {
                 </div>
               </div>
 
-              {/* Temperature & Pulse */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -310,19 +313,18 @@ export default function VitalsPage() {
                 </div>
               </div>
 
-              {/* Respiration & SpO2 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Wind className="h-4 w-4" />
-                    Respiration Rate (breaths/min)
+                    Respiratory Rate (breaths/min)
                   </Label>
                   <Input
                     type="number"
                     placeholder="e.g., 16"
-                    value={vitalsData.respirationRate}
+                    value={vitalsData.respiratoryRate}
                     onChange={(e) =>
-                      handleChange("respirationRate", e.target.value)
+                      handleChange("respiratoryRate", e.target.value)
                     }
                     min="5"
                     max="60"
@@ -332,22 +334,19 @@ export default function VitalsPage() {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Droplet className="h-4 w-4" />
-                    Oxygen Saturation (%)
+                    Oxygen Saturation (SpO₂ %)
                   </Label>
                   <Input
                     type="number"
                     placeholder="e.g., 98"
-                    value={vitalsData.oxygenSaturation}
-                    onChange={(e) =>
-                      handleChange("oxygenSaturation", e.target.value)
-                    }
+                    value={vitalsData.spo2}
+                    onChange={(e) => handleChange("spo2", e.target.value)}
                     min="0"
                     max="100"
                   />
                 </div>
               </div>
 
-              {/* Weight & Height */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -382,16 +381,14 @@ export default function VitalsPage() {
                 </div>
               </div>
 
-              {/* BMI Display */}
               {bmi && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-900">
-                    BMI: {bmi} ({bmiCategory})
+                    BMI: {bmi.toFixed(2)} ({bmiCategory})
                   </p>
                 </div>
               )}
 
-              {/* Blood Glucose */}
               <div className="space-y-2">
                 <Label>Blood Glucose (mg/dL) - Optional</Label>
                 <Input
@@ -404,7 +401,6 @@ export default function VitalsPage() {
                 />
               </div>
 
-              {/* Notes */}
               <div className="space-y-2">
                 <Label>Notes (Optional)</Label>
                 <Textarea
@@ -417,7 +413,6 @@ export default function VitalsPage() {
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
               type="button"

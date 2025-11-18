@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
+import { AddToQueueData } from "@/types";
 
 interface AddToQueueDialogProps {
   open: boolean;
@@ -19,13 +20,11 @@ interface AddToQueueDialogProps {
 export default function AddToQueueDialog({ open, onClose }: AddToQueueDialogProps) {
   const queryClient = useQueryClient();
   const [patientId, setPatientId] = useState("");
-  const [visitType, setVisitType] = useState("New");
-  const [priority, setPriority] = useState("Normal");
-  const [chiefComplaint, setChiefComplaint] = useState("");
+  const [priority, setPriority] = useState("3");
 
   const addToQueueMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiClient.post("/queue", data);
+    mutationFn: async (data: AddToQueueData) => {
+      await apiClient.post("/v1/queue", data);
     },
     onSuccess: () => {
       toast.success("Patient added to queue");
@@ -40,9 +39,7 @@ export default function AddToQueueDialog({ open, onClose }: AddToQueueDialogProp
 
   const resetForm = () => {
     setPatientId("");
-    setVisitType("New");
-    setPriority("Normal");
-    setChiefComplaint("");
+    setPriority("3");
   };
 
   const handleSubmit = () => {
@@ -51,12 +48,12 @@ export default function AddToQueueDialog({ open, onClose }: AddToQueueDialogProp
       return;
     }
 
-    addToQueueMutation.mutate({
+    const data: AddToQueueData = {
       patientId,
-      visitType,
-      priority,
-      chiefComplaint,
-    });
+      priority: parseInt(priority, 10),
+    };
+
+    addToQueueMutation.mutate(data);
   };
 
   return (
@@ -68,52 +65,32 @@ export default function AddToQueueDialog({ open, onClose }: AddToQueueDialogProp
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Patient ID (UPI)</Label>
+            <Label>Patient ID</Label>
             <Input
-              placeholder="Enter patient UPI or search"
+              placeholder="Enter patient ID (patientNumber)"
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
             />
           </div>
 
+          {/* Priority field, using 0-5 scale as suggested in the QueueItem type comment */}
           <div className="space-y-2">
-            <Label>Visit Type</Label>
-            <Select value={visitType} onValueChange={setVisitType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">New Visit</SelectItem>
-                <SelectItem value="Follow-up">Follow-up</SelectItem>
-                <SelectItem value="Emergency">Emergency</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Priority</Label>
+            <Label>Priority (0-5)</Label>
             <Select value={priority} onValueChange={setPriority}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Normal">Normal</SelectItem>
-                <SelectItem value="Urgent">Urgent</SelectItem>
-                <SelectItem value="Emergency">Emergency</SelectItem>
+                <SelectItem value="5">5 - Emergency (Highest)</SelectItem>
+                <SelectItem value="4">4 - Urgent</SelectItem>
+                <SelectItem value="3">3 - Normal</SelectItem>
+                <SelectItem value="2">2 - Low</SelectItem>
+                <SelectItem value="1">1 - Routine</SelectItem>
+                <SelectItem value="0">0 - Least Priority</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          <div className="space-y-2">
-            <Label>Chief Complaint (Optional)</Label>
-            <Textarea
-              placeholder="Brief description of complaint"
-              value={chiefComplaint}
-              onChange={(e) => setChiefComplaint(e.target.value)}
-              rows={3}
-            />
-          </div>
-
+          
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel

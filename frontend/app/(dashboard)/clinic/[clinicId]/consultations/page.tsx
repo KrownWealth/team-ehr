@@ -28,7 +28,7 @@ export default function ConsultationsPage() {
 
       <TableList
         querykey="consultations"
-        endpoint="/consultation"
+        endpoint="/v1/consultation"
         columns={consultationColumns}
       />
     </div>

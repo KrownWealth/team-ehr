@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye, Edit, FileText } from "lucide-react";
+import { MoreHorizontal, Eye, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,18 +35,6 @@ const ActionsComponent = ({ consultation }: { consultation: Consultation }) => {
           <Eye className="mr-2 h-4 w-4" />
           View Details
         </DropdownMenuItem>
-        {consultation.status === "In Progress" && (
-          <DropdownMenuItem
-            onClick={() =>
-              router.push(
-                `/clinic/${clinicId}/consultations/${consultation.id}?edit=true`
-              )
-            }
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Continue Editing
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem
           onClick={() =>
             router.push(
@@ -69,12 +57,15 @@ const consultationColumns: ColumnDef<Consultation>[] = [
     accessorKey: "patientId",
     cell: ({ row }) => {
       const consultation = row.original;
-      // Assuming patient data is populated
+      const patient = consultation.patient;
       return (
         <div>
-          <p className="font-medium text-gray-900">Patient</p>
+          <p className="font-medium text-gray-900">
+            {patient ? `${patient.firstName} ${patient.lastName}` : "Patient"}
+          </p>
           <p className="text-xs text-gray-500">
-            {consultation.patientId.slice(0, 8)}...
+            {patient?.patientNumber ||
+              consultation.patientId.slice(0, 8) + "..."}
           </p>
         </div>
       );
@@ -89,7 +80,7 @@ const consultationColumns: ColumnDef<Consultation>[] = [
       return (
         <div>
           <p className="font-medium text-sm">
-            Dr. {doctor.firstName} {doctor.lastName}
+            {doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : "N/A"}
           </p>
         </div>
       );
@@ -100,7 +91,7 @@ const consultationColumns: ColumnDef<Consultation>[] = [
     header: "Primary Diagnosis",
     accessorKey: "assessment",
     cell: ({ row }) => {
-      const diagnosis = row.original.diagnosis?.[0] || row.original.assessment;
+      const diagnosis = row.original.assessment;
       return (
         <p className="text-sm text-gray-700 max-w-xs truncate">{diagnosis}</p>
       );
@@ -109,11 +100,9 @@ const consultationColumns: ColumnDef<Consultation>[] = [
   {
     id: "consultationDate",
     header: "Date",
-    accessorKey: "consultationDate",
+    accessorKey: "createdAt",
     cell: ({ row }) => (
-      <span className="text-sm">
-        {formatDateTime(row.original.consultationDate)}
-      </span>
+      <span className="text-sm">{formatDateTime(row.original.createdAt)}</span>
     ),
   },
   {
@@ -128,19 +117,6 @@ const consultationColumns: ColumnDef<Consultation>[] = [
       ) : (
         <span className="text-sm text-gray-400">None</span>
       ),
-  },
-  {
-    id: "status",
-    header: "Status",
-    accessorKey: "status",
-    cell: ({ row }) => {
-      const isCompleted = row.original.status === "Completed";
-      return (
-        <Badge variant={isCompleted ? "default" : "secondary"}>
-          {row.original.status}
-        </Badge>
-      );
-    },
   },
   {
     id: "actions",

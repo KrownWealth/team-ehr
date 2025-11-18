@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useVerifyOtp } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +16,7 @@ export default function OTPVerificationPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { verifyOtp, isLoading } = useAuth();
+  const { mutate: verifyOtp, isPending } = useVerifyOtp();
 
   const phone = searchParams.get("phone");
   const email = searchParams.get("email");
@@ -169,10 +169,10 @@ export default function OTPVerificationPage() {
 
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || otp.some((d) => d === "")}
+        disabled={isPending || otp.some((d) => d === "")}
         className="w-full h-12"
       >
-        {isLoading ? "Verifying..." : "Verify & Continue"}
+        {isPending ? "Verifying..." : "Verify & Continue"}
       </Button>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess, DashboardStats } from "@/types";
+import { ApiResponse, DashboardStats } from "@/types";
 import {
   Users,
   UserPlus,
@@ -21,10 +21,10 @@ import { CardSkeleton } from "@/components/shared/loading/CardSkeleton";
 export default function AdminDashboard() {
   const { user } = useAuth();
 
-  const { data: stats, isLoading } = useQuery<ResponseSuccess<DashboardStats>>({
+  const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["admin-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/admin/dashboard/stats");
       return response.data;
     },
   });
@@ -39,41 +39,35 @@ export default function AdminDashboard() {
       href: `/clinic/${user?.clinicId}/patients`,
     },
     {
-      title: "Today's Check-ins",
-      value: statsData?.todayCheckIns || 0,
+      title: "Today's Appointments",
+      value: statsData?.todayAppointments || 0,
       icon: UserPlus,
       href: `/clinic/${user?.clinicId}/queue`,
     },
     {
-      title: "Queue Length",
-      value: statsData?.queueLength || 0,
-      icon: Clock,
-      href: `/clinic/${user?.clinicId}/queue`,
-    },
-    {
       title: "Staff Members",
-      value: statsData?.staffCount || 0,
+      value: statsData?.totalStaff || 0,
       icon: Activity,
       href: `/clinic/${user?.clinicId}/staff`,
     },
     {
-      title: "Revenue (Today)",
-      value: statsData?.revenue ? formatCurrency(statsData.revenue) : "₦0.00",
-      icon: DollarSign,
-      // href: `/clinic/${user?.clinicId}/billing`,
+      title: "Pending Bills",
+      value: statsData?.pendingBills || 0,
+      icon: Clock,
       href: "#",
     },
     {
-      title: "Pending Consultations",
-      value: statsData?.pendingConsultations || 0,
-      icon: TrendingUp,
-      href: `/clinic/${user?.clinicId}/queue`,
+      title: "Revenue (Today)",
+      value: statsData?.todayRevenue
+        ? formatCurrency(statsData.todayRevenue)
+        : "₦0.00",
+      icon: DollarSign,
+      href: "#",
     },
   ];
 
   return (
     <div className="space-y-7">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>

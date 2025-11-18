@@ -17,15 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { ResponseSuccess, Clinic } from "@/types";
-import {
-  Save,
-  Building2,
-  Clock,
-  DollarSign,
-  Palette,
-  CheckCircle2,
-} from "lucide-react";
+import { ApiResponse, Clinic } from "@/types";
+import { Save, Building2, Clock, DollarSign, Palette } from "lucide-react";
 import { useParams } from "next/navigation";
 import Loader from "@/components/shared/Loader";
 
@@ -41,6 +34,8 @@ export default function SettingsPage() {
     address: "",
     city: "",
     state: "",
+    lga: "",
+    type: "",
     logoUrl: "",
   });
 
@@ -54,10 +49,10 @@ export default function SettingsPage() {
     sunday: { open: "09:00", close: "13:00", closed: true },
   });
 
-  const { isLoading, data } = useQuery<ResponseSuccess<Clinic>>({
+  const { isLoading, data } = useQuery<ApiResponse<Clinic>>({
     queryKey: ["clinic", clinicId],
     queryFn: async () => {
-      const response = await apiClient.get("/clinic/profile");
+      const response = await apiClient.get("/v1/clinic/profile");
       return response.data;
     },
   });
@@ -72,14 +67,16 @@ export default function SettingsPage() {
         address: clinic.address || "",
         city: clinic.city || "",
         state: clinic.state || "",
-        logoUrl: clinic.logoUrl || "",
+        lga: clinic.lga || "",
+        type: clinic.type || "",
+        logoUrl: (clinic as any).logoUrl || "",
       });
     }
   }, [data]);
 
   const updateClinicMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiClient.put("/clinic", data);
+      await apiClient.put("/v1/clinic", data);
     },
     onSuccess: () => {
       toast.success("Settings updated successfully!");
@@ -96,7 +93,13 @@ export default function SettingsPage() {
       return;
     }
 
-    updateClinicMutation.mutate(clinicData);
+    const { logoUrl, ...dataToSubmit } = clinicData;
+    updateClinicMutation.mutate(dataToSubmit);
+  };
+
+  const handleBrandingSubmit = () => {
+    // Assuming the API supports a PATCH operation for branding separately
+    updateClinicMutation.mutate({ logoUrl: clinicData.logoUrl });
   };
 
   const handleHoursSubmit = () => {
@@ -104,9 +107,7 @@ export default function SettingsPage() {
   };
 
   if (isLoading) {
-    return (
-      <Loader/>
-    );
+    return <Loader />;
   }
 
   return (
@@ -410,7 +411,7 @@ export default function SettingsPage() {
 
               <div className="flex justify-end pt-4 border-t border-gray-100">
                 <Button
-                  onClick={handleClinicSubmit}
+                  onClick={handleBrandingSubmit}
                   disabled={updateClinicMutation.isPending}
                   className="h-11 px-6 bg-green-600 hover:bg-green-700"
                 >

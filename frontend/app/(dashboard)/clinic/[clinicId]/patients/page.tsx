@@ -28,7 +28,7 @@ export default function PatientsPage() {
 
       <TableList
         querykey="patients"
-        endpoint="/patient"
+        endpoint="/v1/patient"
         columns={patientColumns}
       />
     </div>

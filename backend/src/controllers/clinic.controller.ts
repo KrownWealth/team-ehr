@@ -66,6 +66,14 @@ export const registerClinic = async (req: Request, res: Response) => {
       },
     });
 
+    const userId = (req as any).user?.id;
+    if (userId) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { onboardingStatus: "COMPLETED" },
+      });
+    }
+
     logger.info(`Clinic registered successfully: ${clinic.email}`);
 
     return createdResponse(res, clinic, "Clinic registered successfully");

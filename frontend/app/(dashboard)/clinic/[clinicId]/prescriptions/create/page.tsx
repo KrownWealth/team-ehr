@@ -16,10 +16,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Trash2, AlertTriangle, Save } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { ResponseSuccess, Patient, Medication } from "@/types";
+import {
+  ApiResponse,
+  Patient,
+  Medication,
+  CreatePrescriptionData,
+} from "@/types";
+
+// Local interface for current medication input, reflecting the simplified types
+interface CurrentMedInput {
+  drug: string;
+  dosage: string;
+  frequency: string;
+  duration: number; // Storing as number for form input
+  instructions: string;
+}
 
 export default function CreatePrescriptionPage() {
   const router = useRouter();
@@ -29,17 +43,14 @@ export default function CreatePrescriptionPage() {
 
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [medications, setMedications] = useState<Medication[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Medication[]>([]); // Using 'prescriptions' to match CreatePrescriptionData
   const [notes, setNotes] = useState("");
-  const [currentMed, setCurrentMed] = useState<Medication>({
-    drugName: "",
-    strength: "",
-    form: "Tablet",
+  const [currentMed, setCurrentMed] = useState<CurrentMedInput>({
+    drug: "",
+    dosage: "1 tablet",
     frequency: "BD",
-    route: "Oral",
-    duration: 7,
-    quantity: 14,
-    instructions: "",
+    duration: 7, // days
+    instructions: "Take after meals",
   });
 
   // Search patient
@@ -50,10 +61,10 @@ export default function CreatePrescriptionPage() {
     }
 
     try {
-      const response = await apiClient.get<ResponseSuccess<Patient[]>>(
-        `/patient?search=${patientSearch}&limit=1`
+      const response = await apiClient.get<ApiResponse<Patient[]>>(
+        `/v1/patient?search=${patientSearch}&limit=1`
       );
-      if (response.data.data.length > 0) {
+      if (response.data.data?.length === 1) {
         setSelectedPatient(response.data.data[0]);
       } else {
         toast.error("Patient not found");
@@ -67,32 +78,32 @@ export default function CreatePrescriptionPage() {
   const checkAllergies = () => {
     if (!selectedPatient?.allergies) return [];
 
-    return medications
+    return prescriptions
       .filter((med) =>
         selectedPatient.allergies?.some((allergy) =>
-          med.drugName.toLowerCase().includes(allergy.toLowerCase())
+          med.drug.toLowerCase().includes(allergy.toLowerCase())
         )
       )
-      .map((med) => med.drugName);
+      .map((med) => med.drug);
   };
 
   const allergyWarnings = checkAllergies();
 
   // Add medication to list
   const addMedication = () => {
-    if (!currentMed.drugName || !currentMed.strength) {
-      toast.error("Please fill drug name and strength");
+    if (!currentMed.drug || !currentMed.dosage) {
+      toast.error("Please fill drug name and dosage");
       return;
     }
 
     // Check for allergy
     if (
       selectedPatient?.allergies?.some((allergy) =>
-        currentMed.drugName.toLowerCase().includes(allergy.toLowerCase())
+        currentMed.drug.toLowerCase().includes(allergy.toLowerCase())
       )
     ) {
       toast.error(
-        `⚠️ ALLERGY ALERT: Patient is allergic to ${currentMed.drugName}!`,
+        `⚠️ ALLERGY ALERT: Patient may be allergic to a component of ${currentMed.drug}!`,
         {
           duration: 5000,
         }
@@ -100,31 +111,39 @@ export default function CreatePrescriptionPage() {
       return;
     }
 
-    setMedications([...medications, { ...currentMed }]);
+    setPrescriptions([
+      ...prescriptions,
+      {
+        ...currentMed,
+        duration: `${currentMed.duration} days`, // Convert duration back to string for the API type
+        // Ensure all Medication properties are explicitly set
+        drug: currentMed.drug,
+        dosage: currentMed.dosage,
+        frequency: currentMed.frequency,
+        instructions: currentMed.instructions,
+      },
+    ]);
 
     // Reset current medication form
     setCurrentMed({
-      drugName: "",
-      strength: "",
-      form: "Tablet",
+      drug: "",
+      dosage: "1 tablet",
       frequency: "BD",
-      route: "Oral",
       duration: 7,
-      quantity: 14,
-      instructions: "",
+      instructions: "Take after meals",
     });
 
     toast.success("Medication added");
   };
 
   const removeMedication = (index: number) => {
-    setMedications(medications.filter((_, i) => i !== index));
+    setPrescriptions(prescriptions.filter((_, i) => i !== index));
   };
 
   // Save prescription mutation
   const savePrescriptionMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiClient.post("/prescription", data);
+    mutationFn: async (data: CreatePrescriptionData) => {
+      await apiClient.post("/v1/prescription", data);
     },
     onSuccess: () => {
       toast.success("Prescription created successfully!");
@@ -144,21 +163,22 @@ export default function CreatePrescriptionPage() {
       return;
     }
 
-    if (medications.length === 0) {
+    if (prescriptions.length === 0) {
       toast.error("Please add at least one medication");
       return;
     }
 
-    savePrescriptionMutation.mutate({
+    const prescriptionData: CreatePrescriptionData = {
       patientId: selectedPatient.id,
-      medications,
-      notes,
-    });
+      prescriptions: prescriptions,
+      notes: notes || undefined,
+    };
+
+    savePrescriptionMutation.mutate(prescriptionData);
   };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -176,7 +196,6 @@ export default function CreatePrescriptionPage() {
         </div>
       </div>
 
-      {/* Patient Search */}
       {!selectedPatient && (
         <Card>
           <CardHeader>
@@ -185,7 +204,7 @@ export default function CreatePrescriptionPage() {
           <CardContent>
             <div className="flex gap-3">
               <Input
-                placeholder="Enter patient ID (UPI) or name"
+                placeholder="Enter patient ID or name"
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && searchPatient()}
@@ -196,7 +215,6 @@ export default function CreatePrescriptionPage() {
         </Card>
       )}
 
-      {/* Selected Patient */}
       {selectedPatient && (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="pt-6">
@@ -206,7 +224,7 @@ export default function CreatePrescriptionPage() {
                   {selectedPatient.firstName} {selectedPatient.lastName}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  UPI: {selectedPatient.upi} · {selectedPatient.gender}
+                  ID: {selectedPatient.patientNumber} · {selectedPatient.gender}
                 </p>
                 {selectedPatient.allergies &&
                   selectedPatient.allergies.length > 0 && (
@@ -245,88 +263,38 @@ export default function CreatePrescriptionPage() {
 
       {selectedPatient && (
         <>
-          {/* Add Medication Form */}
           <Card>
             <CardHeader>
               <CardTitle>Add Medication</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Drug Name & Strength */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Drug Name *</Label>
-                  <Input
-                    placeholder="e.g., Paracetamol"
-                    value={currentMed.drugName}
-                    onChange={(e) =>
-                      setCurrentMed({ ...currentMed, drugName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Strength *</Label>
-                  <Input
-                    placeholder="e.g., 500mg"
-                    value={currentMed.strength}
-                    onChange={(e) =>
-                      setCurrentMed({ ...currentMed, strength: e.target.value })
-                    }
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Drug Name *</Label>
+                <Input
+                  placeholder="e.g., Paracetamol 500mg"
+                  value={currentMed.drug}
+                  onChange={(e) =>
+                    setCurrentMed({ ...currentMed, drug: e.target.value })
+                  }
+                />
               </div>
 
-              {/* Form & Route */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Form</Label>
-                  <Select
-                    value={currentMed.form}
-                    onValueChange={(val: any) =>
-                      setCurrentMed({ ...currentMed, form: val })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Tablet">Tablet</SelectItem>
-                      <SelectItem value="Syrup">Syrup</SelectItem>
-                      <SelectItem value="Injection">Injection</SelectItem>
-                      <SelectItem value="Cream">Cream</SelectItem>
-                      <SelectItem value="Drops">Drops</SelectItem>
-                      <SelectItem value="Inhaler">Inhaler</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Route</Label>
-                  <Select
-                    value={currentMed.route}
-                    onValueChange={(val: any) =>
-                      setCurrentMed({ ...currentMed, route: val })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Oral">Oral</SelectItem>
-                      <SelectItem value="IV">IV (Intravenous)</SelectItem>
-                      <SelectItem value="IM">IM (Intramuscular)</SelectItem>
-                      <SelectItem value="Topical">Topical</SelectItem>
-                      <SelectItem value="Sublingual">Sublingual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Frequency & Duration */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Frequency</Label>
+                  <Label>Dosage *</Label>
+                  <Input
+                    placeholder="e.g., 1 tablet"
+                    value={currentMed.dosage}
+                    onChange={(e) =>
+                      setCurrentMed({ ...currentMed, dosage: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Frequency *</Label>
                   <Select
                     value={currentMed.frequency}
-                    onValueChange={(val: any) =>
+                    onValueChange={(val) =>
                       setCurrentMed({ ...currentMed, frequency: val })
                     }
                   >
@@ -343,28 +311,14 @@ export default function CreatePrescriptionPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Duration (days)</Label>
+                  <Label>Duration (days) *</Label>
                   <Input
                     type="number"
                     value={currentMed.duration}
                     onChange={(e) =>
                       setCurrentMed({
                         ...currentMed,
-                        duration: parseInt(e.target.value),
-                      })
-                    }
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    value={currentMed.quantity}
-                    onChange={(e) =>
-                      setCurrentMed({
-                        ...currentMed,
-                        quantity: parseInt(e.target.value),
+                        duration: parseInt(e.target.value) || 1,
                       })
                     }
                     min="1"
@@ -372,11 +326,10 @@ export default function CreatePrescriptionPage() {
                 </div>
               </div>
 
-              {/* Instructions */}
               <div className="space-y-2">
-                <Label>Instructions</Label>
+                <Label>Instructions (Optional)</Label>
                 <Input
-                  placeholder="e.g., Take after meals"
+                  placeholder="e.g., Take after meals, Apply topically"
                   value={currentMed.instructions}
                   onChange={(e) =>
                     setCurrentMed({
@@ -394,28 +347,25 @@ export default function CreatePrescriptionPage() {
             </CardContent>
           </Card>
 
-          {/* Medications List */}
-          {medications.length > 0 && (
+          {prescriptions.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>
-                  Prescription ({medications.length} medications)
+                  Prescription ({prescriptions.length} medications)
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {medications.map((med, index) => (
+                  {prescriptions.map((med, index) => (
                     <div
                       key={index}
                       className="flex justify-between items-start p-4 border rounded-lg"
                     >
                       <div className="flex-1">
-                        <p className="font-semibold">
-                          {med.drugName} {med.strength}
-                        </p>
+                        <p className="font-semibold">{med.drug}</p>
                         <p className="text-sm text-gray-600">
-                          {med.form} · {med.frequency} · {med.route} ·{" "}
-                          {med.duration} days
+                          Dosage: {med.dosage} · Frequency: {med.frequency} ·
+                          Duration: {med.duration}
                         </p>
                         {med.instructions && (
                           <p className="text-sm text-gray-500 mt-1">
@@ -438,7 +388,6 @@ export default function CreatePrescriptionPage() {
             </Card>
           )}
 
-          {/* Notes */}
           <Card>
             <CardHeader>
               <CardTitle>Additional Notes (Optional)</CardTitle>
@@ -453,7 +402,6 @@ export default function CreatePrescriptionPage() {
             </CardContent>
           </Card>
 
-          {/* Allergy Warnings */}
           {allergyWarnings.length > 0 && (
             <Card className="border-red-500 bg-red-50">
               <CardContent className="pt-6">
@@ -464,8 +412,8 @@ export default function CreatePrescriptionPage() {
                       ALLERGY WARNING
                     </p>
                     <p className="text-sm text-red-800">
-                      Patient has documented allergies to:{" "}
-                      {allergyWarnings.join(", ")}
+                      Patient has documented allergies potentially conflicting
+                      with: {allergyWarnings.join(", ")}
                     </p>
                   </div>
                 </div>
@@ -473,7 +421,6 @@ export default function CreatePrescriptionPage() {
             </Card>
           )}
 
-          {/* Submit */}
           <div className="flex justify-end gap-3">
             <Button
               variant="outline"
@@ -484,7 +431,7 @@ export default function CreatePrescriptionPage() {
             <Button
               onClick={handleSubmit}
               disabled={
-                savePrescriptionMutation.isPending || medications.length === 0
+                savePrescriptionMutation.isPending || prescriptions.length === 0
               }
             >
               <Save className="mr-2 h-4 w-4" />

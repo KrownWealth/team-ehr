@@ -11,7 +11,7 @@ import EmergencyContactStep from "./_components/EmergencyContactStep";
 import { useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { ResponseSuccess } from "@/types";
+import { ApiResponse, RegisterPatientData, Gender, BloodGroup } from "@/types";
 
 const STEPS = [
   { id: 1, name: "Personal Info", icon: User },
@@ -19,26 +19,29 @@ const STEPS = [
   { id: 3, name: "Emergency Contact", icon: Phone },
 ];
 
+// Intersection type to handle form state including UI-specific emergency fields
+// that might be missing from the strict RegisterPatientData type
+type PatientFormData = Partial<RegisterPatientData> & {
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  emergencyRelation?: string;
+};
+
 export default function RegisterPatientPage() {
   const router = useRouter();
   const params = useParams();
   const clinicId = params.clinicId as string;
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<any>({
-    nationalId: "",
+  const [formData, setFormData] = useState<PatientFormData>({
     firstName: "",
     lastName: "",
-    otherNames: "",
-    gender: "",
     birthDate: "",
+    gender: undefined,
     phone: "",
     email: "",
-    addressLine: "",
-    city: "",
-    state: "",
-    photoUrl: "",
-    bloodGroup: "",
+    address: "",
+    bloodGroup: undefined,
     allergies: [],
     chronicConditions: [],
     emergencyContact: "",
@@ -47,9 +50,9 @@ export default function RegisterPatientPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiClient.post<ResponseSuccess<any>>(
-        "/patient/register",
+    mutationFn: async (data: PatientFormData) => {
+      const response = await apiClient.post<ApiResponse<any>>(
+        "/v1/patient/register",
         data
       );
       return response.data;
@@ -79,32 +82,32 @@ export default function RegisterPatientPage() {
     }
   };
 
-  const updateFormData = (data: any) => {
-    setFormData({ ...formData, ...data });
+  const updateFormData = (data: Partial<PatientFormData>) => {
+    setFormData((prev) => ({ ...prev, ...data }));
   };
 
   return (
     <div className="space-y-8 w-full max-w-3xl mx-auto pb-12">
-      {/* Header */}
       <div className="space-y-4 justify-center flex flex-col">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="mx-auto text-center justify-center" 
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mx-auto text-center justify-center"
           onClick={() => router.back()}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">Register New Patient</h1>
+          <h1 className="text-4xl font-bold text-gray-900">
+            Register New Patient
+          </h1>
           <p className="text-gray-600 mt-3 text-[15px]">
             Complete all steps to register a new patient
           </p>
         </div>
       </div>
 
-      {/* Progress Steps */}
       <div className="flex items-center justify-between px-4">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
@@ -149,7 +152,6 @@ export default function RegisterPatientPage() {
         })}
       </div>
 
-      {/* Form Card */}
       <Card className="border-gray-200 shadow-sm rounded-2xl">
         <CardContent className="p-8">
           <div className="animate-in fade-in duration-300">
@@ -164,18 +166,17 @@ export default function RegisterPatientPage() {
             )}
           </div>
 
-          {/* Navigation */}
           <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleBack}
               className="flex-1 h-12 text-[15px]"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               {currentStep === 1 ? "Cancel" : "Previous"}
             </Button>
-            <Button 
-              onClick={handleNext} 
+            <Button
+              onClick={handleNext}
               disabled={registerMutation.isPending}
               className="flex-1 h-12 text-[15px]"
             >

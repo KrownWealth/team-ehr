@@ -107,7 +107,7 @@ export function getErrorMessage(error: unknown): string {
     const apiError = error as AxiosError<ApiError>;
     return (
       apiError.response?.data?.message ||
-      apiError.response?.data?.error ||
+      apiError.response?.data?.errors?.[0].message ||
       "Something went wrong"
     );
   }
@@ -197,7 +197,9 @@ export function abbreviateDirection(input: string): string {
   return abbreviation;
 }
 
-export function parseCookieValue<T>(value: string | undefined | null): T | null {
+export function parseCookieValue<T>(
+  value: string | undefined | null
+): T | null {
   if (!value || typeof value !== "string") return null;
 
   try {

@@ -36,7 +36,7 @@ export default function QueuePage() {
 
       <TableList
         querykey="queue"
-        endpoint="/queue"
+        endpoint="/v1/queue"
         columns={queueColumns}
         tabs={{
           value: statusFilter !== "all" ? `status=${statusFilter}` : "",

@@ -65,14 +65,13 @@ export default function EmergencyContactStep({
         />
       </div>
 
-      {/* Summary Section */}
       <div className="border-t pt-6 mt-6">
         <h3 className="font-semibold text-lg mb-4">Registration Summary</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-600">Patient Name:</p>
             <p className="font-medium">
-              {data.firstName} {data.otherNames} {data.lastName}
+              {data.firstName} {data.lastName}
             </p>
           </div>
           <div>

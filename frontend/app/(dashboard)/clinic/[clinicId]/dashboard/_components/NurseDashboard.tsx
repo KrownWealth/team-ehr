@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
-import { ResponseSuccess } from "@/types";
+import { ApiResponse, DashboardStats } from "@/types";
 import { Heart, Clock, Activity, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -12,10 +12,10 @@ import { CardSkeleton } from "@/components/shared/loading/CardSkeleton";
 export default function NurseDashboard() {
   const { user } = useAuth();
 
-  const { data: stats, isLoading } = useQuery<ResponseSuccess<any>>({
+  const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["nurse-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/admin/dashboard/stats");
       return response.data;
     },
   });
@@ -25,21 +25,21 @@ export default function NurseDashboard() {
   const statCards = [
     {
       title: "Pending Vitals",
-      value: statsData?.pendingVitals || 0,
+      value: statsData?.todayAppointments || 0,
       subtitle: "Patients waiting",
       icon: Activity,
       href: `/clinic/${user?.clinicId}/vitals`,
     },
     {
       title: "Queue Status",
-      value: statsData?.queueLength || 0,
+      value: statsData?.totalPatients || 0,
       subtitle: "In queue",
       icon: Clock,
       href: `/clinic/${user?.clinicId}/queue`,
     },
     {
       title: "Vitals Recorded Today",
-      value: statsData?.todayCheckIns || 0,
+      value: statsData?.todayAppointments || 0,
       subtitle: "Completed",
       icon: TrendingUp,
       href: `/clinic/${user?.clinicId}/vitals`,
@@ -48,12 +48,11 @@ export default function NurseDashboard() {
 
   return (
     <div className="space-y-7">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Nurse Station</h1>
           <p className="text-base text-gray-600 mt-1">
-            Welcome, {user?.firstName}! Monitor vitals and patient queue.
+            Welcome, {user?.firstName}\! Monitor vitals and patient queue.
           </p>
         </div>
         <Link href={`/clinic/${user?.clinicId}/queue`}>
@@ -64,7 +63,6 @@ export default function NurseDashboard() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
@@ -85,7 +83,9 @@ export default function NurseDashboard() {
                       <div className="text-4xl font-bold text-gray-900">
                         {stat.value}
                       </div>
-                      <p className="text-sm text-gray-600 mt-2">{stat.subtitle}</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {stat.subtitle}
+                      </p>
                     </CardContent>
                   </Card>
                 </Link>
@@ -93,7 +93,6 @@ export default function NurseDashboard() {
             })}
       </div>
 
-      {/* Quick Actions */}
       <Card className="w-fit">
         <CardHeader>
           <CardTitle className="text-xl">Quick Actions</CardTitle>

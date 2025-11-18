@@ -18,6 +18,7 @@ export const siteConfig = {
     DOCTOR: "DOCTOR",
     NURSE: "NURSE",
     CLERK: "CLERK",
+    CASHIER: "CASHIER",
     PATIENT: "PATIENT",
   } as const,
 
@@ -26,6 +27,7 @@ export const siteConfig = {
     DOCTOR: "Doctor",
     NURSE: "Nurse",
     CLERK: "Front Desk Clerk",
+    CASHIER: "Cashier",
     PATIENT: "Patient",
   },
 

@@ -9,39 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RegisterPatientData, Gender } from "@/types";
 
 interface PersonalInfoStepProps {
-  data: any;
-  onChange: (data: any) => void;
+  data: Partial<RegisterPatientData>;
+  onChange: (data: Partial<RegisterPatientData>) => void;
 }
 
 export default function PersonalInfoStep({
   data,
   onChange,
 }: PersonalInfoStepProps) {
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: keyof RegisterPatientData, value: any) => {
     onChange({ [field]: value });
   };
 
   return (
     <div className="space-y-6">
-      {/* National ID */}
-      <div className="space-y-2">
-        <Label htmlFor="nationalId">National ID (NIN) - Optional</Label>
-        <Input
-          id="nationalId"
-          placeholder="12345678901"
-          value={data.nationalId}
-          onChange={(e) => handleChange("nationalId", e.target.value)}
-          maxLength={11}
-        />
-        <p className="text-xs text-gray-500">
-          Enter NIN to auto-fill name and date of birth
-        </p>
-      </div>
-
-      {/* Name Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">
             First Name <span className="text-red-500">*</span>
@@ -67,19 +52,8 @@ export default function PersonalInfoStep({
             required
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="otherNames">Other Names</Label>
-          <Input
-            id="otherNames"
-            placeholder="Middle name"
-            value={data.otherNames}
-            onChange={(e) => handleChange("otherNames", e.target.value)}
-          />
-        </div>
       </div>
 
-      {/* Gender and Birth Date */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="gender">
@@ -87,15 +61,15 @@ export default function PersonalInfoStep({
           </Label>
           <Select
             value={data.gender}
-            onValueChange={(val) => handleChange("gender", val)}
+            onValueChange={(val) => handleChange("gender", val as Gender)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Male">Male</SelectItem>
-              <SelectItem value="Female">Female</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+              <SelectItem value="MALE">Male</SelectItem>
+              <SelectItem value="FEMALE">Female</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -115,7 +89,6 @@ export default function PersonalInfoStep({
         </div>
       </div>
 
-      {/* Contact Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="phone">
@@ -143,37 +116,14 @@ export default function PersonalInfoStep({
         </div>
       </div>
 
-      {/* Address */}
       <div className="space-y-2">
-        <Label htmlFor="addressLine">Address</Label>
+        <Label htmlFor="address">Address</Label>
         <Input
-          id="addressLine"
-          placeholder="Street address"
-          value={data.addressLine}
-          onChange={(e) => handleChange("addressLine", e.target.value)}
+          id="address"
+          placeholder="Street address, City, State"
+          value={data.address}
+          onChange={(e) => handleChange("address", e.target.value)}
         />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="city">City</Label>
-          <Input
-            id="city"
-            placeholder="Lagos"
-            value={data.city}
-            onChange={(e) => handleChange("city", e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="state">State</Label>
-          <Input
-            id="state"
-            placeholder="Lagos"
-            value={data.state}
-            onChange={(e) => handleChange("state", e.target.value)}
-          />
-        </div>
       </div>
     </div>
   );

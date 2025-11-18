@@ -32,7 +32,7 @@ export default function PrescriptionsPage() {
 
       <TableList
         querykey="prescriptions"
-        endpoint="/prescription"
+        endpoint="/v1/prescription"
         columns={prescriptionColumns}
       />
     </div>
