@@ -43,7 +43,7 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-background">
+      <div className="flex-1 flex items-center justify-center bg-background p-4">
         {children}
       </div>
     </div>

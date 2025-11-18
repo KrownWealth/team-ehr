@@ -10,6 +10,32 @@ import logger from "../utils/logger.utils";
 const emailService = new EmailService();
 
 /**
+ * Helper function to create and send OTP
+ */
+async function createAndSendOTP(email: string) {
+  // Delete any existing unverified OTPs for this email
+  await prisma.oTP.deleteMany({
+    where: {
+      email,
+      verified: false,
+    },
+  });
+
+  const otpCode = generateOTP();
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  await prisma.oTP.create({
+    data: {
+      email,
+      code: String(otpCode), // Ensure it's stored as string
+      expiresAt: otpExpiry,
+    },
+  });
+
+  await emailService.sendOTPEmail(email, otpCode);
+}
+
+/**
  * Register Admin User (First-time clinic setup)
  */
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -30,19 +56,6 @@ export const registerAdmin = async (req: Request, res: Response) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate OTP
-    const otpCode = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Create OTP record
-    await prisma.oTP.create({
-      data: {
-        email,
-        code: otpCode,
-        expiresAt: otpExpiry,
-      },
-    });
 
     // Create user with pending clinic status
     const user = await prisma.user.create({
@@ -66,8 +79,8 @@ export const registerAdmin = async (req: Request, res: Response) => {
       },
     });
 
-    // Send OTP email
-    await emailService.sendOTPEmail(email, otpCode);
+    // Create and send OTP
+    await createAndSendOTP(email);
 
     logger.info(`Admin registered: ${email}`);
 
@@ -104,16 +117,6 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otpCode = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
-    await prisma.oTP.create({
-      data: {
-        email,
-        code: otpCode,
-        expiresAt: otpExpiry,
-      },
-    });
 
     const user = await prisma.user.create({
       data: {
@@ -127,7 +130,8 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    await emailService.sendOTPEmail(email, otpCode);
+    // Create and send OTP
+    await createAndSendOTP(email);
 
     logger.info(`User registered: ${email}`);
 
@@ -146,16 +150,63 @@ export const register = async (req: Request, res: Response) => {
 };
 
 /**
+ * Resend OTP
+ */
+export const resendOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists and is not verified
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is already verified",
+      });
+    }
+
+    // Create and send new OTP
+    await createAndSendOTP(email);
+
+    logger.info(`OTP resent to: ${email}`);
+
+    res.json({
+      status: "success",
+      message: "OTP has been resent to your email",
+    });
+  } catch (error: any) {
+    logger.error("Resend OTP error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+/**
  * Verify OTP
  */
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
+    // Ensure code is string for comparison
+    const codeStr = String(code).trim();
+
     const otp = await prisma.oTP.findFirst({
       where: {
         email,
-        code,
+        code: codeStr,
         verified: false,
         expiresAt: { gt: new Date() },
       },
@@ -395,6 +446,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       });
     }
 
+    // Create a password reset token (consider using a separate token type)
     const resetToken = generateAccessToken(user.id);
     await emailService.sendPasswordResetEmail(email, resetToken);
 

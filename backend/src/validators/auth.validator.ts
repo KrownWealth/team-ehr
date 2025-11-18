@@ -63,3 +63,10 @@ export const changePasswordValidator = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage("Password must contain uppercase, lowercase, and number"),
 ];
+
+export const resendOtpValidator = [
+  body("email")
+    .isEmail()
+    .withMessage("Valid email is required")
+    .normalizeEmail(),
+];

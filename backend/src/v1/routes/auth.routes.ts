@@ -3,6 +3,7 @@ import {
   registerAdmin,
   register,
   verifyOtp,
+  resendOtp,
   login,
   changePassword,
   refreshToken,
@@ -18,6 +19,7 @@ import {
   loginValidator,
   verifyOtpValidator,
   changePasswordValidator,
+  resendOtpValidator,
 } from "../../validators/auth.validator";
 
 const router = Router();
@@ -26,11 +28,11 @@ const router = Router();
 router.post("/register-admin", registerValidator, validate, registerAdmin);
 router.post("/register", registerValidator, validate, register);
 router.post("/verify-otp", verifyOtpValidator, validate, verifyOtp);
+router.post("/resend-otp", resendOtpValidator, validate, resendOtp);
 router.post("/login", loginValidator, validate, login);
 router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-router.post("/change-password", changePassword);
 
 // OAuth routes
 router.get("/google", googleAuth);
