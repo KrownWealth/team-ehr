@@ -62,7 +62,7 @@ export default function OnboardingPage() {
 
   const onboardMutation = useMutation({
     mutationFn: async (data: OnboardClinicData) => {
-      const response = await apiClient.post("/v1/onboard", data);
+      const response = await apiClient.post("/v1/clinic/onboard", data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -140,6 +140,7 @@ export default function OnboardingPage() {
         <Label htmlFor="name">Clinic Name *</Label>
         <Input
           id="name"
+          className="h-12"
           placeholder="e.g., City General Hospital"
           value={formData.name}
           onChange={(e) => updateFormData({ name: e.target.value })}
@@ -153,7 +154,7 @@ export default function OnboardingPage() {
           onValueChange={(val) => updateFormData({ type: val })}
           required
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select Clinic Type" />
           </SelectTrigger>
           <SelectContent>
@@ -171,6 +172,7 @@ export default function OnboardingPage() {
           <Input
             id="email"
             type="email"
+            className="h-12"
             placeholder="contact@clinic.com"
             value={formData.email}
             onChange={(e) => updateFormData({ email: e.target.value })}
@@ -182,6 +184,7 @@ export default function OnboardingPage() {
           <Input
             id="phone"
             type="tel"
+            className="h-12"
             placeholder="08012345678"
             value={formData.phone}
             onChange={(e) => updateFormData({ phone: e.target.value })}
@@ -199,6 +202,7 @@ export default function OnboardingPage() {
         <Label htmlFor="address">Full Address *</Label>
         <Textarea
           id="address"
+          className="h-12"
           placeholder="Street name and number"
           value={formData.address}
           onChange={(e) => updateFormData({ address: e.target.value })}
@@ -210,6 +214,7 @@ export default function OnboardingPage() {
           <Label htmlFor="city">City *</Label>
           <Input
             id="city"
+            className="h-12"
             placeholder="e.g., Lagos"
             value={formData.city}
             onChange={(e) => updateFormData({ city: e.target.value })}
@@ -220,6 +225,7 @@ export default function OnboardingPage() {
           <Label htmlFor="state">State *</Label>
           <Input
             id="state"
+            className="h-12"
             placeholder="e.g., Lagos State"
             value={formData.state}
             onChange={(e) => updateFormData({ state: e.target.value })}
@@ -230,6 +236,7 @@ export default function OnboardingPage() {
           <Label htmlFor="lga">LGA *</Label>
           <Input
             id="lga"
+            className="h-12"
             placeholder="e.g., Ikeja"
             value={formData.lga}
             onChange={(e) => updateFormData({ lga: e.target.value })}
@@ -251,6 +258,7 @@ export default function OnboardingPage() {
           <Label htmlFor="numberOfDoctors">Number of Doctors</Label>
           <Input
             id="numberOfDoctors"
+            className="h-12"
             type="number"
             placeholder="e.g., 5"
             value={formData.numberOfDoctors}
@@ -266,6 +274,7 @@ export default function OnboardingPage() {
             id="averageDailyPatients"
             type="number"
             placeholder="e.g., 50"
+            className="h-12"
             value={formData.averageDailyPatients}
             onChange={(e) =>
               updateFormData({
@@ -276,8 +285,8 @@ export default function OnboardingPage() {
           />
         </div>
       </div>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-        <p className="text-sm text-yellow-800 font-medium">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <p className="text-sm text-green-800 font-medium">
           Once submitted, you will be directed to your dashboard. This completes
           the primary setup.
         </p>
@@ -286,12 +295,8 @@ export default function OnboardingPage() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-12">
+    <div className="max-w-3xl mx-auto space-y-8 pb-12 px-5 py-14">
       <div className="text-center">
-        {/* Placeholder for logo/icon, consistent with other UIs */}
-        <div className="h-12 w-12 rounded-lg bg-green-600 mx-auto mb-4 flex items-center justify-center">
-          <Building2 className="h-6 w-6 text-white" />
-        </div>
         <h1 className="text-3xl font-bold text-gray-900">Clinic Onboarding</h1>
         <p className="text-gray-600 mt-2 text-base">
           Just a few steps to set up your clinic profile.

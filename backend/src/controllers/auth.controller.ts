@@ -16,23 +16,27 @@ async function createAndSendOTP(email: string) {
   // Delete any existing unverified OTPs for this email
   await prisma.oTP.deleteMany({
     where: {
-      email,
+      email: email,
       verified: false,
     },
   });
 
   const otpCode = generateOTP();
-  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+  const otpString = String(otpCode);
 
   await prisma.oTP.create({
     data: {
-      email,
-      code: String(otpCode), // Ensure it's stored as string
+      email: email,
+      code: otpString,
       expiresAt: otpExpiry,
     },
   });
 
-  await emailService.sendOTPEmail(email, otpCode);
+  await emailService.sendOTPEmail(email, otpString);
+
+  console.log(`[OTP] Created for ${email}: ${otpString}`);
 }
 
 /**
@@ -200,17 +204,32 @@ export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
-    // Ensure code is string for comparison
-    const codeStr = String(code).trim();
+    if (!email || !code) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email and code are required",
+      });
+    }
+
+    const normalizedEmail = email;
+    const normalizedCode = String(code).trim();
+
+    console.log(
+      `[OTP] Verification attempt - Email: ${normalizedEmail}, Code: ${normalizedCode}`
+    );
+
+    console.log(await prisma.oTP.findMany());
 
     const otp = await prisma.oTP.findFirst({
       where: {
-        email,
-        code: codeStr,
+        email: normalizedEmail,
+        code: normalizedCode,
         verified: false,
         expiresAt: { gt: new Date() },
       },
     });
+
+    console.log(`[OTP] Found OTP: ${otp ? "YES" : "NO"}`);
 
     if (!otp) {
       return res.status(400).json({
@@ -227,10 +246,11 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     // Mark user as verified
     await prisma.user.update({
-      where: { email },
+      where: { email: normalizedEmail },
       data: { isVerified: true },
     });
 
+    console.log(`[OTP] ✅ Verification successful for: ${normalizedEmail}`);
     logger.info(`OTP verified for: ${email}`);
 
     res.json({
@@ -238,6 +258,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       message: "Email verified successfully",
     });
   } catch (error: any) {
+    console.error(`[OTP] ❌ Error:`, error);
     logger.error("Verify OTP error:", error);
     res.status(500).json({
       status: "error",
@@ -256,6 +277,8 @@ export const login = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+
+    console.log(user, email, password)
 
     if (!user || !user.password) {
       return res.status(401).json({
@@ -316,7 +339,7 @@ export const login = async (req: Request, res: Response) => {
           updatedAt: user.updatedAt,
           isActive: user.isActive,
           phone: user.phone,
-          photoUrl: user.photoUrl
+          photoUrl: user.photoUrl,
         },
       },
     });
@@ -446,7 +469,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
       });
     }
 
-    // Create a password reset token (consider using a separate token type)
     const resetToken = generateAccessToken(user.id);
     await emailService.sendPasswordResetEmail(email, resetToken);
 

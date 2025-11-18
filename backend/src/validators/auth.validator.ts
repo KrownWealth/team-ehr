@@ -17,9 +17,9 @@ export const registerValidator = [
 
   body("email")
     .trim()
+    .toLowerCase()  // Changed: Use toLowerCase instead of normalizeEmail
     .isEmail()
-    .withMessage("Valid email is required")
-    .normalizeEmail(),
+    .withMessage("Valid email is required"),
 
   body("phone")
     .trim()
@@ -38,15 +38,21 @@ export const registerValidator = [
 export const loginValidator = [
   body("email")
     .trim()
+    .toLowerCase()  // Changed: Use toLowerCase instead of normalizeEmail
     .isEmail()
-    .withMessage("Valid email is required")
-    .normalizeEmail(),
+    .withMessage("Valid email is required"),
 
-  body("password").notEmpty().withMessage("Password is required"),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required"),
 ];
 
 export const verifyOtpValidator = [
-  body("email").trim().isEmail().withMessage("Valid email is required"),
+  body("email")
+    .trim()
+    .toLowerCase()  // Changed: Use toLowerCase instead of normalizeEmail
+    .isEmail()
+    .withMessage("Valid email is required"),
 
   body("code")
     .trim()
@@ -55,7 +61,9 @@ export const verifyOtpValidator = [
 ];
 
 export const changePasswordValidator = [
-  body("oldPassword").notEmpty().withMessage("Old password is required"),
+  body("oldPassword")
+    .notEmpty()
+    .withMessage("Old password is required"),
 
   body("newPassword")
     .isLength({ min: 8 })
@@ -66,7 +74,8 @@ export const changePasswordValidator = [
 
 export const resendOtpValidator = [
   body("email")
+    .trim()
+    .toLowerCase()  // Changed: Use toLowerCase instead of normalizeEmail
     .isEmail()
-    .withMessage("Valid email is required")
-    .normalizeEmail(),
+    .withMessage("Valid email is required"),
 ];

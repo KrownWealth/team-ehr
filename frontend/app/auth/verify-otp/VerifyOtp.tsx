@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useVerifyOtp } from "@/lib/hooks/use-auth";
+import { useVerifyOtp, useResendOtp } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -17,10 +17,11 @@ export default function OTPVerificationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { mutate: verifyOtp, isPending } = useVerifyOtp();
+  const { mutate: resendOtp, isPending: isResending } = useResendOtp();
 
   const phone = searchParams.get("phone");
   const email = searchParams.get("email");
-  const type = searchParams.get("type")?.toUpperCase() || "STAFF";
+  const type = searchParams.get("type")?.toUpperCase() || "ADMIN";
 
   useEffect(() => {
     if (!email && !phone) {
@@ -90,19 +91,20 @@ export default function OTPVerificationPage() {
     verifyOtp(payload);
   };
 
-  const handleResend = async () => {
-    try {
-      // TODO: Replace with actual resend OTP API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast.success("OTP resent successfully!");
-      setTimer(60);
-      setCanResend(false);
-      setOtp(["", "", "", "", "", ""]);
-      inputRefs.current[0]?.focus();
-    } catch (error) {
-      toast.error("Failed to resend OTP");
+  const handleResend = () => {
+    if (!email) {
+      toast.error("Email is required to resend OTP");
+      return;
     }
+
+    resendOtp(email, {
+      onSuccess: () => {
+        setTimer(60);
+        setCanResend(false);
+        setOtp(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+      },
+    });
   };
 
   if (!email && !phone) {
@@ -155,9 +157,10 @@ export default function OTPVerificationPage() {
           <Button
             variant="link"
             onClick={handleResend}
+            disabled={isResending}
             className="text-green-600 hover:text-green-700"
           >
-            Resend OTP
+            {isResending ? "Resending..." : "Resend OTP"}
           </Button>
         ) : (
           <p className="text-sm text-gray-600">

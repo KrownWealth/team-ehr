@@ -1,3 +1,5 @@
+// @/lib/stores/auth-store.ts
+
 import { create } from "zustand";
 import { User, OnboardingStatus } from "@/types";
 import { getCookie, setCookie, deleteCookie } from "cookies-next";

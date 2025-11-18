@@ -100,16 +100,20 @@ export function useLogin() {
         return;
       }
 
-      const redirectUrl = getDefaultRouteForRole(
-        data.user.role,
-        data.user.clinicId
-      );
-
-      router.replace(redirectUrl);
+      if (data.user.clinicId) {
+        const redirectUrl = getDefaultRouteForRole(
+          data.user.role,
+          data.user.clinicId
+        );
+        router.replace(redirectUrl);
+      } else {
+        console.warn("User has completed onboarding but no clinicId found");
+        router.replace("/onboarding");
+      }
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Login failed";
-      // toast.error(message);
+      toast.error(message); // This was commented out - now it shows errors
     },
   });
 }
@@ -137,7 +141,6 @@ export function useRegister() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
-      // toast.error(message);
     },
   });
 }
@@ -161,7 +164,6 @@ export function useVerifyOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Verification failed";
-      // toast.error(message);
     },
   });
 }
@@ -183,7 +185,6 @@ export function useForgotPassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to send reset link";
-      // toast.error(message);
     },
   });
 }
@@ -207,7 +208,6 @@ export function useResetPassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to reset password";
-      // toast.error(message);
     },
   });
 }
@@ -229,7 +229,26 @@ export function useChangePassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to change password";
-      // toast.error(message);
+    },
+  });
+}
+
+export function useResendOtp() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const response = await apiClient.post<ApiResponse<void>>(
+        "/v1/auth/resend-otp",
+        { email }
+      );
+      return response.data;
+    },
+    onSuccess: (response) => {
+      const message = response.message || "OTP has been resent to your email";
+      toast.success(message);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to resend OTP";
+      toast.error(message);
     },
   });
 }

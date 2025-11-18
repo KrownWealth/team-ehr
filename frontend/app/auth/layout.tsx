@@ -1,5 +1,4 @@
 "use client";
-
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -10,9 +9,32 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const router = useRouter();
 
-  if (isAuthenticated) {
+  useEffect(() => {
+    if (user) {
+      console.log("Authenticated user:", user);
+
+      if (user.onboardingStatus === "PENDING") {
+        console.log("Here");
+        router.push("/onboarding");
+        return;
+      }
+
+      if (user.clinicId) {
+        const defaultRoute =
+          user.role === "PATIENT"
+            ? `/clinic/${user.clinicId}/portal/dashboard`
+            : `/clinic/${user.clinicId}/dashboard`;
+
+        router.push(defaultRoute);
+      }
+    }
+  }, [user, router]);
+
+  // Show loading only if authenticated AND has clinicId (ready to redirect)
+  if (user?.clinicId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -27,7 +49,6 @@ export default function AuthLayout({
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 flex-col p-12 relative overflow-hidden bg-primary text-primary-foreground">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-30 pointer-events-none"></div>
-
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-accent opacity-20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute top-40 right-0 w-96 h-96 bg-secondary opacity-15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-10 left-10 w-64 h-64 bg-primary-foreground opacity-5 rounded-full blur-2xl pointer-events-none"></div>
@@ -43,7 +64,7 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-background p-4">
+      <div className="flex-1 flex items-center justify-center bg-background">
         {children}
       </div>
     </div>
