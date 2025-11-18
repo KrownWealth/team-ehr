@@ -45,6 +45,7 @@ export default function DashboardLayout({
     }
 
     if (user && !canAccessRoute(user.role, pathname)) {
+      console.log(user.role, pathname);
       notFound();
       return;
     }

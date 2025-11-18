@@ -16,7 +16,6 @@ export const tenantIsolation = (
     }
   }
 
-  // ✅ Require valid clinicId for all other requests
   if (!req.clinicId) {
     logger.error("Tenant isolation failed: No valid clinicId found");
     return res.status(400).json({

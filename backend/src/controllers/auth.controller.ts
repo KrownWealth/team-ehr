@@ -103,11 +103,22 @@ export const registerAdmin = async (req: Request, res: Response) => {
 };
 
 /**
- * Register Regular User (Staff)
+ * Register Regular User (Staff) - UPDATED TO ASSIGN CLINIC ID
  */
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: AuthRequest, res: Response) => {
   try {
     const { firstName, lastName, email, phone, password, role } = req.body;
+
+    // 1. Get the clinicId from the authenticated user (Admin/Manager)
+    const clinicId = req.user?.clinicId;
+
+    // Safety check: Clinic ID is required for staff registration
+    if (!clinicId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Staff registration requires an associated clinic.",
+      });
+    }
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -131,21 +142,31 @@ export const register = async (req: Request, res: Response) => {
         password: hashedPassword,
         role: role || "CLERK",
         isVerified: false,
+        // 2. IMPORTANT: Assign the staff to the Admin's clinic
+        clinicId: clinicId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        clinicId: true, // Include clinicId in the response
       },
     });
 
     // Create and send OTP
     await createAndSendOTP(email);
 
-    logger.info(`User registered: ${email}`);
+    logger.info(`Staff registered: ${email} for Clinic ID: ${clinicId}`);
 
     res.status(201).json({
       status: "success",
-      message: "Registration successful. Please verify your email.",
-      data: { id: user.id, email: user.email },
+      message: "Registration successful. Please verify staff email.",
+      data: { id: user.id, email: user.email, clinicId: user.clinicId },
     });
   } catch (error: any) {
-    logger.error("Register error:", error);
+    logger.error("Staff registration error:", error);
     res.status(500).json({
       status: "error",
       message: error.message,
@@ -278,7 +299,7 @@ export const login = async (req: Request, res: Response) => {
       where: { email },
     });
 
-    console.log(user, email, password)
+    console.log(user, email, password);
 
     if (!user || !user.password) {
       return res.status(401).json({

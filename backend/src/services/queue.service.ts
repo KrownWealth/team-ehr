@@ -36,7 +36,6 @@ export class QueueService {
         .where("clinicId", "==", clinicId)
         .where("status", "in", ["WAITING", "IN_CONSULTATION"])
         .orderBy("priority", "desc")
-        .orderBy("checkedInAt", "asc")
         .get();
 
       return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));

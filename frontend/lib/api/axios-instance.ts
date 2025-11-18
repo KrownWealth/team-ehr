@@ -120,7 +120,6 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 403) {
-      toast.error("Access denied");
       if (typeof window !== "undefined" && !isAuthPage) {
         window.location.href = "/404";
       }

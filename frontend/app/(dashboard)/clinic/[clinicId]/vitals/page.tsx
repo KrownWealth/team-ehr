@@ -382,8 +382,8 @@ export default function VitalsPage() {
               </div>
 
               {bmi && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-blue-900">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-green-900">
                     BMI: {bmi.toFixed(2)} ({bmiCategory})
                   </p>
                 </div>

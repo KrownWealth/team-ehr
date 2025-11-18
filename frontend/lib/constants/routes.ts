@@ -12,18 +12,39 @@ export const ROUTE_PERMISSIONS: Record<string, Role[]> = {
   "/staff": ["ADMIN"],
   "/settings": ["ADMIN"],
   "/billing": ["ADMIN"],
-};
+};;
 
 export function canAccessRoute(
   userRole: Role | undefined,
   route: string
 ): boolean {
   if (!userRole) return false;
-  const baseRoute = route.split("/").slice(0, 3).join("/");
-  const cleanRoute = baseRoute.replace(/\/[a-f0-9-]{36}/gi, "");
+
+  const segments = route.split("/").filter((s) => s.length > 0);
+  let cleanRoute = "";
+
+  if (segments[0] === "clinic" && segments.length >= 2) {
+    const relevantSegments = segments.slice(0, 4);
+
+    if (relevantSegments.length > 1) {
+      relevantSegments[1] = "{id}";
+    }
+
+    cleanRoute = "/" + relevantSegments.join("/");
+
+    if (segments.length === 2) {
+      cleanRoute = "/clinic/{id}";
+    }
+  } else {
+    const baseRoute = segments.slice(0, 3).join("/");
+    cleanRoute = "/" + baseRoute.replace(/[a-f0-9-]{7,36}/gi, "{id}");
+  }
 
   const allowedRoles = ROUTE_PERMISSIONS[cleanRoute];
-  if (!allowedRoles) return true;
+
+  if (!allowedRoles) {
+    return true;
+  }
 
   return allowedRoles.includes(userRole);
 }

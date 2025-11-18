@@ -111,9 +111,22 @@ export function useLogin() {
         router.replace("/onboarding");
       }
     },
-    onError: (error: any) => {
+    onError: (error: any, variables: LoginCredentials) => {
       const message = error.response?.data?.message || "Login failed";
-      toast.error(message); // This was commented out - now it shows errors
+
+      // If the error message indicates the user needs to verify OTP, redirect to verify-otp with email
+      if (
+        message &&
+        (message.toLowerCase().includes("verify otp") ||
+          message.toLowerCase().includes("email not verified") || message.toLowerCase().includes("verify your email"))
+      ) {
+        router.replace(
+          `/auth/verify-otp?email=${encodeURIComponent(variables.email)}`
+        );
+        return;
+      }
+
+      toast.error(message);
     },
   });
 }
