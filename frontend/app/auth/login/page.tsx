@@ -199,7 +199,7 @@ export default function LoginPage() {
               href="/auth/register"
               className="text-green-600 hover:text-green-700 font-medium"
             >
-              Register your clinic
+              Register
             </Link>
           </div>
         </TabsContent>

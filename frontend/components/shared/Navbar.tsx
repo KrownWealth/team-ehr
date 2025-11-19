@@ -1,20 +1,7 @@
 "use client";
 
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  NavbarMenuToggle,
-  NavbarMenu,
-  NavbarMenuItem,
-  Link,
-  Button,
-} from "@heroui/react";
-
-import { useState } from "react";
-import { useAuth } from "@/lib/hooks/use-auth";
-import Image from "next/image";
+import { Bell, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,181 +10,120 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, Mail } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useRouter, useParams } from "next/navigation";
 import { getInitials } from "@/lib/utils/formatters";
+import { toast } from "sonner";
 
-export const AppNavbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+export function AppNavbar() {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const clinicId = params.clinicId as string;
 
-  const dashboardUrl = user?.clinicId
-    ? `/clinic/${user.clinicId}/dashboard`
-    : "/auth/login";
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    router.push("/auth/login");
+  };
+
+  const handleSettings = () => {
+    if (clinicId) {
+      router.push(`/clinic/${clinicId}/settings`);
+    }
+  };
+
+  const handleProfile = () => {
+    if (clinicId && user?.id) {
+      // Navigate to profile or settings based on role
+      if (user.role === "PATIENT") {
+        router.push(`/clinic/${clinicId}/portal/profile`);
+      } else {
+        router.push(`/clinic/${clinicId}/settings`);
+      }
+    }
+  };
+
+  if (!user) return null;
+
+  const userInitials = getInitials(user.firstName, user.lastName);
+  const userFullName = `${user.firstName} ${user.lastName}`;
 
   return (
-    <Navbar
-      shouldHideOnScroll
-      onMenuOpenChange={setIsMenuOpen}
-      className="bg-white/90 backdrop-blur-md border-b border-green-100 shadow-sm py-3.5"
-      maxWidth="xl"
-    >
-      <NavbarContent justify="start">
-        <NavbarBrand>
-          <Link href="/" className="flex items-center gap-2.5 cursor-pointer">
-            <Image
-              src={"/images/logo.png"}
-              width={142}
-              height={142}
-              priority
-              alt="WCE"
-            />
-          </Link>
-        </NavbarBrand>
-      </NavbarContent>
+    <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="flex h-16 items-center justify-between px-6">
+        {/* Left side - could add breadcrumbs or page title here */}
+        <div className="flex-1" />
 
-      <NavbarContent justify="end" className="hidden sm:flex gap-4">
-        {user ? (
-          <NavbarItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="bordered"
-                  className="flex items-center gap-3 h-10 px-3 cursor-pointer hover:bg-gray-50 rounded-xl border-green-700 text-green-700"
-                >
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                    {user && getInitials(user.firstName, user.lastName)}
-                  </div>
-                  <div className="flex-col hidden md:flex items-start">
-                    <span className="text-sm font-medium text-gray-900 block">
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                    <p className="text-xs text-gray-500 font-normal mt-0.5">
-                      {user?.email}
-                    </p>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 mt-2">
-                <DropdownMenuLabel className="py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
-                      {user && getInitials(user.firstName, user.lastName)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {user?.firstName} {user?.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 font-normal mt-0.5">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href={dashboardUrl} className="cursor-pointer py-2.5 flex items-center w-full">
-                    <Settings className="mr-3 h-4 w-4 text-gray-500" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer py-2.5"
-                  onClick={() => {
-                    window.location.href = "mailto:support@yourapp.com";
-                  }}
-                >
-                  <Mail className="mr-3 h-4 w-4 text-gray-500" />
-                  Help & Support
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer py-2.5 text-red-600 focus:text-red-600 focus:bg-red-50"
-                  onClick={logout}
-                >
-                  <LogOut className="mr-3 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </NavbarItem>
-        ) : (
-          <>
-            <NavbarItem>
+        {/* Right side - notifications and user menu */}
+        <div className="flex items-center gap-4">
+          {/* Notifications */}
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 text-[10px] font-medium text-white flex items-center justify-center">
+              3
+            </span>
+          </Button>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                as={Link}
-                href="/auth/login"
-                variant="bordered"
-                className="border-green-700 text-green-700 hover:bg-green-50 font-semibold"
+                variant="ghost"
+                className="flex items-center gap-2 hover:bg-gray-100"
               >
-                Sign In
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.photoUrl} alt={userFullName} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-gray-900">
+                    {userFullName}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {user.role.toLowerCase()}
+                  </p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
               </Button>
-            </NavbarItem>
-            <NavbarItem>
-              <Button
-                as={Link}
-                href="/auth/register"
-                color="primary"
-                variant="shadow"
-                className="bg-green-700 hover:bg-green-800 text-white font-semibold"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{userFullName}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={handleProfile}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem onClick={handleSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
               >
-                Get Started
-              </Button>
-            </NavbarItem>
-          </>
-        )}
-      </NavbarContent>
-
-      {/* MOBILE TOGGLE */}
-      <NavbarMenuToggle
-        aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-        className="sm:hidden text-green-700"
-      />
-
-      <NavbarMenu className="bg-white/95 backdrop-blur-md pt-6">
-        <div className="space-y-6 py-14 px-4">
-          {user ? (
-            <>
-              <NavbarMenuItem>
-                <Button
-                  as={Link}
-                  href={dashboardUrl}
-                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
-                >
-                  Dashboard
-                </Button>
-              </NavbarMenuItem>
-              <NavbarMenuItem>
-                <Button
-                  onClick={logout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-6"
-                >
-                  Logout
-                </Button>
-              </NavbarMenuItem>
-            </>
-          ) : (
-            <>
-              <NavbarMenuItem>
-                <Link
-                  href="/auth/login"
-                  className="w-full text-green-700 font-bold text-lg py-3 block text-center border border-green-700 rounded-xl hover:bg-green-50"
-                >
-                  Sign In
-                </Link>
-              </NavbarMenuItem>
-              <NavbarMenuItem>
-                <Button
-                  as={Link}
-                  href="/auth/register"
-                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
-                >
-                  Get Started
-                </Button>
-              </NavbarMenuItem>
-            </>
-          )}
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </NavbarMenu>
-    </Navbar>
+      </div>
+    </header>
   );
 }
