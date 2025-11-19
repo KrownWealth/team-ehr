@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter, usePathname, notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/shared/Sidebar";
-import Navbar from "@/components/shared/Navbar";
+import { AppNavbar } from "@/components/shared/Navbar";
 import { canAccessRoute } from "@/lib/constants/routes";
 import Image from "next/image";
 import { OnboardingStatus } from "@/types";
@@ -30,8 +30,9 @@ export default function DashboardLayout({
       return;
     }
 
+    // ✅ FIX: Only ADMIN needs onboarding
     const isPendingOnboarding =
-      user.onboardingStatus === OnboardingStatus.PENDING;
+      user.role === "ADMIN" && user.onboardingStatus === OnboardingStatus.PENDING;
     const isOnboardingPage = pathname === "/onboarding";
 
     if (isPendingOnboarding && !isOnboardingPage) {
@@ -44,9 +45,11 @@ export default function DashboardLayout({
       return;
     }
 
+    // ✅ FIX: Check route permissions, but don't throw 404 for valid clinic routes
     if (user && !canAccessRoute(user.role, pathname)) {
-      console.log(user.role, pathname);
-      notFound();
+      console.log("Access denied for:", user.role, pathname);
+      // Instead of notFound(), redirect to dashboard
+      router.push(`/clinic/${user.clinicId}/dashboard`);
       return;
     }
 
@@ -74,7 +77,7 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-[#fcfcfc] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar />
+        <AppNavbar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1600px] mx-auto p-6">{children}</div>
         </main>
