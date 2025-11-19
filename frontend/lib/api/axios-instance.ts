@@ -121,7 +121,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 403) {
       if (typeof window !== "undefined" && !isAuthPage) {
-        window.location.href = "/404";
+        // window.location.href = "/404";
       }
       return Promise.reject(error);
     }

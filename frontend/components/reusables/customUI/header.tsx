@@ -15,10 +15,26 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, Settings, Mail } from "lucide-react";
+import { getInitials } from "@/lib/utils/formatters";
+import { getDefaultRouteForRole } from "@/lib/constants/routes";
 
 export default function AppNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user } = useAuth(); // Get user from your auth context
+  const { user, logout } = useAuth();
+  const clinicId = user?.clinicId;
+
+  const dashboardUrl = user?.clinicId
+    ? getDefaultRouteForRole(user.role, user.clinicId)
+    : "/dashboard";
 
   return (
     <Navbar
@@ -44,15 +60,67 @@ export default function AppNavbar() {
       <NavbarContent justify="end" className="hidden sm:flex gap-4">
         {user ? (
           <NavbarItem>
-            <Button
-              as={Link}
-              href="/dashboard"
-              color="primary"
-              variant="shadow"
-              className="bg-green-700 hover:bg-green-800 text-white font-semibold"
-            >
-              Dashboard
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-3 h-13 p-2 cursor-pointer hover:bg-gray-50 rounded-xl border-none border-green-200"
+                >
+                  <div className="h-10 w-10 rounded-full bg-green-700 text-white flex items-center justify-center text-sm font-semibold">
+                    {getInitials(user.firstName, user.lastName)}
+                  </div>
+                  <div className="flex-col hidden md:flex items-start">
+                    <span className="text-[15px] font-medium text-gray-900 block">
+                      {user.firstName} {user.lastName}
+                    </span>
+                    <p className="text-xs text-gray-500 font-normal mt-0.5">
+                      {user.email}
+                    </p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 mt-2">
+                <DropdownMenuLabel className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
+                      {getInitials(user.firstName, user.lastName)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 font-normal mt-0.5">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <Link href={dashboardUrl}>
+                  <DropdownMenuItem className="cursor-pointer py-2.5">
+                    <Settings className="mr-3 h-4 w-4 text-gray-500" />
+                    Dashboard
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5"
+                  onClick={() => {
+                    window.location.href = "mailto:support@wecareehr.com";
+                  }}
+                >
+                  <Mail className="mr-3 h-4 w-4 text-gray-500" />
+                  Help & Support
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5 text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={logout}
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </NavbarItem>
         ) : (
           <>
@@ -90,15 +158,25 @@ export default function AppNavbar() {
       <NavbarMenu className="bg-white/95 backdrop-blur-md pt-6">
         <div className="space-y-6 py-14 px-4">
           {user ? (
-            <NavbarMenuItem>
-              <Button
-                as={Link}
-                href="/dashboard"
-                className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
-              >
-                Dashboard
-              </Button>
-            </NavbarMenuItem>
+            <>
+              <NavbarMenuItem>
+                <Button
+                  as={Link}
+                  href={dashboardUrl}
+                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
+                >
+                  Dashboard
+                </Button>
+              </NavbarMenuItem>
+              <NavbarMenuItem>
+                <Button
+                  onPress={logout}
+                  className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 font-bold text-lg py-6"
+                >
+                  Logout
+                </Button>
+              </NavbarMenuItem>
+            </>
           ) : (
             <>
               <NavbarMenuItem>

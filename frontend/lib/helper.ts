@@ -106,8 +106,8 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
     const apiError = error as AxiosError<ApiError>;
     return (
-      apiError.response?.data?.message ||
       apiError.response?.data?.errors?.[0].message ||
+      apiError.response?.data?.message ||
       "Something went wrong"
     );
   }

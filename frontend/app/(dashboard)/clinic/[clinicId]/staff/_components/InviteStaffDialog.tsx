@@ -23,6 +23,8 @@ import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { Mail, User, Phone, Briefcase, Lock, Eye, EyeOff } from "lucide-react";
 import { CreateStaffData } from "@/types";
+import { getErrorMessage } from "@/lib/helper";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 interface InviteStaffDialogProps {
   open: boolean;
@@ -49,27 +51,30 @@ export default function InviteStaffDialog({
   onClose,
 }: InviteStaffDialogProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<
     Omit<RegisterStaffData, "role"> & { role: StaffRole }
   >({
     email: "",
     firstName: "",
     lastName: "",
-    phone: "", // Local phone number only
+    phone: "",
     password: "",
     confirmPassword: "",
     role: "CLERK",
   });
   const [selectedCountryCode, setSelectedCountryCode] = useState(
-    countries[0].code // Default to +234
+    countries[0].code
   );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const registerMutation = useMutation({
     mutationFn: async (data: Omit<RegisterStaffData, "confirmPassword">) => {
-      // API call expects phone and password, not confirmPassword
-      await apiClient.post("/v1/auth/register", data);
+      await apiClient.post("/v1/auth/register", {
+        ...data,
+        clinicId: user?.clinicId,
+      });
     },
     onSuccess: () => {
       toast.success("Staff member registered! Verification email sent.");
@@ -78,7 +83,7 @@ export default function InviteStaffDialog({
       resetForm();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -322,7 +327,7 @@ export default function InviteStaffDialog({
                 <SelectItem value="CLERK">Front Desk Clerk</SelectItem>
                 <SelectItem value="NURSE">Nurse</SelectItem>
                 <SelectItem value="DOCTOR">Doctor</SelectItem>
-                <SelectItem value="CASHIER">Cashier</SelectItem>
+                {/* <SelectItem value="CASHIER">Cashier</SelectItem> */}
               </SelectContent>
             </Select>
           </div>

@@ -33,13 +33,11 @@ function isAuthRoute(pathname: string): boolean {
 type FullUserData = AuthTokenPayload & {
   onboardingStatus: OnboardingStatus;
   role: string;
-  clinicId?: string;
 };
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for static files and Next.js internals
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -54,30 +52,48 @@ export async function middleware(request: NextRequest) {
   let user: Partial<FullUserData> | null = null;
   const loginUrl = new URL("/auth/login", request.url);
 
-  // Token validation
   if (token) {
     try {
       const decodedUser = jwtDecode<AuthTokenPayload>(token);
       const currentTime = Date.now() / 1000;
 
       if (decodedUser.exp < currentTime) {
-        const response = NextResponse.redirect(loginUrl);
+        const userDataFromCookie = parseCookieValue(
+          userDataStr
+        ) as Partial<FullUserData> | null;
+
+        if (userDataFromCookie?.role === "ADMIN") {
+          const response = NextResponse.redirect(loginUrl);
+          response.cookies.delete("auth_token");
+          response.cookies.delete("user_data");
+          return response;
+        }
+
+        const response = NextResponse.next();
         response.cookies.delete("auth_token");
-        response.cookies.delete("refresh_token");
         response.cookies.delete("user_data");
         return response;
       }
       user = decodedUser;
     } catch (error) {
-      const response = NextResponse.redirect(loginUrl);
+      const userDataFromCookie = parseCookieValue(
+        userDataStr
+      ) as Partial<FullUserData> | null;
+
+      if (userDataFromCookie?.role === "ADMIN") {
+        const response = NextResponse.redirect(loginUrl);
+        response.cookies.delete("auth_token");
+        response.cookies.delete("user_data");
+        return response;
+      }
+
+      const response = NextResponse.next();
       response.cookies.delete("auth_token");
-      response.cookies.delete("refresh_token");
       response.cookies.delete("user_data");
       return response;
     }
   }
 
-  // Merge user data from cookie
   const userDataFromCookie = parseCookieValue(
     userDataStr
   ) as Partial<FullUserData> | null;
@@ -87,105 +103,86 @@ export async function middleware(request: NextRequest) {
     user = userDataFromCookie as Partial<FullUserData>;
   }
 
-  // Allow public routes for everyone
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // Check authentication (user must have userId and role)
   const isAuthenticated = user?.userId && user?.role;
 
   if (!isAuthenticated) {
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const fullUser = user as FullUserData;
-  const onboardingUrl = new URL("/onboarding", request.url);
-  const isOnboardingRoute = pathname.startsWith("/onboarding");
-
-  // ✅ FIX 1: ADMIN-ONLY ONBOARDING
-  // Only ADMINs need to complete onboarding
-  const isAdmin = fullUser.role === "ADMIN";
-  const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
-
-  if (isAdmin && isPending && !isOnboardingRoute) {
-    // Admin needs onboarding, redirect to onboarding
-    return NextResponse.redirect(onboardingUrl);
-  }
-
-  if (isAdmin && !isPending && isOnboardingRoute) {
-    // Admin completed onboarding, redirect to dashboard
-    const dashboardUrl = new URL(
-      `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
-    );
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  // Non-admins should never see onboarding
-  if (!isAdmin && isOnboardingRoute) {
-    const dashboardUrl = new URL(
-      `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
-    );
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  // ✅ FIX 2: STOP REDIRECTING AUTHENTICATED USERS FROM LANDING PAGE
-  // Allow authenticated users to view landing page
-  if (pathname === "/") {
+    if (user?.role === "ADMIN" || !user?.role) {
+      return NextResponse.redirect(loginUrl);
+    }
     return NextResponse.next();
   }
 
-  // ✅ FIX 3: REDIRECT AUTHENTICATED USERS FROM AUTH PAGES
-  // If user is logged in and tries to access auth pages, redirect to dashboard
-  if (isAuthRoute(pathname)) {
-    const dashboardUrl = new URL(
-      `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
-    );
-    return NextResponse.redirect(dashboardUrl);
+  const fullUser = user as FullUserData;
+  const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
+
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+
+  if (isPending && !isOnboardingRoute) {
+    const onboardingUrl = new URL("/onboarding", request.url);
+    return NextResponse.redirect(onboardingUrl);
   }
 
-  // ✅ FIX 4: LESS AGGRESSIVE ROLE-BASED PROTECTION
-  // Only check permissions for clinic routes
-  if (pathname.startsWith("/clinic/")) {
-    const pathParts = pathname.split("/").filter(Boolean);
+  console.log(fullUser);
 
-    // Ensure user has clinicId
-    if (!fullUser.clinicId) {
-      return NextResponse.redirect(loginUrl);
-    }
-
-    const clinicId = pathParts[1];
-
-    // Allow users to access their own clinic
-    if (clinicId !== fullUser.clinicId) {
-      const correctDashboard = new URL(
-        `/clinic/${fullUser.clinicId}/dashboard`,
-        request.url
-      );
-      return NextResponse.redirect(correctDashboard);
-    }
-
-    // Build route pattern for permission check
-    const routeParts = pathParts.slice(2); // Remove 'clinic' and clinicId
-    let routeToCheck = "/" + routeParts.join("/");
-
-    // Replace dynamic segments with placeholders
-    routeToCheck = routeToCheck.replace(/\/[a-f0-9-]{36}/gi, "/{id}");
-
-    // Check if route has specific permissions
-    const allowedRoles = ROUTE_PERMISSIONS[routeToCheck];
-
-    if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
-      // User doesn't have permission, redirect to their dashboard
+  if (!isPending && isOnboardingRoute) {
+    if (fullUser.clinicId) {
       const dashboardUrl = new URL(
         `/clinic/${fullUser.clinicId}/dashboard`,
         request.url
       );
       return NextResponse.redirect(dashboardUrl);
     }
+  }
+
+  if (isAuthRoute(pathname) && !isPending && fullUser.clinicId) {
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
+    return NextResponse.redirect(dashboardUrl);
+  }
+
+  const pathParts = pathname.split("/").filter(Boolean);
+  if (pathParts.length === 0 && fullUser.clinicId && !isPending) {
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
+    return NextResponse.redirect(dashboardUrl);
+  }
+
+  if (pathParts.length < 2 || pathParts[0] !== "clinic") {
+    return NextResponse.next();
+  }
+
+  const clinicId = pathParts[1];
+
+  if (clinicId !== fullUser.clinicId) {
+    return NextResponse.next();
+  }
+
+  const routeParts = pathParts.slice(2);
+  let baseRoute = "/" + routeParts.join("/");
+
+  baseRoute = baseRoute.replace(/\/[a-zA-Z0-9-_]+$/, "");
+
+  let allowedRoles: string[] | undefined = ROUTE_PERMISSIONS[baseRoute];
+
+  if (!allowedRoles && baseRoute !== "/") {
+    const parentRoute = baseRoute.split("/").slice(0, -1).join("/") || "/";
+    allowedRoles = ROUTE_PERMISSIONS[parentRoute];
+  }
+
+  if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

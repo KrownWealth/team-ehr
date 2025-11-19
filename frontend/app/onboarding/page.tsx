@@ -27,7 +27,6 @@ import { toast } from "sonner";
 import { OnboardClinicData, OnboardingStatus } from "@/types";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
-import Image from "next/image";
 
 const STEPS = [
   { id: 1, name: "Clinic Info", icon: Building2 },

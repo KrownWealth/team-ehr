@@ -1,13 +1,13 @@
 "use client";
 
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useRouter, usePathname, notFound } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/shared/Sidebar";
-import { AppNavbar } from "@/components/shared/Navbar";
 import { canAccessRoute } from "@/lib/constants/routes";
 import Image from "next/image";
 import { OnboardingStatus } from "@/types";
+import { AppNavbar } from "@/components/shared/Navbar";
 
 export default function DashboardLayout({
   children,
@@ -21,7 +21,9 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/auth/login");
+      if (!user || user.role === "ADMIN") {
+        router.push("/auth/login");
+      }
       return;
     }
 
@@ -30,9 +32,8 @@ export default function DashboardLayout({
       return;
     }
 
-    // ✅ FIX: Only ADMIN needs onboarding
     const isPendingOnboarding =
-      user.role === "ADMIN" && user.onboardingStatus === OnboardingStatus.PENDING;
+      user.onboardingStatus === OnboardingStatus.PENDING;
     const isOnboardingPage = pathname === "/onboarding";
 
     if (isPendingOnboarding && !isOnboardingPage) {
@@ -45,11 +46,14 @@ export default function DashboardLayout({
       return;
     }
 
-    // ✅ FIX: Check route permissions, but don't throw 404 for valid clinic routes
     if (user && !canAccessRoute(user.role, pathname)) {
-      console.log("Access denied for:", user.role, pathname);
-      // Instead of notFound(), redirect to dashboard
-      router.push(`/clinic/${user.clinicId}/dashboard`);
+      if (user.clinicId) {
+        const defaultRoute =
+          user.role === "PATIENT"
+            ? `/clinic/${user.clinicId}/portal/dashboard`
+            : `/clinic/${user.clinicId}/dashboard`;
+        router.push(defaultRoute);
+      }
       return;
     }
 

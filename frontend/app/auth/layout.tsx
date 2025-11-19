@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { siteConfig } from "@/lib/siteConfig";
+import { getDefaultRouteForRole } from "@/lib/constants/routes";
 
 export default function AuthLayout({
   children,
@@ -14,27 +15,18 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (user) {
-      console.log("Authenticated user:", user);
-
-      // ✅ FIX: Only redirect ADMIN to onboarding
-      if (user.role === "ADMIN" && user.onboardingStatus === "PENDING") {
+      if (user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
         return;
       }
 
-      // ✅ FIX: All authenticated users with clinicId go to dashboard
       if (user.clinicId) {
-        const defaultRoute =
-          user.role === "PATIENT"
-            ? `/clinic/${user.clinicId}/portal/dashboard`
-            : `/clinic/${user.clinicId}/dashboard`;
-
+        const defaultRoute = getDefaultRouteForRole(user.role, user.clinicId);
         router.push(defaultRoute);
       }
     }
   }, [user, router]);
 
-  // Show loading only if authenticated AND has clinicId (ready to redirect)
   if (user?.clinicId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

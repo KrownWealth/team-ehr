@@ -107,14 +107,11 @@ export const registerAdmin = async (req: Request, res: Response) => {
  */
 export const register = async (req: AuthRequest, res: Response) => {
   try {
-    const { firstName, lastName, email, phone, password, role } = req.body;
+    const { firstName, lastName, email, phone, password, role, clinicId } =
+      req.body;
 
-    // 1. Get the clinicId from the authenticated user (Admin/Manager)
-    const clinicId = req.user?.clinicId;
-
-    // Safety check: Clinic ID is required for staff registration
     if (!clinicId) {
-      return res.status(403).json({
+      return res.status(400).json({
         status: "error",
         message: "Staff registration requires an associated clinic.",
       });

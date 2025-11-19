@@ -44,7 +44,7 @@ export const onboardClinic = async (req: AuthRequest, res: Response) => {
     // Update admin user with clinic ID
     await prisma.user.update({
       where: { id: userId },
-      data: { clinicId: clinic.id },
+      data: { clinicId: clinic.id, onboardingStatus: "COMPLETED" },
     });
 
     logger.info(`Clinic onboarded: ${clinic.name}`);
