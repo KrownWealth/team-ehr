@@ -20,7 +20,6 @@ app.use(
       const allowedOrigins = [
         "https://team-ehr.vercel.app",
         "http://localhost:3000",
-        "http://localhost:5173",
         process.env.FRONTEND_URL,
         process.env.FRONTEND_URL_2,
       ].filter(Boolean);
