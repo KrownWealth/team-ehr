@@ -123,7 +123,7 @@ export const config = {
   },
   frontendUrls: [
     process.env.FRONTEND_URL || "https://team-ehr.vercel.app",
-    process.env.FRONTEND_URL_2 || "http://localhost:3000/onboarding",
+    process.env.FRONTEND_URL_2 || "http://localhost:3000",
   ].filter(Boolean),
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
