@@ -1,9 +1,20 @@
 "use client";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  NavbarMenuToggle,
+  NavbarMenu,
+  NavbarMenuItem,
+  Link,
+  Button,
+} from "@heroui/react";
+
+import { useState } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { Bell, ChevronRight, LogOut, Mail, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,112 +23,181 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LogOut, Settings, Mail } from "lucide-react";
 import { getInitials } from "@/lib/utils/formatters";
 
-export default function Navbar() {
-  const pathname = usePathname();
+export const AppNavbar = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  const clinicId = user?.clinicId;
 
-  const pathSegments = pathname.split("/").filter(Boolean);
-  const breadcrumbs = pathSegments.slice(1).map((segment, index) => ({
-    label: segment
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" "),
-    href: `/${pathSegments.slice(0, index + 2).join("/")}`,
-    isLast: index === pathSegments.length - 2,
-  }));
+  const dashboardUrl = user?.clinicId
+    ? `/clinic/${user.clinicId}/dashboard`
+    : "/auth/login";
 
   return (
-    <header className="h-[80px] bg-white border-b border-gray-100 flex items-center justify-between px-8">
-      <nav className="flex items-center gap-2 text-[18px]">
-        {breadcrumbs.map((crumb, index) => (
-          <div key={crumb.href} className="flex items-center gap-2">
-            {index > 0 && <ChevronRight className="h-4 w-4 text-gray-300" />}
-            <span
-              className={
-                crumb.isLast ? "font-semibold text-gray-900" : "text-gray-500"
-              }
-            >
-              {crumb.label}
-            </span>
-          </div>
-        ))}
-      </nav>
+    <Navbar
+      shouldHideOnScroll
+      onMenuOpenChange={setIsMenuOpen}
+      className="bg-white/90 backdrop-blur-md border-b border-green-100 shadow-sm py-3.5"
+      maxWidth="xl"
+    >
+      <NavbarContent justify="start">
+        <NavbarBrand>
+          <Link href="/" className="flex items-center gap-2.5 cursor-pointer">
+            <Image
+              src={"/images/logo.png"}
+              width={142}
+              height={142}
+              priority
+              alt="WCE"
+            />
+          </Link>
+        </NavbarBrand>
+      </NavbarContent>
 
-      <div className="flex items-center gap-4">
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-10 w-10 hover:bg-gray-50 rounded-xl"
-        >
-          <Bell className="h-5 w-5 text-gray-600" />
-          <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full"></span>
-        </Button> */}
+      <NavbarContent justify="end" className="hidden sm:flex gap-4">
+        {user ? (
+          <NavbarItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="bordered"
+                  className="flex items-center gap-3 h-10 px-3 cursor-pointer hover:bg-gray-50 rounded-xl border-green-700 text-green-700"
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                    {user && getInitials(user.firstName, user.lastName)}
+                  </div>
+                  <div className="flex-col hidden md:flex items-start">
+                    <span className="text-sm font-medium text-gray-900 block">
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                    <p className="text-xs text-gray-500 font-normal mt-0.5">
+                      {user?.email}
+                    </p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 mt-2">
+                <DropdownMenuLabel className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
+                      {user && getInitials(user.firstName, user.lastName)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 font-normal mt-0.5">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href={dashboardUrl} className="cursor-pointer py-2.5 flex items-center w-full">
+                    <Settings className="mr-3 h-4 w-4 text-gray-500" />
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5"
+                  onClick={() => {
+                    window.location.href = "mailto:support@yourapp.com";
+                  }}
+                >
+                  <Mail className="mr-3 h-4 w-4 text-gray-500" />
+                  Help & Support
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5 text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={logout}
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </NavbarItem>
+        ) : (
+          <>
+            <NavbarItem>
+              <Button
+                as={Link}
+                href="/auth/login"
+                variant="bordered"
+                className="border-green-700 text-green-700 hover:bg-green-50 font-semibold"
+              >
+                Sign In
+              </Button>
+            </NavbarItem>
+            <NavbarItem>
+              <Button
+                as={Link}
+                href="/auth/register"
+                color="primary"
+                variant="shadow"
+                className="bg-green-700 hover:bg-green-800 text-white font-semibold"
+              >
+                Get Started
+              </Button>
+            </NavbarItem>
+          </>
+        )}
+      </NavbarContent>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex items-center gap-3 h-10 px-1 cursor-pointer hover:bg-gray-50 rounded-xl"
-            >
-              <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                {user && getInitials(user.firstName, user.lastName)}
-              </div>
-              <div className="flex-col hidden md:flex items-start">
-                <span className="text-[15px] font-medium text-gray-900 block">
-                  {user?.firstName} {user?.lastName}
-                </span>
-                <p className="text-xs text-gray-500 font-normal mt-0.5">
-                  {user?.email}
-                </p>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 mt-2">
-            <DropdownMenuLabel className="py-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
-                  {user && getInitials(user.firstName, user.lastName)}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500 font-normal mt-0.5">
-                    {user?.email}
-                  </p>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <Link href={`/clinic/${clinicId}/settings`}>
-              <DropdownMenuItem className="cursor-pointer py-2.5">
-                <Settings className="mr-3 h-4 w-4 text-gray-500" />
-                Settings
-              </DropdownMenuItem>
-            </Link>
-            <DropdownMenuItem
-              className="cursor-pointer py-2.5"
-              onClick={() => {
-                window.location.href = "mailto:support@yourapp.com";
-              }}
-            >
-              <Mail className="mr-3 h-4 w-4 text-gray-500" />
-              Help & Support
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer py-2.5 text-red-600 focus:text-red-600 focus:bg-red-50"
-              onClick={logout}
-            >
-              <LogOut className="mr-3 h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
+      {/* MOBILE TOGGLE */}
+      <NavbarMenuToggle
+        aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+        className="sm:hidden text-green-700"
+      />
+
+      <NavbarMenu className="bg-white/95 backdrop-blur-md pt-6">
+        <div className="space-y-6 py-14 px-4">
+          {user ? (
+            <>
+              <NavbarMenuItem>
+                <Button
+                  as={Link}
+                  href={dashboardUrl}
+                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
+                >
+                  Dashboard
+                </Button>
+              </NavbarMenuItem>
+              <NavbarMenuItem>
+                <Button
+                  onClick={logout}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-6"
+                >
+                  Logout
+                </Button>
+              </NavbarMenuItem>
+            </>
+          ) : (
+            <>
+              <NavbarMenuItem>
+                <Link
+                  href="/auth/login"
+                  className="w-full text-green-700 font-bold text-lg py-3 block text-center border border-green-700 rounded-xl hover:bg-green-50"
+                >
+                  Sign In
+                </Link>
+              </NavbarMenuItem>
+              <NavbarMenuItem>
+                <Button
+                  as={Link}
+                  href="/auth/register"
+                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
+                >
+                  Get Started
+                </Button>
+              </NavbarMenuItem>
+            </>
+          )}
+        </div>
+      </NavbarMenu>
+    </Navbar>
   );
 }

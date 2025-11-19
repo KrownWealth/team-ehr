@@ -16,12 +16,13 @@ export default function AuthLayout({
     if (user) {
       console.log("Authenticated user:", user);
 
-      if (user.onboardingStatus === "PENDING") {
-        console.log("Here");
+      // ✅ FIX: Only redirect ADMIN to onboarding
+      if (user.role === "ADMIN" && user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
         return;
       }
 
+      // ✅ FIX: All authenticated users with clinicId go to dashboard
       if (user.clinicId) {
         const defaultRoute =
           user.role === "PATIENT"

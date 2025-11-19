@@ -33,11 +33,13 @@ function isAuthRoute(pathname: string): boolean {
 type FullUserData = AuthTokenPayload & {
   onboardingStatus: OnboardingStatus;
   role: string;
+  clinicId?: string;
 };
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip middleware for static files and Next.js internals
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -52,6 +54,7 @@ export async function middleware(request: NextRequest) {
   let user: Partial<FullUserData> | null = null;
   const loginUrl = new URL("/auth/login", request.url);
 
+  // Token validation
   if (token) {
     try {
       const decodedUser = jwtDecode<AuthTokenPayload>(token);
@@ -60,6 +63,7 @@ export async function middleware(request: NextRequest) {
       if (decodedUser.exp < currentTime) {
         const response = NextResponse.redirect(loginUrl);
         response.cookies.delete("auth_token");
+        response.cookies.delete("refresh_token");
         response.cookies.delete("user_data");
         return response;
       }
@@ -67,11 +71,13 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       const response = NextResponse.redirect(loginUrl);
       response.cookies.delete("auth_token");
+      response.cookies.delete("refresh_token");
       response.cookies.delete("user_data");
       return response;
     }
   }
 
+  // Merge user data from cookie
   const userDataFromCookie = parseCookieValue(
     userDataStr
   ) as Partial<FullUserData> | null;
@@ -81,71 +87,105 @@ export async function middleware(request: NextRequest) {
     user = userDataFromCookie as Partial<FullUserData>;
   }
 
+  // Allow public routes for everyone
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // --- START OF FIX: Redefine authentication without requiring clinicId ---
-
-  const isAuthenticated = user?.userId && user?.role; // ✅ Checks only for logged-in user details
+  // Check authentication (user must have userId and role)
+  const isAuthenticated = user?.userId && user?.role;
 
   if (!isAuthenticated) {
-    // If the user is not authenticated, send them to login.
     return NextResponse.redirect(loginUrl);
   }
 
-  // --- END OF FIX ---
-
-  // User is authenticated, proceed to onboarding/completion checks
   const fullUser = user as FullUserData;
-  const dashboardUrl = new URL(
-    `/clinic/${fullUser.clinicId}/dashboard`,
-    request.url
-  );
   const onboardingUrl = new URL("/onboarding", request.url);
-  const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
-  // Onboarding enforcement
-  if (isPending && !isOnboardingRoute) {
+  // ✅ FIX 1: ADMIN-ONLY ONBOARDING
+  // Only ADMINs need to complete onboarding
+  const isAdmin = fullUser.role === "ADMIN";
+  const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
+
+  if (isAdmin && isPending && !isOnboardingRoute) {
+    // Admin needs onboarding, redirect to onboarding
     return NextResponse.redirect(onboardingUrl);
   }
 
-  if (!isPending && isOnboardingRoute) {
+  if (isAdmin && !isPending && isOnboardingRoute) {
+    // Admin completed onboarding, redirect to dashboard
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
     return NextResponse.redirect(dashboardUrl);
   }
 
-  // Auth route redirect (Only redirect if user is COMPLETE)
-  if (isAuthRoute(pathname) && !isPending) {
+  // Non-admins should never see onboarding
+  if (!isAdmin && isOnboardingRoute) {
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
     return NextResponse.redirect(dashboardUrl);
   }
 
-  // Handle bare path redirect to dashboard
-  const pathParts = pathname.split("/").filter(Boolean);
-  if (pathParts.length === 0) {
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  // Clinic ID and Role-based authorization
-  const clinicId = pathParts[1];
-
-  if (clinicId !== fullUser.clinicId) {
+  // ✅ FIX 2: STOP REDIRECTING AUTHENTICATED USERS FROM LANDING PAGE
+  // Allow authenticated users to view landing page
+  if (pathname === "/") {
     return NextResponse.next();
   }
 
-  const routeParts = pathParts.slice(1);
-  let baseRoute = "/" + routeParts.join("/");
-  baseRoute = baseRoute.replace(/\/[a-zA-Z0-9-_]+$/, "");
-
-  let allowedRoles: string[] | undefined = ROUTE_PERMISSIONS[baseRoute];
-
-  if (!allowedRoles) {
-    const parentRoute = baseRoute.split("/").slice(0, -1).join("/") || "/";
-    allowedRoles = ROUTE_PERMISSIONS[parentRoute];
+  // ✅ FIX 3: REDIRECT AUTHENTICATED USERS FROM AUTH PAGES
+  // If user is logged in and tries to access auth pages, redirect to dashboard
+  if (isAuthRoute(pathname)) {
+    const dashboardUrl = new URL(
+      `/clinic/${fullUser.clinicId}/dashboard`,
+      request.url
+    );
+    return NextResponse.redirect(dashboardUrl);
   }
 
-  if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
-    return NextResponse.redirect(dashboardUrl);
+  // ✅ FIX 4: LESS AGGRESSIVE ROLE-BASED PROTECTION
+  // Only check permissions for clinic routes
+  if (pathname.startsWith("/clinic/")) {
+    const pathParts = pathname.split("/").filter(Boolean);
+
+    // Ensure user has clinicId
+    if (!fullUser.clinicId) {
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const clinicId = pathParts[1];
+
+    // Allow users to access their own clinic
+    if (clinicId !== fullUser.clinicId) {
+      const correctDashboard = new URL(
+        `/clinic/${fullUser.clinicId}/dashboard`,
+        request.url
+      );
+      return NextResponse.redirect(correctDashboard);
+    }
+
+    // Build route pattern for permission check
+    const routeParts = pathParts.slice(2); // Remove 'clinic' and clinicId
+    let routeToCheck = "/" + routeParts.join("/");
+
+    // Replace dynamic segments with placeholders
+    routeToCheck = routeToCheck.replace(/\/[a-f0-9-]{36}/gi, "/{id}");
+
+    // Check if route has specific permissions
+    const allowedRoles = ROUTE_PERMISSIONS[routeToCheck];
+
+    if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
+      // User doesn't have permission, redirect to their dashboard
+      const dashboardUrl = new URL(
+        `/clinic/${fullUser.clinicId}/dashboard`,
+        request.url
+      );
+      return NextResponse.redirect(dashboardUrl);
+    }
   }
 
   return NextResponse.next();
