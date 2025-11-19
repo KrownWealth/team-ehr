@@ -67,7 +67,7 @@ export interface QueueEntry {
   id?: string;
   patientId: string;
   clinicId: string;
-  doctorId?: string; // <-- add this
+  doctorId?: string;
   status: "WAITING" | "IN_CONSULTATION" | "COMPLETED";
   checkedInAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
@@ -232,7 +232,6 @@ class DatabaseService {
     try {
       const userRef = this.db.collection("users").doc(userId);
 
-      // Optional: ensure user belongs to clinic
       if (clinicId) {
         const user = await userRef.get();
         if (!user.exists || user.data()?.clinicId !== clinicId) return null;
