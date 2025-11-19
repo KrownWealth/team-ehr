@@ -17,17 +17,35 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      if (config.frontendUrls.includes(origin)) {
+      const allowedOrigins = [
+        "https://team-ehr.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        process.env.FRONTEND_URL,
+        process.env.FRONTEND_URL_2,
+      ].filter(Boolean);
+
+      if (allowedOrigins.some((allowed) => origin.startsWith(allowed || ""))) {
         return callback(null, true);
       }
 
+      logger.warn(`CORS blocked origin: ${origin}`);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Request-ID",
+      "X-Idempotency-Key",
+    ],
+    exposedHeaders: ["X-Request-ID"],
+    maxAge: 86400,
   })
 );
+
+app.options("*", cors());
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

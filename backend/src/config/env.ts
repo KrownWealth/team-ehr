@@ -121,10 +121,14 @@ export const config = {
     aiDiagnosisUrl: process.env.AI_DIAGNOSIS_FUNCTION_URL,
     aiDiagnosisAPIKey: process.env.AI_API_KEY,
   },
+  // ✅ FIX: Improved frontend URLs configuration
   frontendUrls: [
-    process.env.FRONTEND_URL || "https://team-ehr.vercel.app",
-    process.env.FRONTEND_URL_2 || "http://localhost:3000",
-  ].filter(Boolean),
+    "https://team-ehr.vercel.app",
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URL_2,
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ].filter((url): url is string => Boolean(url)),
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
