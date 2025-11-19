@@ -1,13 +1,12 @@
 import { Storage } from "@google-cloud/storage";
 import { Firestore } from "@google-cloud/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
-import { PubSub, Topic, Subscription } from "@google-cloud/pubsub";
+import { PubSub, Topic } from "@google-cloud/pubsub";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { config } from "./env";
 import logger from "../utils/logger.utils";
 import fs from "fs";
 
-// Check if service account file exists
 const hasServiceAccount =
   config.gcp.credentials && fs.existsSync(config.gcp.credentials);
 
@@ -20,7 +19,6 @@ if (!hasServiceAccount) {
   );
 }
 
-// Initialize GCP services only if credentials exist
 let storage: Storage | null = null;
 let firestore: Firestore | null = null;
 let secretManager: SecretManagerServiceClient | null = null;
@@ -29,15 +27,11 @@ let pubsub: PubSub | null = null;
 
 if (hasServiceAccount) {
   try {
-    // Cloud Storage
     storage = new Storage({
-      //  projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
-    // Firestore
     firestore = new Firestore({
-      // projectId: config.gcp.projectId,
       keyFilename: config.gcp.credentials,
     });
 
@@ -55,7 +49,6 @@ if (hasServiceAccount) {
   }
 }
 
-// Create mock implementations for local development
 const createMockBucket = (): any => ({
   file: () => ({
     save: async () => {
