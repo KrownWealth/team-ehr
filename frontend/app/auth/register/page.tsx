@@ -1,335 +1,390 @@
 "use client";
 
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Eye,
+  EyeOff,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import apiClient from "@/lib/api/axios-instance";
-import { toast } from "sonner";
-import { Mail, User, Phone, Briefcase, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
-import { CreateStaffData } from "@/types";
-import { useRouter } from "next/navigation";
+import { useRegister } from "@/lib/hooks/use-auth";
+import Link from "next/link";
 
-type StaffRole = "CLERK" | "NURSE" | "DOCTOR" | "CASHIER";
-
-type RegisterStaffData = CreateStaffData & {
-  password: string;
-  confirmPassword: string;
-};
-
-const COUNTRIES = [
+const countries = [
   { name: "Nigeria", code: "+234" },
+  { name: "India", code: "+91" },
   { name: "USA", code: "+1" },
   { name: "UK", code: "+44" },
-  { name: "India", code: "+91" },
 ];
 
-export default function RegisterStaffPage() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
+const registerSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(2, "First name must be at least 2 characters")
+      .max(50, "First name must be at most 50 characters"),
+    lastName: z
+      .string()
+      .min(2, "Last name must be at least 2 characters")
+      .max(50, "Last name must be at most 50 characters"),
+    email: z.email("Invalid email address"),
+    phone: z
+      .string()
+      .min(4, "Phone number is required")
+      .regex(/^\d{7,14}$/, "Enter phone number without country code"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain uppercase, lowercase, and number"
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type FormData = z.infer<typeof registerSchema>;
+
+const STEPS = [
+  { number: 1, title: "Personal Info", icon: User },
+  { number: 2, title: "Contact", icon: Phone },
+  { number: 3, title: "Security", icon: Mail },
+];
+
+export default function RegisterPage() {
+  const [step, setStep] = useState(1);
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedCountryCode, setSelectedCountryCode] = useState(COUNTRIES[0].code);
 
-  const [formData, setFormData] = useState<
-    Omit<RegisterStaffData, "role" | "phone"> & { role: StaffRole; phoneNumber: string }
-  >({
-    email: "",
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-    password: "",
-    confirmPassword: "",
-    role: "CLERK",
+  const { mutate: registerAdmin, isPending } = useRegister();
+
+  const {
+    register,
+    handleSubmit,
+    trigger,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(registerSchema),
+    mode: "onChange",
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: RegisterStaffData) => {
-      const { confirmPassword, ...apiPayload } = data;
-      await apiClient.post("/v1/auth/register", apiPayload);
-    },
-    onSuccess: () => {
-      toast.success("Staff member registered! Verification email sent.");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
-      resetForm();
-      router.push("/staff"); // Navigate to staff list or dashboard
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Registration failed");
-    },
-  });
-
-  const resetForm = () => {
-    setFormData({
-      email: "",
-      firstName: "",
-      lastName: "",
-      phoneNumber: "",
-      password: "",
-      confirmPassword: "",
-      role: "CLERK",
-    });
-    setSelectedCountryCode(COUNTRIES[0].code);
+  const stepFields: Record<number, (keyof FormData)[]> = {
+    1: ["firstName", "lastName"],
+    2: ["email", "phone"],
+    3: ["password", "confirmPassword"],
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (
-      !formData.email ||
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.phoneNumber ||
-      !formData.password
-    ) {
-      toast.error("Please fill all required fields");
-      return;
+  const nextStep = async () => {
+    const valid = await trigger(stepFields[step]);
+    if (valid && step < 3) {
+      setStep(step + 1);
     }
+  };
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match.");
-      return;
-    }
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+  };
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-    if (!passwordRegex.test(formData.password)) {
-      toast.error("Password must be at least 8 characters, contain uppercase, lowercase, and a number.");
-      return;
-    }
+  const onSubmit = async (data: FormData) => {
+    // Format phone with country code
+    const formattedPhone = `${selectedCountry.code}${data.phone}`;
 
-    const formattedPhone = `${selectedCountryCode}${formData.phoneNumber}`;
-
-    const dataToSend: RegisterStaffData = {
-      ...formData,
+    // Send data matching API spec: firstName, lastName, email, phone, password
+    const registerData = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
       phone: formattedPhone,
-    } as RegisterStaffData;
+      password: data.password,
+    };
 
-    registerMutation.mutate(dataToSend);
-  };
-
-  const handleChange = (field: keyof typeof formData, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    registerAdmin(registerData);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white shadow-sm rounded-lg p-6 sm:p-8">
-          <div className="mb-6">
+    <div className="space-y-6 w-full max-w-xl">
+      <div>
+        <h2 className="text-3xl font-extrabold text-gray-900">
+          Register Your Clinic
+        </h2>
+        <p className="text-gray-600 mt-2">
+          Join wecareEHR and modernize your healthcare practice
+        </p>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="flex items-center justify-between mb-8">
+        {STEPS.map((s, idx) => {
+          const Icon = s.icon;
+          const isActive = step === s.number;
+          const isCompleted = step > s.number;
+
+          return (
+            <React.Fragment key={s.number}>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    isActive
+                      ? "bg-green-600 text-white scale-110"
+                      : isCompleted
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+                <span
+                  className={`text-xs mt-2 font-medium ${
+                    isActive ? "text-green-600" : "text-gray-500"
+                  }`}
+                >
+                  {s.title}
+                </span>
+              </div>
+              {idx < STEPS.length - 1 && (
+                <div
+                  className={`flex-1 h-1 mx-2 rounded transition-all ${
+                    isCompleted ? "bg-green-500" : "bg-gray-200"
+                  }`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Step 1: Personal Info */}
+        {step === 1 && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                placeholder="John"
+                className="h-12"
+                {...register("firstName")}
+              />
+              {errors.firstName && (
+                <p className="text-sm text-red-600">
+                  {errors.firstName.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                className="h-12"
+                {...register("lastName")}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-red-600">
+                  {errors.lastName.message}
+                </p>
+              )}
+            </div>
+
             <Button
               type="button"
-              variant="ghost"
-              onClick={() => router.back()}
-              className="mb-4"
+              onClick={nextStep}
+              className="w-full h-12 mt-6"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Continue
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Register New Staff Member</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Provide details for the new staff member. They will receive an email to verify their account.
-            </p>
           </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Step 2: Contact Info */}
+        {step === 2 && (
+          <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Address <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="email">Email Address *</Label>
               <Input
-                className="h-12"
                 id="email"
                 type="email"
-                placeholder="staff@example.com"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                required
+                placeholder="john.doe@clinic.com"
+                className="h-12"
+                {...register("email")}
               />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  First Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-12"
-                  id="firstName"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => handleChange("firstName", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lastName">
-                  Last Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-12"
-                  id="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => handleChange("lastName", e.target.value)}
-                  required
-                />
-              </div>
+              {errors.email && (
+                <p className="text-sm text-red-600">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Phone Number <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="phone">Phone Number *</Label>
               <div className="flex gap-2">
                 <Select
-                  value={selectedCountryCode}
-                  onValueChange={setSelectedCountryCode}
+                  value={selectedCountry.code}
+                  onValueChange={(value) =>
+                    setSelectedCountry(countries.find((c) => c.code === value)!)
+                  }
                 >
-                  <SelectTrigger className="w-24 h-12 flex-shrink-0">
-                    <SelectValue />
+                  <SelectTrigger className="w-28 h-12">
+                    <SelectValue>{selectedCountry.code}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((c) => (
+                    {countries.map((c) => (
                       <SelectItem key={c.code} value={c.code}>
-                        {c.code}
+                        {c.name} ({c.code})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Input
-                  className="h-12 flex-1"
-                  id="phoneNumber"
+                  id="phone"
                   type="tel"
                   placeholder="8012345678"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                  required
+                  className="flex-1 h-12"
+                  {...register("phone")}
                 />
               </div>
+              {errors.phone && (
+                <p className="text-sm text-red-600">{errors.phone.message}</p>
+              )}
               <p className="text-xs text-gray-500">
-                Enter the local number. Must be a valid international number when combined with the country code.
+                Enter phone number without country code
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password" className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Initial Password <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    className="h-12 pr-10"
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">
-                  Confirm Password <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    className="h-12 pr-10"
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role" className="flex items-center gap-2">
-                <Briefcase className="h-4 w-4" />
-                Role <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(val) => handleChange("role", val as StaffRole)}
-              >
-                <SelectTrigger className="w-full h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CLERK">Front Desk Clerk</SelectItem>
-                  <SelectItem value="NURSE">Nurse</SelectItem>
-                  <SelectItem value="DOCTOR">Doctor</SelectItem>
-                  <SelectItem value="CASHIER">Cashier</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-800">
-                The user will need to verify their email address before accessing the system.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+            <div className="flex gap-3 mt-6">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
-                className="w-full sm:w-auto"
+                onClick={prevStep}
+                className="flex-1 h-12"
               >
-                Cancel
+                Back
+              </Button>
+              <Button type="button" onClick={nextStep} className="flex-1 h-12">
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Security */}
+        {step === 3 && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="h-12 pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="h-12 pr-10"
+                  {...register("confirmPassword")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-600">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+              <p className="font-medium mb-1">Password Requirements:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>At least 8 characters long</li>
+                <li>Contains uppercase and lowercase letters</li>
+                <li>Includes at least one number</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                className="flex-1 h-12"
+              >
+                Back
               </Button>
               <Button
                 type="submit"
-                disabled={registerMutation.isPending}
-                className="w-full sm:w-auto"
+                className="flex-1 h-12"
+                disabled={isPending}
               >
-                {registerMutation.isPending ? "Registering..." : "Register Staff"}
+                {isPending ? "Creating Account..." : "Complete Registration"}
               </Button>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
+      </form>
+
+      <div className="text-center text-sm text-gray-600">
+        Already have an account?{" "}
+        <Link
+          href="/auth/login"
+          className="text-green-600 hover:text-green-700 font-medium"
+        >
+          Sign in
+        </Link>
       </div>
     </div>
   );
