@@ -121,7 +121,7 @@ export const config = {
     aiDiagnosisUrl: process.env.AI_DIAGNOSIS_FUNCTION_URL,
     aiDiagnosisAPIKey: process.env.AI_API_KEY,
   },
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+  frontendUrl: process.env.FRONTEND_URL || "https://team-ehr.vercel.app",
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
