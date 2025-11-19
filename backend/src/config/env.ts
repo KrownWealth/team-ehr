@@ -127,7 +127,6 @@ export const config = {
     process.env.FRONTEND_URL,
     process.env.FRONTEND_URL_2,
     "http://localhost:3000",
-    "http://localhost:5173",
   ].filter((url): url is string => Boolean(url)),
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
