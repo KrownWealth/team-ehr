@@ -125,7 +125,7 @@ export default function RegisterPage() {
     <div className="space-y-6 w-full max-w-xl">
       <div>
         <h2 className="text-3xl font-extrabold text-gray-900">
-          Register Your Clinic
+          Register As an Admin!
         </h2>
         <p className="text-gray-600 mt-2">
           Join wecareEHR and modernize your healthcare practice
@@ -144,10 +144,10 @@ export default function RegisterPage() {
               <div className="flex flex-col items-center">
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isActive
-                      ? "bg-green-600 text-white scale-110"
-                      : isCompleted
-                        ? "bg-green-500 text-white"
-                        : "bg-gray-200 text-gray-500"
+                    ? "bg-green-600 text-white scale-110"
+                    : isCompleted
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-500"
                     }`}
                 >
                   <Icon className="w-5 h-5" />
