@@ -147,7 +147,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(to: string, resetToken: string): Promise<void> {
     try {
-      const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+      //const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
 
       await this.transporter.sendMail({
         from: config.email.from,
