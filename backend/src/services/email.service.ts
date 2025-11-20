@@ -163,90 +163,189 @@ export class EmailService {
     role: string
   ): Promise<void> {
     try {
-      const verifyUrl = `${
-        this.frontendUrl
-      }/auth/verify?email=${encodeURIComponent(to)}`;
+      const PRIMARY_COLOR = "#135d1d";
       const loginUrl = `${this.frontendUrl}/auth/login`;
+      const logoUrl = `${this.frontendUrl}/images/logo.png`;
 
       await this.transporter.sendMail({
         from: config.email.from,
         to,
-        subject: "Staff Invitation - WeCareEHR",
+        subject: "Staff Invitation - Welcome to WeCareEHR",
         html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background-color: #2c5aa0; color: white; padding: 20px; text-align: center; }
-              .content { padding: 30px; background-color: #f9f9f9; }
-              .credentials-box { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2c5aa0; }
-              .credential-row { padding: 10px 0; }
-              .label { font-weight: bold; color: #2c5aa0; display: inline-block; width: 150px; }
-              .value { font-family: monospace; background-color: #f0f0f0; padding: 5px 10px; border-radius: 3px; }
-              .button { display: inline-block; padding: 12px 30px; background-color: #2c5aa0; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-              .warning { background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; }
-              .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Welcome to WeCareEHR Team! 🎉</h1>
-              </div>
-              <div class="content">
-                <p>Hi ${firstName},</p>
-                <p>You have been added as a <strong>${role}</strong> to the WeCareEHR system.</p>
-                
-                <div class="credentials-box">
-                  <h3 style="margin-top: 0;">Your Login Credentials</h3>
-                  <div class="credential-row">
-                    <span class="label">Email:</span>
-                    <span class="value">${to}</span>
-                  </div>
-                  <div class="credential-row">
-                    <span class="label">Temporary Password:</span>
-                    <span class="value">${tempPassword}</span>
-                  </div>
-                  <div class="credential-row">
-                    <span class="label">Role:</span>
-                    <span class="value">${role}</span>
-                  </div>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Staff Invitation</title>
+                <style>
+                    /* Global Styles */
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                        line-height: 1.6;
+                        color: #333333;
+                        background-color: #f4f7f6;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 40px auto;
+                        background-color: #ffffff;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+                    }
+                    /* Header & Branding */
+                    .header {
+                        background-color: ${PRIMARY_COLOR};
+                        padding: 30px 20px;
+                        text-align: center;
+                    }
+                    .logo {
+                        max-width: 150px;
+                        height: auto;
+                        background-color: white; /* Ensure logo is on white background */
+                        padding: 5px 15px;
+                        border-radius: 8px;
+                    }
+                    .header h1 {
+                        color: white;
+                        font-size: 24px;
+                        margin-top: 20px;
+                        margin-bottom: 0;
+                    }
+
+                    /* Content Area */
+                    .content {
+                        padding: 30px 40px;
+                    }
+                    .content p {
+                        margin-bottom: 20px;
+                        font-size: 15px;
+                    }
+
+                    /* Credentials Box */
+                    .credentials-box {
+                        background-color: #e8f5e9; /* Light green background */
+                        padding: 25px;
+                        border-radius: 8px;
+                        margin: 30px 0;
+                        border-left: 5px solid ${PRIMARY_COLOR};
+                    }
+                    .credentials-box h3 {
+                        color: ${PRIMARY_COLOR};
+                        margin-top: 0;
+                        border-bottom: 1px solid #c8e6c9;
+                        padding-bottom: 10px;
+                        margin-bottom: 15px;
+                    }
+                    .credential-row {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px dashed #d5d5d5;
+                    }
+                    .credential-row:last-child {
+                        border-bottom: none;
+                    }
+                    .label {
+                        font-weight: 600;
+                        color: #555555;
+                        min-width: 120px;
+                    }
+                    .value {
+                        font-family: monospace;
+                        background-color: #ffffff;
+                        padding: 4px 10px;
+                        border-radius: 4px;
+                        color: ${PRIMARY_COLOR};
+                        font-size: 14px;
+                        font-weight: bold;
+                        word-break: break-all;
+                        text-align: right;
+                    }
+
+                    /* Call to Action Button */
+                    .button-container {
+                        text-align: center;
+                        margin: 30px 0;
+                    }
+                    .button {
+                        display: inline-block;
+                        padding: 15px 35px;
+                        background-color: ${PRIMARY_COLOR};
+                        color: white !important;
+                        text-decoration: none;
+                        font-weight: bold;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        transition: background-color 0.3s;
+                    }
+                    .button:hover {
+                        background-color: #0d3b14; /* Darker green on hover */
+                    }
+
+                    /* Footer */
+                    .footer {
+                        text-align: center;
+                        padding: 20px 40px;
+                        color: #999999;
+                        font-size: 12px;
+                        border-top: 1px solid #eeeeee;
+                        margin-top: 20px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <img src="${logoUrl}" alt="WeCareEHR Logo" class="logo" />
+                        <h1>Welcome to the WeCareEHR Team!</h1>
+                    </div>
+                    <div class="content">
+                        <p>Hi ${firstName},</p>
+                        <p>
+                            You have been invited to join the WeCareEHR system as a <strong>${role}</strong>. 
+                            Please use the temporary credentials below to log in and activate your account.
+                        </p>
+
+                        <div class="credentials-box">
+                            <h3>Your Temporary Credentials</h3>
+                            <div class="credential-row">
+                                <span class="label">Email:</span>
+                                <span class="value">${to}</span>
+                            </div>
+                            <div class="credential-row">
+                                <span class="label">Temporary Password:</span>
+                                <span class="value">${tempPassword}</span>
+                            </div>
+                            <div class="credential-row">
+                                <span class="label">Assigned Role:</span>
+                                <span class="value">${role}</span>
+                            </div>
+                        </div>
+                        
+                        <p style="font-weight: bold; color: #cc6600;">
+                            ⚠️ Security Notice: For your protection, you will be prompted to change this temporary password immediately upon your first successful login.
+                        </p>
+
+                        <div class="button-container">
+                            <a href="${loginUrl}" class="button">Go to Login Page</a>
+                        </div>
+
+                        <p style="font-size: 14px; color: #666666;">
+                            If you did not expect to receive this invitation or have any trouble logging in, 
+                            please contact your system administrator immediately.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>© ${new Date().getFullYear()} WeCareEHR. All rights reserved.</p>
+                        <p>This email was intended for ${to}.</p>
+                    </div>
                 </div>
-
-                <div class="warning">
-                  <strong>⚠️ Important Security Notice:</strong>
-                  <p style="margin: 10px 0 0 0;">You must change your password after your first login for security purposes.</p>
-                </div>
-
-                <h3>Getting Started:</h3>
-                <ol>
-                  <li>Click the button below to verify your email</li>
-                  <li>Log in with your temporary password</li>
-                  <li>You'll be prompted to set a new secure password</li>
-                  <li>Start using the WeCareEHR system</li>
-                </ol>
-
-                <div style="text-align: center;">
-                  <a href="${verifyUrl}" class="button">Verify Email & Get Started</a>
-                </div>
-
-                <p style="text-align: center; margin-top: 20px;">
-                  <a href="${loginUrl}" style="color: #2c5aa0;">Or go directly to login</a>
-                </p>
-
-                <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                  If you have any questions about the system, please contact your administrator.
-                </p>
-              </div>
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} WeCareEHR. All rights reserved.</p>
-                <p>This email was sent to ${to}</p>
-              </div>
-            </div>
-          </body>
-          </html>
+            </body>
+            </html>
         `,
       });
       logger.info(`Staff invitation sent to: ${to}`);
