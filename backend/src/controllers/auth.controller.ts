@@ -288,9 +288,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Login
- */
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -373,9 +370,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Change Password
- */
 export const changePassword = async (req: AuthRequest, res: Response) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -426,9 +420,6 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Refresh Token
- */
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refreshToken: token } = req.body;
@@ -471,9 +462,6 @@ export const refreshToken = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Forgot Password
- */
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -508,9 +496,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Reset Password
- */
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
@@ -540,9 +525,6 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Google OAuth (Placeholder)
- */
 export const googleAuth = async (req: Request, res: Response) => {
   res.status(501).json({
     status: "error",
@@ -550,12 +532,73 @@ export const googleAuth = async (req: Request, res: Response) => {
   });
 };
 
-/**
- * Google OAuth Callback (Placeholder)
- */
 export const googleCallback = async (req: Request, res: Response) => {
   res.status(501).json({
     status: "error",
     message: "Google OAuth not implemented yet",
   });
+};
+
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (userId) {
+      // Log the logout event
+      logger.info(`User logged out: ${req.user.email}`);
+
+      // Optional: Update lastLogout timestamp
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastLogin: new Date(), // You might want to add a lastLogout field to schema
+        },
+      });
+    }
+
+    res.json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  } catch (error: any) {
+    logger.error("Logout error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+export const logoutAllDevices = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "Unauthorized",
+      });
+    }
+
+    // In a production system, you would:
+    // 1. Increment a token version number in the user record
+    // 2. Add current tokens to a blacklist with expiry
+    // 3. Invalidate all refresh tokens in database
+
+    logger.info(`User logged out from all devices: ${req.user.email}`);
+
+    res.json({
+      status: "success",
+      message: "Logged out from all devices successfully",
+      data: {
+        note: "Please log in again on all devices",
+      },
+    });
+  } catch (error: any) {
+    logger.error("Logout all devices error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 };

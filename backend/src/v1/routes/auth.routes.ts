@@ -11,6 +11,8 @@ import {
   resetPassword,
   googleAuth,
   googleCallback,
+  logout,
+  logoutAllDevices,
 } from "../../controllers/auth.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validation.middleware";
@@ -46,5 +48,7 @@ router.post(
   validate,
   changePassword
 );
+router.post("/logout", authenticate, logout);
+router.post("/logout-all", authenticate, logoutAllDevices);
 
 export default router;

@@ -5,6 +5,7 @@ import {
   getPrescriptionById,
   updatePrescription,
   checkAllergies,
+  getAllPrescriptions,
 } from "../../controllers/prescription.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
@@ -18,6 +19,8 @@ import {
 const router = Router();
 router.use(authenticate);
 router.use(tenantIsolation);
+
+router.get("/", getAllPrescriptions);
 
 router.post(
   "/create",
