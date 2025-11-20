@@ -2,11 +2,16 @@ import { Response } from "express";
 import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { EmailService } from "../services/email.service";
-import { QueueService } from "../services/queue.service";
 import logger from "../utils/logger.utils";
+import {
+  createdResponse,
+  notFoundResponse,
+  paginatedResponse,
+  serverErrorResponse,
+  successResponse,
+} from "../utils/response.utils";
 
 const emailService = new EmailService();
-const queueService = new QueueService();
 
 export const createConsultation = async (req: AuthRequest, res: Response) => {
   try {
@@ -23,22 +28,20 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
     const { clinicId, user } = req;
 
     // Get patient details for allergy check
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
       select: {
-        allergies: true,
-        email: true,
-        patientNumber: true,
+        id: true,
         firstName: true,
         lastName: true,
+        email: true,
+        patientNumber: true,
+        allergies: true,
       },
     });
 
     if (!patient) {
-      return res.status(404).json({
-        status: "error",
-        message: "Patient not found",
-      });
+      return notFoundResponse(res, "Patient");
     }
 
     // Check for drug allergies
@@ -53,7 +56,10 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({
           status: "error",
           message: "Drug allergy conflict detected",
-          conflicts: allergyConflicts,
+          data: {
+            conflicts: allergyConflicts,
+            allergies: patient.allergies,
+          },
         });
       }
     }
@@ -72,11 +78,18 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
         followUpDate: followUpDate ? new Date(followUpDate) : null,
       },
       include: {
-        patient: true,
+        patient: {
+          select: {
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         doctor: {
           select: {
             firstName: true,
             lastName: true,
+            licenseId: true,
           },
         },
       },
@@ -91,26 +104,122 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Publish consultation completed event
-    // await pubsubService.publishConsultationCompleted({
-    //   consultationId: consultation.id,
-    //   patientId,
-    //   clinicId,
-    //   prescriptions,
-    // });
-
     logger.info(`Consultation created: ${consultation.id}`);
 
-    res.status(201).json({
-      status: "success",
-      data: consultation,
-    });
+    return createdResponse(
+      res,
+      consultation,
+      "Consultation created successfully"
+    );
   } catch (error: any) {
     logger.error("Create consultation error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to create consultation", error);
+  }
+};
+
+/**
+ * Get all consultations for the clinic with filtering
+ */
+export const getAllConsultations = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clinicId } = req;
+    const {
+      page = 1,
+      limit = 20,
+      patientId,
+      doctorId,
+      startDate,
+      endDate,
+      search,
+    } = req.query;
+
+    const where: any = { clinicId };
+
+    // Filter by patient
+    if (patientId) {
+      where.patientId = patientId;
+    }
+
+    // Filter by doctor
+    if (doctorId) {
+      where.doctorId = doctorId;
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate as string);
+      }
+    }
+
+    // Search in assessment or patient name
+    if (search) {
+      where.OR = [
+        { assessment: { contains: search as string, mode: "insensitive" } },
+        {
+          patient: {
+            OR: [
+              {
+                firstName: { contains: search as string, mode: "insensitive" },
+              },
+              { lastName: { contains: search as string, mode: "insensitive" } },
+              {
+                patientNumber: {
+                  contains: search as string,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      ];
+    }
+
+    const [consultations, total] = await Promise.all([
+      prisma.consultation.findMany({
+        where,
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { createdAt: "desc" },
+        include: {
+          patient: {
+            select: {
+              patientNumber: true,
+              firstName: true,
+              lastName: true,
+              gender: true,
+              birthDate: true,
+            },
+          },
+          doctor: {
+            select: {
+              firstName: true,
+              lastName: true,
+              licenseId: true,
+            },
+          },
+        },
+      }),
+      prisma.consultation.count({ where }),
+    ]);
+
+    return paginatedResponse(
+      res,
+      consultations,
+      {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+      },
+      "Consultations retrieved successfully"
+    );
+  } catch (error: any) {
+    logger.error("Get all consultations error:", error);
+    return serverErrorResponse(res, "Failed to retrieve consultations", error);
   }
 };
 
@@ -122,7 +231,18 @@ export const getConsultationById = async (req: AuthRequest, res: Response) => {
     const consultation = await prisma.consultation.findFirst({
       where: { id, clinicId },
       include: {
-        patient: true,
+        patient: {
+          select: {
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+            gender: true,
+            birthDate: true,
+            bloodGroup: true,
+            allergies: true,
+            chronicConditions: true,
+          },
+        },
         doctor: {
           select: {
             id: true,
@@ -135,22 +255,17 @@ export const getConsultationById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        status: "error",
-        message: "Consultation not found",
-      });
+      return notFoundResponse(res, "Consultation");
     }
 
-    res.json({
-      status: "success",
-      data: consultation,
-    });
+    return successResponse(
+      res,
+      consultation,
+      "Consultation retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get consultation by ID error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve consultation", error);
   }
 };
 
@@ -165,29 +280,41 @@ export const updateConsultation = async (req: AuthRequest, res: Response) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        status: "error",
-        message: "Consultation not found or unauthorized",
-      });
+      return notFoundResponse(res, "Consultation not found or unauthorized");
     }
 
     const updated = await prisma.consultation.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        followUpDate: updateData.followUpDate
+          ? new Date(updateData.followUpDate)
+          : undefined,
+      },
+      include: {
+        patient: {
+          select: {
+            patientNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        doctor: {
+          select: {
+            firstName: true,
+            lastName: true,
+            licenseId: true,
+          },
+        },
+      },
     });
 
     logger.info(`Consultation updated: ${id}`);
 
-    res.json({
-      status: "success",
-      data: updated,
-    });
+    return successResponse(res, updated, "Consultation updated successfully");
   } catch (error: any) {
     logger.error("Update consultation error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to update consultation", error);
   }
 };
 
@@ -198,32 +325,56 @@ export const getPatientConsultations = async (
   try {
     const { patientId } = req.params;
     const { clinicId } = req;
+    const { page = 1, limit = 20 } = req.query;
 
-    const consultations = await prisma.consultation.findMany({
-      where: {
-        patientId,
-        clinicId,
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        doctor: {
-          select: {
-            firstName: true,
-            lastName: true,
+    // Verify patient exists
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+    });
+
+    if (!patient) {
+      return notFoundResponse(res, "Patient");
+    }
+
+    const [consultations, total] = await Promise.all([
+      prisma.consultation.findMany({
+        where: {
+          patientId,
+          clinicId,
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { createdAt: "desc" },
+        include: {
+          doctor: {
+            select: {
+              firstName: true,
+              lastName: true,
+              licenseId: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.consultation.count({
+        where: {
+          patientId,
+          clinicId,
+        },
+      }),
+    ]);
 
-    res.json({
-      status: "success",
-      data: consultations,
-    });
+    return paginatedResponse(
+      res,
+      consultations,
+      {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+      },
+      "Patient consultations retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get patient consultations error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to retrieve consultations", error);
   }
 };

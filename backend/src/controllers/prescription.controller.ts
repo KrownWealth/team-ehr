@@ -94,6 +94,108 @@ export const createPrescription = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * Get all prescriptions with filtering
+ */
+export const getAllPrescriptions = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clinicId } = req;
+    const {
+      page = 1,
+      limit = 20,
+      patientId,
+      doctorId,
+      startDate,
+      endDate,
+      search,
+    } = req.query;
+
+    const where: any = {
+      clinicId,
+      prescriptions: { not: Prisma.JsonNull },
+    };
+
+    // Filter by patient
+    if (patientId) {
+      where.patientId = patientId;
+    }
+
+    // Filter by doctor
+    if (doctorId) {
+      where.doctorId = doctorId;
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate as string);
+      }
+    }
+
+    // Search in patient name
+    if (search) {
+      where.patient = {
+        OR: [
+          { firstName: { contains: search as string, mode: "insensitive" } },
+          { lastName: { contains: search as string, mode: "insensitive" } },
+          {
+            patientNumber: { contains: search as string, mode: "insensitive" },
+          },
+        ],
+      };
+    }
+
+    const [consultations, total] = await Promise.all([
+      prisma.consultation.findMany({
+        where,
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        select: {
+          id: true,
+          prescriptions: true,
+          createdAt: true,
+          patient: {
+            select: {
+              patientNumber: true,
+              firstName: true,
+              lastName: true,
+              gender: true,
+              birthDate: true,
+            },
+          },
+          doctor: {
+            select: {
+              firstName: true,
+              lastName: true,
+              licenseId: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.consultation.count({ where }),
+    ]);
+
+    return paginatedResponse(
+      res,
+      consultations,
+      {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+      },
+      "Prescriptions retrieved successfully"
+    );
+  } catch (error: any) {
+    logger.error("Get all prescriptions error:", error);
+    return serverErrorResponse(res, "Failed to retrieve prescriptions", error);
+  }
+};
+
 export const getPatientPrescriptions = async (
   req: AuthRequest,
   res: Response
@@ -177,6 +279,10 @@ export const getPrescriptionById = async (req: AuthRequest, res: Response) => {
             patientNumber: true,
             firstName: true,
             lastName: true,
+            gender: true,
+            birthDate: true,
+            bloodGroup: true,
+            allergies: true,
           },
         },
         doctor: {

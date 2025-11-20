@@ -4,6 +4,7 @@ import {
   getConsultationById,
   updateConsultation,
   getPatientConsultations,
+  getAllConsultations,
 } from "../../controllers/consultation.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
@@ -15,7 +16,8 @@ const router = Router();
 router.use(authenticate);
 router.use(tenantIsolation);
 
-// Consultation Management
+router.get("/", getAllConsultations);
+
 router.post(
   "/",
   authorize(["DOCTOR"]),
