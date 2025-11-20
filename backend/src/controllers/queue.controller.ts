@@ -1,3 +1,4 @@
+// backend/src/controllers/queue.controller.ts
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { QueueService } from "../services/queue.service";
@@ -62,14 +63,16 @@ export const addToQueue = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Get clinic queue
+ * Get clinic queue - FIXED: Returns actual queue data
  */
 export const getClinicQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
 
     const queue = await queueService.getClinicQueue(clinicId!);
-    return successResponse(res, queue.length, "Queue Retrieved successfully");
+
+    // ✅ FIX: Return the actual queue data, not the length
+    return successResponse(res, queue, "Queue retrieved successfully");
   } catch (error: any) {
     logger.error("Get queue error:", error);
     return serverErrorResponse(res, "Failed to retrieve queue", error);
@@ -96,35 +99,33 @@ export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Queue status updated: ${id} -> ${status}`);
 
-    return successResponse(res, "Queue updated successfully");
+    return successResponse(res, null, "Queue status updated successfully");
   } catch (error: any) {
     logger.error("Queue update error:", error);
     return serverErrorResponse(res, "Failed to update queue", error);
   }
 };
+
 /**
  * Remove patient from queue
  */
 export const removeFromQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { clinicId } = req;
 
     // Update status to COMPLETED to effectively remove from active queue
     await queueService.updateQueueStatus(id, "COMPLETED");
 
     logger.info(`Patient removed from queue: ${id}`);
 
-    res.json({
-      status: "success",
-      message: "Patient removed from queue successfully",
-    });
+    return successResponse(
+      res,
+      null,
+      "Patient removed from queue successfully"
+    );
   } catch (error: any) {
     logger.error("Remove from queue error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to remove from queue", error);
   }
 };
 
@@ -139,22 +140,16 @@ export const getNextPatient = async (req: AuthRequest, res: Response) => {
     const nextPatient = queue.find((item: any) => item.status === "WAITING");
 
     if (!nextPatient) {
-      return res.json({
-        status: "success",
-        data: null,
-        message: "No patients waiting in queue",
-      });
+      return successResponse(res, null, "No patients waiting in queue");
     }
 
-    res.json({
-      status: "success",
-      data: nextPatient,
-    });
+    return successResponse(
+      res,
+      nextPatient,
+      "Next patient retrieved successfully"
+    );
   } catch (error: any) {
     logger.error("Get next patient error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    return serverErrorResponse(res, "Failed to get next patient", error);
   }
 };

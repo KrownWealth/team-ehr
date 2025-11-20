@@ -1,5 +1,3 @@
-// backend/src/controllers/vital.controller.ts (UPDATED WITH ALERTS)
-
 import { Response } from "express";
 import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -10,18 +8,14 @@ import {
   successResponse,
   notFoundResponse,
   serverErrorResponse,
+  paginatedResponse,
 } from "../utils/response.utils";
 
-/**
- * Record patient vitals
- * Returns vitals data with critical alerts
- */
 export const recordVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, ...vitalsData } = req.body;
     const { user, clinicId } = req;
 
-    // Verify patient belongs to clinic
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       select: {
@@ -36,16 +30,13 @@ export const recordVitals = async (req: AuthRequest, res: Response) => {
       return notFoundResponse(res, "Patient not found in this clinic");
     }
 
-    // Calculate BMI if weight and height provided
     let bmi = 0;
     if (vitalsData.weight && vitalsData.height) {
       bmi = calculateBMI(vitalsData.weight, vitalsData.height);
     }
 
-    // Check for abnormal values and generate flags
     const flags = checkVitalFlags({ ...vitalsData, bmi });
 
-    // Create vitals record
     const vitals = await prisma.vitals.create({
       data: {
         patientId,
@@ -72,13 +63,11 @@ export const recordVitals = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Separate critical and warning alerts
     const criticalAlerts = flags.filter((f: string) =>
       f.startsWith("CRITICAL")
     );
     const warningAlerts = flags.filter((f: string) => f.startsWith("WARNING"));
 
-    // Log critical vitals for immediate attention
     if (criticalAlerts.length > 0) {
       logger.warn(
         `CRITICAL VITALS: Patient ${patient.patientNumber} (${
@@ -89,7 +78,6 @@ export const recordVitals = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Vitals recorded for patient: ${patientId}`);
 
-    // Return response with alerts as metadata
     return createdResponse(res, vitals, "Vitals recorded successfully", {
       alerts: {
         critical: criticalAlerts,
@@ -105,16 +93,12 @@ export const recordVitals = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get patient vitals history
- */
 export const getPatientVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId } = req.params;
     const { clinicId } = req;
     const { limit = 10, page = 1 } = req.query;
 
-    // Verify patient exists
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       select: { id: true, patientNumber: true },
@@ -124,7 +108,6 @@ export const getPatientVitals = async (req: AuthRequest, res: Response) => {
       return notFoundResponse(res, "Patient");
     }
 
-    // Get vitals with pagination
     const [vitals, total] = await Promise.all([
       prisma.vitals.findMany({
         where: {
@@ -152,31 +135,15 @@ export const getPatientVitals = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
-    // Calculate vitals summary
-    const latestVital = vitals[0];
-    const hasCriticalFlags = latestVital?.flags?.some((f: string) =>
-      f.startsWith("CRITICAL")
-    );
-
-    return successResponse(
+    return paginatedResponse(
       res,
+      vitals,
       {
-        vitals,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
+        page: Number(page),
+        limit: Number(limit),
+        total,
       },
       "Vitals retrieved successfully"
-      // {
-      //   summary: {
-      //     totalRecords: total,
-      //     latestRecordDate: latestVital?.createdAt,
-      //     hasCriticalFlags,
-      //   },
-      // }
     );
   } catch (error: any) {
     logger.error("Get patient vitals error:", error);
@@ -184,16 +151,12 @@ export const getPatientVitals = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Update vitals record
- */
 export const updateVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { clinicId } = req;
     const updateData = req.body;
 
-    // Check if vitals record exists and belongs to clinic
     const existingVitals = await prisma.vitals.findFirst({
       where: {
         id,
@@ -205,7 +168,6 @@ export const updateVitals = async (req: AuthRequest, res: Response) => {
       return notFoundResponse(res, "Vitals record");
     }
 
-    // Recalculate BMI if weight or height changed
     if (updateData.weight || updateData.height) {
       const weight = updateData.weight || existingVitals.weight;
       const height = updateData.height || existingVitals.height;
@@ -215,11 +177,9 @@ export const updateVitals = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Recheck flags with updated data
     const mergedData = { ...existingVitals, ...updateData };
     updateData.flags = checkVitalFlags(mergedData);
 
-    // Update vitals
     const vitals = await prisma.vitals.update({
       where: { id },
       data: updateData,
@@ -240,7 +200,6 @@ export const updateVitals = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Check for new critical alerts
     const criticalAlerts = updateData.flags.filter((f: string) =>
       f.startsWith("CRITICAL")
     );
@@ -255,28 +214,13 @@ export const updateVitals = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Vitals updated: ${id}`);
 
-    return successResponse(
-      res,
-      vitals,
-      "Vitals updated successfully"
-      //   alerts: {
-      //     critical: criticalAlerts,
-      //     warnings: updateData.flags.filter((f: string) =>
-      //       f.startsWith("WARNING")
-      //     ),
-      //     hasCritical: criticalAlerts.length > 0,
-      //   },
-      // }
-    );
+    return successResponse(res, vitals, "Vitals updated successfully");
   } catch (error: any) {
     logger.error("Update vitals error:", error);
     return serverErrorResponse(res, "Failed to update vitals", error);
   }
 };
 
-/**
- * Get abnormal vital flags for a specific record
- */
 export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -309,7 +253,6 @@ export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
       return notFoundResponse(res, "Vitals record");
     }
 
-    // Categorize flags
     const critical = vitals.flags.filter((f: string) =>
       f.startsWith("CRITICAL")
     );
@@ -317,7 +260,6 @@ export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
       f.startsWith("WARNING")
     );
 
-    // Create detailed flag descriptions
     const flagDescriptions = vitals.flags.map((flag: string) => ({
       flag,
       severity: flag.startsWith("CRITICAL") ? "critical" : "warning",
@@ -347,10 +289,6 @@ export const getAbnormalFlags = async (req: AuthRequest, res: Response) => {
         },
       },
       "Vital flags retrieved successfully"
-      // {
-      //   requiresAttention: critical.length > 0,
-      //   alertCount: vitals.flags.length,
-      // }
     );
   } catch (error: any) {
     logger.error("Get abnormal flags error:", error);
@@ -380,9 +318,6 @@ function getFlagDescription(flag: string): string {
   return descriptions[flag] || "Abnormal vital sign detected";
 }
 
-/**
- * Helper function to extract parameter from flag
- */
 function getFlagParameter(flag: string): string {
   if (flag.includes("BP")) return "Blood Pressure";
   if (flag.includes("TEMP")) return "Temperature";
