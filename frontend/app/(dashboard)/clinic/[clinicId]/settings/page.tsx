@@ -53,7 +53,7 @@ export default function SettingsPage() {
   const { isLoading, data } = useQuery<ApiResponse<Clinic>>({
     queryKey: ["clinic", clinicId],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/clinic");
+      const response = await apiClient.get(`/v1/clinic/${clinicId}`);
       return response.data;
     },
   });
@@ -77,7 +77,7 @@ export default function SettingsPage() {
 
   const updateClinicMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiClient.put("/v1/clinic", data);
+      await apiClient.put(`/v1/clinic/${clinicId}`, { ...data, id: clinicId });
     },
     onSuccess: () => {
       toast.success("Settings updated successfully!");
@@ -136,7 +136,7 @@ export default function SettingsPage() {
             <Clock className="h-4 w-4" />
             <span className="block">Operating Hours</span>
           </TabsTrigger>
-          <TabsTrigger
+          {/* <TabsTrigger
             value="pricing"
             className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
@@ -149,7 +149,7 @@ export default function SettingsPage() {
           >
             <Palette className="h-4 w-4" />
             <span className="block">Branding</span>
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="profile" className="mt-3">

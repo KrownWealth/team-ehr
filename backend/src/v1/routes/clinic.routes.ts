@@ -20,13 +20,7 @@ router.use(authorize(["ADMIN"]));
 router.post("/onboard", clinicValidator, validate, onboardClinic);
 
 router.get("/", getClinics);
-
 router.get("/profile", getClinicProfile);
-router.put("/", updateClinic);
-
-router.get("/:id", getClinicById);
-
-router.patch("/:id", tenantIsolation, authorize(["ADMIN"]), updateClinic);
 
 router.get("/:id/settings", (req, res) =>
   res.json({
@@ -41,5 +35,9 @@ router.patch("/:id/settings", (req, res) =>
     message: "Update clinic settings - Not implemented yet",
   })
 );
+
+router.get("/:id", getClinicById);
+router.put("/:id", clinicValidator, validate, updateClinic);
+router.patch("/:id", updateClinic);
 
 export default router;

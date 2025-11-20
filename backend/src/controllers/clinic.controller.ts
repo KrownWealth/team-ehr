@@ -116,6 +116,18 @@ export const updateClinic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    if (!id) {
+      return badRequestResponse(res, "Clinic ID is required");
+    }
+
+    const existingClinic = await prisma.clinic.findUnique({
+      where: { id },
+    });
+
+    if (!existingClinic) {
+      return notFoundResponse(res, "Clinic not found");
+    }
+
     const clinic = await prisma.clinic.update({
       where: { id },
       data: updateData,

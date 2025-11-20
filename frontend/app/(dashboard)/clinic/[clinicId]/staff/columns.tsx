@@ -70,10 +70,10 @@ const ActionsComponent = ({ staff }: { staff: Staff }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
           <Edit className="mr-2 h-4 w-4" />
           Edit Details
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
 
         {staff.isActive ? (
           <DropdownMenuItem
