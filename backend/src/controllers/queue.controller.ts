@@ -1,4 +1,3 @@
-// backend/src/controllers/queue.controller.ts
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { QueueService } from "../services/queue.service";
@@ -12,15 +11,11 @@ import {
 
 const queueService = new QueueService();
 
-/**
- * Add patient to queue
- */
 export const addToQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { patientId, priority } = req.body;
     const { clinicId } = req;
 
-    // Verify patient exists and belongs to clinic
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
       select: {
@@ -62,9 +57,6 @@ export const addToQueue = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get clinic queue - FIXED: Returns actual queue data
- */
 export const getClinicQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
@@ -79,9 +71,6 @@ export const getClinicQueue = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Update queue status
- */
 export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -106,9 +95,6 @@ export const updateQueueStatus = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Remove patient from queue
- */
 export const removeFromQueue = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

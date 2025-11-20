@@ -1,4 +1,3 @@
-// backend/src/controllers/consultation.controller.ts
 import { Response } from "express";
 import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
