@@ -1,11 +1,5 @@
-// backend/src/utils/response.utils.ts
-
 import { Response } from "express";
 
-/**
- * Standard API Response Structure
- * All API responses should follow this format
- */
 export interface ApiResponse<T = any> {
   status: "success" | "error";
   message?: string;
@@ -13,26 +7,18 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-/**
- * Paginated Response Structure
- */
 export interface PaginatedResponse<T = any> {
   status: "success";
   message?: string;
-  data: {
-    items: T[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
-    };
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
   };
 }
 
-/**
- * Success Response - 200 OK
- */
 export const successResponse = <T>(
   res: Response,
   data?: T,
@@ -45,9 +31,6 @@ export const successResponse = <T>(
   });
 };
 
-/**
- * Created Response - 201 Created
- */
 export const createdResponse = <T>(
   res: Response,
   data?: T,
@@ -60,7 +43,6 @@ export const createdResponse = <T>(
     data,
   };
 
-  // Include metadata if provided (e.g., alerts, warnings, counts)
   if (meta && Object.keys(meta).length > 0) {
     Object.assign(response, meta);
   }
@@ -68,16 +50,10 @@ export const createdResponse = <T>(
   return res.status(201).json(response);
 };
 
-/**
- * No Content Response - 204 No Content
- */
 export const noContentResponse = (res: Response): Response => {
   return res.status(204).send();
 };
 
-/**
- * Bad Request Response - 400 Bad Request
- */
 export const badRequestResponse = (
   res: Response,
   message?: string,
@@ -90,9 +66,6 @@ export const badRequestResponse = (
   });
 };
 
-/**
- * Unauthorized Response - 401 Unauthorized
- */
 export const unauthorizedResponse = (
   res: Response,
   message?: string
@@ -103,9 +76,6 @@ export const unauthorizedResponse = (
   });
 };
 
-/**
- * Forbidden Response - 403 Forbidden
- */
 export const forbiddenResponse = (
   res: Response,
   message?: string
@@ -116,9 +86,6 @@ export const forbiddenResponse = (
   });
 };
 
-/**
- * Not Found Response - 404 Not Found
- */
 export const notFoundResponse = (
   res: Response,
   resource?: string
@@ -129,9 +96,6 @@ export const notFoundResponse = (
   });
 };
 
-/**
- * Conflict Response - 409 Conflict
- */
 export const conflictResponse = (res: Response, message?: string): Response => {
   return res.status(409).json({
     status: "error",
@@ -139,9 +103,6 @@ export const conflictResponse = (res: Response, message?: string): Response => {
   });
 };
 
-/**
- * Validation Error Response - 422 Unprocessable Entity
- */
 export const validationErrorResponse = (
   res: Response,
   errors: any[]
@@ -170,12 +131,9 @@ export const serverErrorResponse = (
   });
 };
 
-/**
- * Paginated Success Response
- */
 export const paginatedResponse = <T>(
   res: Response,
-  items: T[],
+  data: T[],
   pagination: {
     page: number;
     limit: number;
@@ -186,19 +144,14 @@ export const paginatedResponse = <T>(
   return res.status(200).json({
     status: "success",
     message: message || "Request successful",
-    data: {
-      items,
-      pagination: {
-        ...pagination,
-        pages: Math.ceil(pagination.total / pagination.limit),
-      },
+    data,
+    pagination: {
+      ...pagination,
+      pages: Math.ceil(pagination.total / pagination.limit),
     },
   });
 };
 
-/**
- * Custom Status Response
- */
 export const customResponse = (
   res: Response,
   statusCode: number,
@@ -218,9 +171,6 @@ export const customResponse = (
   return res.status(statusCode).json(response);
 };
 
-/**
- * Rate Limited Response - 429 Too Many Requests
- */
 export const rateLimitResponse = (
   res: Response,
   retryAfter?: number
@@ -232,9 +182,6 @@ export const rateLimitResponse = (
   });
 };
 
-/**
- * Service Unavailable Response - 503 Service Unavailable
- */
 export const serviceUnavailableResponse = (
   res: Response,
   message?: string

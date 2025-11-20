@@ -1,3 +1,4 @@
+// backend/src/controllers/consultation.controller.ts
 import { Response } from "express";
 import prisma from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -118,7 +119,7 @@ export const createConsultation = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Get all consultations for the clinic with filtering
+ * ✅ UNIFIED: Get all consultations for the clinic with filtering
  */
 export const getAllConsultations = async (req: AuthRequest, res: Response) => {
   try {
@@ -207,6 +208,7 @@ export const getAllConsultations = async (req: AuthRequest, res: Response) => {
       prisma.consultation.count({ where }),
     ]);
 
+    // ✅ UNIFIED: Return consultations directly in data array
     return paginatedResponse(
       res,
       consultations,
@@ -318,6 +320,9 @@ export const updateConsultation = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * ✅ UNIFIED: Get patient consultations
+ */
 export const getPatientConsultations = async (
   req: AuthRequest,
   res: Response
@@ -327,7 +332,6 @@ export const getPatientConsultations = async (
     const { clinicId } = req;
     const { page = 1, limit = 20 } = req.query;
 
-    // Verify patient exists
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, clinicId },
     });
