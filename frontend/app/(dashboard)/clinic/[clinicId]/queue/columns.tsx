@@ -72,7 +72,6 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
           View Patient
         </DropdownMenuItem>
 
-        {/* NURSE: Move from WAITING to IN_CONSULTATION (implying vitals taken) */}
         {isNurse && queue.status === "WAITING" && (
           <DropdownMenuItem
             onClick={() => updateStatusMutation.mutate("IN_CONSULTATION")}
@@ -82,7 +81,6 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
           </DropdownMenuItem>
         )}
 
-        {/* DOCTOR: Move from IN_CONSULTATION to COMPLETED */}
         {isDoctor && queue.status === "IN_CONSULTATION" && (
           <DropdownMenuItem
             onClick={() => updateStatusMutation.mutate("COMPLETED")}
@@ -92,13 +90,15 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem
-          onClick={() => removeMutation.mutate()}
-          className="text-red-600"
-        >
-          <XCircle className="mr-2 h-4 w-4" />
-          Remove from Queue
-        </DropdownMenuItem>
+        {["ADMIN", "CLERK", "NURSE"].includes(user?.role!) && (
+          <DropdownMenuItem
+            onClick={() => removeMutation.mutate()}
+            className="text-red-600"
+          >
+            <XCircle className="mr-2 h-4 w-4" />
+            Remove from Queue
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

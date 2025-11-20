@@ -322,7 +322,7 @@ export default function CreateConsultationPage() {
                                 }}
                                 className="flex items-center gap-3 py-3"
                               >
-                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                                   <span className="text-xs font-semibold text-green-600">
                                     {patient.firstName[0]}
                                     {patient.lastName[0]}
@@ -352,7 +352,7 @@ export default function CreateConsultationPage() {
                                     )}
                                   </div>
                                 </div>
-                                <Check className={cn("ml-auto h-4 w-4")} />
+                                {/* <Check className={cn("ml-auto h-4 w-4")} /> */}
                               </CommandItem>
                             );
                           })}
@@ -382,7 +382,6 @@ export default function CreateConsultationPage() {
                 {selectedPatient.allergies &&
                   selectedPatient.allergies.length > 0 && (
                     <div className="mt-2 flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                       <div>
                         <p className="text-xs font-medium text-red-600">
                           ALLERGIES:

@@ -318,7 +318,6 @@ export default function CreatePrescriptionPage() {
                 {selectedPatient.allergies &&
                   selectedPatient.allergies.length > 0 && (
                     <div className="mt-2 flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                       <div>
                         <p className="text-xs font-medium text-red-600">
                           ALLERGIES:
