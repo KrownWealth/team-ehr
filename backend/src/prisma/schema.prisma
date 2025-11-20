@@ -41,6 +41,13 @@ enum OnboardingStatus {
   COMPLETED
 }
 
+enum QueueStatus {
+  WAITING
+  IN_CONSULTATION
+  COMPLETED
+  CANCELLED
+}
+
 model Clinic {
   id                   String   @id @default(cuid())
   name                 String
@@ -61,6 +68,7 @@ model Clinic {
   patients      Patient[]
   consultations Consultation[]
   bills         Bill[]
+  queue         Queue[]
 
   @@map("clinics")
 }
@@ -93,6 +101,27 @@ model User {
   @@index([clinicId])
   @@index([email])
   @@map("users")
+}
+
+model Queue {
+  id          String      @id @default(cuid())
+  clinicId    String
+  patientId   String
+  patientName String
+  priority    Int         @default(0)
+  position    Int         @default(0)
+  status      QueueStatus @default(WAITING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@index([clinicId, status])
+  @@map("queue")
 }
 
 model Patient {
@@ -128,6 +157,7 @@ model Patient {
   consultations Consultation[]
   appointments  Appointment[]
   bills         Bill[]
+  queues        Queue[]
 
   @@index([clinicId])
   @@index([patientNumber])
