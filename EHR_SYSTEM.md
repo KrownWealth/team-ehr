@@ -12,6 +12,7 @@ wecareEHR is a cloud-based, mobile-first Electronic Health Record (EHR) system d
 - No continuity of care when patients visit different facilities
 - Zero data for public health surveillance and epidemic response
 - Limited healthcare workforce unable to leverage technology for efficiency
+- Patients unable to view their own health-data, follow-up on appointment with doctors, view consultations
 
 ### Our Solution
 
@@ -21,7 +22,7 @@ A simple, affordable, intelligent EHR system that:
 - Provides real-time access to complete patient medical history
 - Uses AI to reduce medical errors and improve clinical decision-making
 - Enables connected care across multiple facilities
-- Works offline in low-connectivity environments
+- Patients having access to their patient dashboard, appointment, medicatin reminders, medical hsitory, and health tips
 - Costs **80% less** than existing Western EHR solutions
 
 ## Table of Contents
@@ -60,9 +61,6 @@ A simple, affordable, intelligent EHR system that:
 - **Doctor Consultations**: SOAP notes (Subjective, Objective, Assessment, Plan)
 - **Patient Portal**: Access to health information, reminders, and tools to monitor vital signs, empowering patients to manage their own health proactively
 - **Prescription Management**: Drug allergy checking, common drug library
-- **Lab Management**: Test ordering, result entry, reference ranges
-- **Billing & Payments**: Multiple payment methods, receipt generation
-- **Reporting & Analytics**: Revenue tracking, patient statistics, charts
 
 ### AI-Powered Features
 
@@ -79,14 +77,12 @@ A simple, affordable, intelligent EHR system that:
 - Full system access
 - Staff management (add, edit, deactivate)
 - Clinic configuration
-- Financial reports
 - Data export
 
 ### Doctor
 - View assigned patients
 - Write consultations (SOAP notes)
 - Prescribe medications
-- Order lab tests
 - View patient history
 
 ### Nurse
@@ -99,7 +95,6 @@ A simple, affordable, intelligent EHR system that:
 - Register new patients
 - Schedule appointments
 - Check-in patients
-- Print receipts
 - Manage patient queue
 
 ### Cashier
@@ -143,10 +138,6 @@ The wecareEHR system is built to ensure:
 
 - **PHI (Patient Health Information)**: Highly sensitive data encrypted at rest (Cloud SQL) and in transit (SSL/TLS).
 
-- **Offline-First**: Core workflows must function without network connection.
-
-- **Synchronization**: Client queues offline actions (in indexedDB) and dispatches them to the backend when connectivity is restored.
-
 - **Action**: User-initiated request dispatched from client to backend (e.g., `POST /vitals`).
 
 - **Asynchronous Event**: Non-blocking task (AI analysis, email notifications) triggered by backend but decoupled via Pub/Sub to avoid API latency.
@@ -186,17 +177,7 @@ The wecareEHR system is built to ensure:
 - Stores binary files (photos, exports)
 
 #### Client Application (Next.JS)
-- Captures user interactions triggering actions
-- Renders current state based on API responses or local data
-- Manages local state for offline usage (indexedDB)
-- Queues offline actions for synchronization
-- Dispatches API requests to Backend API
 
-#### Local Store (indexedDB)
-- Maintains local application state for Client Application
-- Holds queued actions waiting for network connectivity
-
----
 
 ## Workflow Processes
 
@@ -222,25 +203,6 @@ The wecareEHR system is built to ensure:
 
 9. **Client Store Update**: Client receives JSON response, updates local state, and re-renders UI
 
-### 2. Offline-First Synchronization Flow
-
-1. **Network Loss**: Client detects network failure and enters offline state
-
-2. **User Interaction**: User performs action in core workflow (e.g., saves Consultation)
-
-3. **Local Queuing**: Client saves action and payload to Local Store (indexedDB) instead of dispatching API request
-
-4. **Optimistic UI Update**: Client immediately updates local state and UI as if save was successful
-
-5. **Network Restoration**: Client detects connectivity is restored
-
-6. **Sync Dispatch**: Sync service retrieves queued action from Local Store
-
-7. **Action Dispatch**: Client dispatches queued API request to Backend API
-
-8. **Backend Processing**: Backend processes request following standard Online Action Flow
-
-9. **Resolve Queue**: Upon successful response, client removes action from Local Store queue (if failed, remains for retry)
 
 ### 3. Asynchronous Event Flow
 
@@ -323,22 +285,6 @@ The wecareEHR system is built to ensure:
 - **Authentication**: Firebase Authentication
 - **Async Processing**: Cloud Functions + Pub/Sub
 - **Storage**: Cloud Storage
-- **Local Storage**: indexedDB
 
 ---
 
-## Getting Started
-
-[Add installation, configuration, and deployment instructions specific to your implementation]
-
-## Contributing
-
-[Add contribution guidelines if applicable]
-
-## License
-
-[Add license information]
-
-## Support
-
-[Add support contact information]
