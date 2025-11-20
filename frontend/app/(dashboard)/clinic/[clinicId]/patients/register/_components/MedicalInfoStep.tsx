@@ -69,7 +69,7 @@ export default function MedicalInfoStep({
           value={data.bloodGroup}
           onValueChange={(val) => handleChange("bloodGroup", val)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select blood group" />
           </SelectTrigger>
           <SelectContent>
@@ -153,8 +153,8 @@ export default function MedicalInfoStep({
         )}
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-        <p className="text-sm text-yellow-800">
+      <div className="bg-green-50 border border-green-200 rounded-md p-4">
+        <p className="text-sm text-green-800">
           <strong>Note:</strong> Allergy and chronic condition information is
           critical for safe treatment. Please ensure all known allergies and
           conditions are recorded.

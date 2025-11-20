@@ -90,9 +90,9 @@ export function getDefaultRouteForRole(role: Role, clinicId: string): string {
     case "ADMIN":
       return `/clinic/${clinicId}/dashboard`;
     case "CLERK":
-      return `/clinic/${clinicId}/queue`;
+      return `/clinic/${clinicId}/dashboard`;
     case "NURSE":
-      return `/clinic/${clinicId}/queue`;
+      return `/clinic/${clinicId}/dashboard`;
     case "DOCTOR":
       return `/clinic/${clinicId}/dashboard`;
     case "CASHIER":

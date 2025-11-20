@@ -100,7 +100,7 @@ export function formatDateRange(
   return format(date.from, "LLL dd, y");
 }
 
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown, fallback?: string): string {
   if (!error) return "Something went wrong";
 
   if (error instanceof AxiosError) {
@@ -108,6 +108,7 @@ export function getErrorMessage(error: unknown): string {
     return (
       apiError.response?.data?.errors?.[0].message ||
       apiError.response?.data?.message ||
+      fallback ||
       "Something went wrong"
     );
   }

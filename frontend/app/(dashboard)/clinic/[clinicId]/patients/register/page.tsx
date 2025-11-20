@@ -12,6 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { ApiResponse, RegisterPatientData, Gender, BloodGroup } from "@/types";
+import { getErrorMessage } from "@/lib/helper";
 
 const STEPS = [
   { id: 1, name: "Personal Info", icon: User },
@@ -19,12 +20,13 @@ const STEPS = [
   { id: 3, name: "Emergency Contact", icon: Phone },
 ];
 
-// Intersection type to handle form state including UI-specific emergency fields
-// that might be missing from the strict RegisterPatientData type
 type PatientFormData = Partial<RegisterPatientData> & {
   emergencyContact?: string;
   emergencyPhone?: string;
   emergencyRelation?: string;
+  addressLine: string;
+  city: string;
+  state: string;
 };
 
 export default function RegisterPatientPage() {
@@ -40,13 +42,16 @@ export default function RegisterPatientPage() {
     gender: undefined,
     phone: "",
     email: "",
-    address: "",
     bloodGroup: undefined,
     allergies: [],
     chronicConditions: [],
     emergencyContact: "",
     emergencyPhone: "",
     emergencyRelation: "",
+
+    addressLine: "",
+    city: "",
+    state: "",
   });
 
   const registerMutation = useMutation({
@@ -62,7 +67,7 @@ export default function RegisterPatientPage() {
       router.push(`/clinic/${clinicId}/patients/${data.data.id}`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error(getErrorMessage(error, "Registration failed"));
     },
   });
 

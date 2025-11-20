@@ -18,9 +18,7 @@ import { PaginationMeta, ApiResponse } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiQuery } from "@/lib/hooks/use-api";
 
-type ApiStatsType<TData> =
-  | { data: TData[]; meta: PaginationMeta; exportButtonLabel: string }
-  | TData[];
+type ApiStatsType<TData> = any
 
 function TableList<TData, TValue>({
   querykey,
@@ -80,7 +78,7 @@ function TableList<TData, TValue>({
 
   const normalizedData: TData[] = Array.isArray(res?.data)
     ? res.data
-    : res?.data?.data || [];
+    : res?.data?.items || res?.data?.data || [];
 
   const meta: PaginationMeta | undefined = Array.isArray(res?.data)
     ? {

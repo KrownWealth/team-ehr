@@ -18,13 +18,13 @@ export default function PatientVitals({ patientId }: { patientId: string }) {
     },
   });
 
-  const vitals = data?.data || [];
+  const vitals = data?.data || data?.items || [];
 
   if (isLoading) {
     return <div className="text-center py-8">Loading vitals...</div>;
   }
 
-  if (vitals.length === 0) {
+  if (vitals?.length === 0) {
     return (
       <Card className="mt-6">
         <CardContent className="py-8">
@@ -36,7 +36,7 @@ export default function PatientVitals({ patientId }: { patientId: string }) {
 
   return (
     <div className="space-y-4 mt-6">
-      {vitals.map((vital) => (
+      {vitals && vitals?.map((vital) => (
         <Card key={vital.id}>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start mb-4">

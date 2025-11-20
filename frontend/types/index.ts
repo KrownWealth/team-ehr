@@ -139,7 +139,9 @@ export interface Patient {
   gender: Gender;
   phone: string;
   email?: string;
-  address: string;
+  addressLine: string;
+  state: string;
+  city: string;
   bloodGroup?: BloodGroup;
   allergies?: string[];
   chronicConditions?: string[];
@@ -156,10 +158,13 @@ export interface RegisterPatientData {
   gender: Gender;
   phone: string;
   email?: string;
-  address: string;
+  addressLine: string;
   bloodGroup?: BloodGroup;
   allergies?: string[];
   chronicConditions?: string[];
+
+  city: string;
+  state: string;
 }
 
 // ============================================================================
@@ -628,6 +633,7 @@ export interface ApiResponse<T = unknown> {
   status: "success" | "error";
   message?: string;
   data?: T;
+  items?: T;
   meta?: PaginationMeta;
 }
 

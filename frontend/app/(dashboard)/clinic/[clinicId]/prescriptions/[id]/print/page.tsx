@@ -169,7 +169,7 @@ export default function PrintPrescriptionPage() {
         </div>
 
         {prescription.notes && (
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
+          <div className="bg-green-50 border border-green-200 p-4 rounded">
             <p className="text-sm font-semibold text-gray-900 mb-1">
               Additional Notes:
             </p>

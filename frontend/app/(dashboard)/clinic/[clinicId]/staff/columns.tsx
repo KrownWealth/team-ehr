@@ -22,6 +22,7 @@ import { formatRelativeTime } from "@/lib/utils/formatters";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/helper";
 
 const RoleBadge = ({ role }: { role: Staff["role"] }) => {
   const colors: Record<string, string> = {
@@ -57,7 +58,7 @@ const ActionsComponent = ({ staff }: { staff: Staff }) => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update status");
+      toast.error(getErrorMessage(error, "Failed to update status"));
     },
   });
 

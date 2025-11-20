@@ -101,7 +101,7 @@ export default function PatientOverview({ patient }: PatientOverviewProps) {
               <MapPin className="h-4 w-4 text-gray-500 mt-1" />
               <div>
                 <p className="text-sm text-gray-600">Address</p>
-                <p className="font-medium">{patient.address}</p>
+                <p className="font-medium">{patient.addressLine}</p>
               </div>
             </div>
           </div>

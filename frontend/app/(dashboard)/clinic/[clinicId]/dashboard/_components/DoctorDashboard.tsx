@@ -56,7 +56,7 @@ export default function DoctorDashboard() {
           </p>
         </div>
         <Link href={`/clinic/${user?.clinicId}/queue`}>
-          <button className="btn btn-block">
+          <button className="btn btn-block py-3">
             <Stethoscope className="mr-2 h-5 w-5" />
             Start Consultation
           </button>

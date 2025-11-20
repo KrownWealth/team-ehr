@@ -51,7 +51,7 @@ export function AppNavbar() {
   const userFullName = `${user.firstName} ${user.lastName}`;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
       <div className="flex h-16 items-center justify-between px-6">
         {/* Left side - could add breadcrumbs or page title here */}
         <div className="flex-1" />
@@ -71,7 +71,7 @@ export function AppNavbar() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex items-center gap-2 hover:bg-gray-100"
+                className="flex items-center gap-2 hover:bg-gray-100 p-2 py-6"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.photoUrl} alt={userFullName} />

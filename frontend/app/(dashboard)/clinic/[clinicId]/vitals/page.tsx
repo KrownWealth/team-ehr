@@ -27,6 +27,7 @@ import {
   Scale,
   Ruler,
 } from "lucide-react";
+import { getErrorMessage } from "@/lib/helper";
 
 // Local type for form state to handle string inputs before conversion
 interface VitalsFormState {
@@ -117,7 +118,7 @@ export default function VitalsPage() {
       toast.info("Ready for next patient");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to record vitals");
+      toast.error(getErrorMessage(error, "Failed to record vitals"));
     },
   });
 

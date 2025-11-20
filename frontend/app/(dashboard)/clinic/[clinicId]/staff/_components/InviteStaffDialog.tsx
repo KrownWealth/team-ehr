@@ -237,8 +237,7 @@ export default function InviteStaffDialog({
               />
             </div>
             <p className="text-xs text-gray-500">
-              Enter phone number without the country code. The full number will
-              be **concatenated** on submit.
+              Enter phone number without country code
             </p>
           </div>
           <div className="space-y-2">

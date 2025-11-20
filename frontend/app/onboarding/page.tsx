@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { OnboardClinicData, OnboardingStatus } from "@/types";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { getErrorMessage } from "@/lib/helper";
 
 const STEPS = [
   { id: 1, name: "Clinic Info", icon: Building2 },
@@ -70,7 +71,7 @@ export default function OnboardingPage() {
       router.replace(`/clinic/${data.data.id}/dashboard`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Clinic onboarding failed.");
+      toast.error(getErrorMessage(error, "Clinic onboarding failed."));
     },
   });
 

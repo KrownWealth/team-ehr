@@ -63,7 +63,7 @@ export default function PersonalInfoStep({
             value={data.gender}
             onValueChange={(val) => handleChange("gender", val as Gender)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
             <SelectContent>
@@ -121,9 +121,34 @@ export default function PersonalInfoStep({
         <Input
           id="address"
           placeholder="Street address, City, State"
-          value={data.address}
-          onChange={(e) => handleChange("address", e.target.value)}
+          value={data.addressLine}
+          onChange={(e) => handleChange("addressLine", e.target.value)}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <Label htmlFor="city">City *</Label>
+          <Input
+            id="city"
+            className="h-12"
+            placeholder="e.g., Lagos"
+            value={data.city}
+            onChange={(e) => handleChange("city", e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-3">
+          <Label htmlFor="state">State *</Label>
+          <Input
+            id="state"
+            className="h-12"
+            placeholder="e.g., Lagos State"
+            value={data.state}
+            onChange={(e) => handleChange("state", e.target.value)}
+            required
+          />
+        </div>
       </div>
     </div>
   );

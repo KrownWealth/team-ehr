@@ -5,9 +5,11 @@ import patientColumns from "./column";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export default function PatientsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const params = useParams();
   const clinicId = params.clinicId as string;
 
@@ -20,10 +22,15 @@ export default function PatientsPage() {
             Manage and view all registered patients
           </p>
         </div>
-        <button className="btn btn-block" onClick={() => router.push(`/clinic/${clinicId}/patients/register`)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Register Patient
-        </button>
+        {user?.role && ["ADMIN", "CLERK"].includes(user?.role) && (
+          <button
+            className="btn btn-block"
+            onClick={() => router.push(`/clinic/${clinicId}/patients/register`)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Register Patient
+          </button>
+        )}
       </div>
 
       <TableList

@@ -21,6 +21,7 @@ import { ApiResponse, Clinic } from "@/types";
 import { Save, Building2, Clock, DollarSign, Palette } from "lucide-react";
 import { useParams } from "next/navigation";
 import Loader from "@/components/shared/Loader";
+import { getErrorMessage } from "@/lib/helper";
 
 export default function SettingsPage() {
   const params = useParams();
@@ -83,7 +84,7 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["clinic"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update settings");
+      toast.error(getErrorMessage(error, "Failed to update settings"));
     },
   });
 

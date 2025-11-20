@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/helper";
 
 const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
   const router = useRouter();
@@ -34,7 +35,7 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
       queryClient.invalidateQueries({ queryKey: ["queue"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update status");
+      toast.error(getErrorMessage(error, "Failed to update status"));
     },
   });
 
@@ -47,7 +48,7 @@ const ActionsComponent = ({ queue }: { queue: QueueItem }) => {
       queryClient.invalidateQueries({ queryKey: ["queue"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to remove patient");
+      toast.error(getErrorMessage(error, "Failed to remove patient"));
     },
   });
 
