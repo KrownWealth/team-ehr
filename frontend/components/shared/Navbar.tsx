@@ -23,7 +23,11 @@ import { useRouter, useParams } from "next/navigation";
 import { getInitials } from "@/lib/utils/formatters";
 import { toast } from "sonner";
 
-export function AppNavbar() {
+interface AppNavbarProps {
+  onMenuClick?: () => void;
+}
+
+export function AppNavbar({ onMenuClick }: AppNavbarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const params = useParams();
@@ -43,7 +47,6 @@ export function AppNavbar() {
 
   const handleProfile = () => {
     if (clinicId && user?.id) {
-      // Navigate to profile or settings based on role
       if (user.role === "PATIENT") {
         router.push(`/clinic/${clinicId}/portal/profile`);
       } else {
@@ -59,15 +62,21 @@ export function AppNavbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
-      <div className="flex h-20 items-center justify-between px-6">
+      <div className="flex h-16 md:h-20 items-center justify-between px-4 md:px-6">
         <div className="flex-1">
-          <button className="w-5 h-5">
-            <MenuIcon />
-          </button>
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onMenuClick}
+          >
+            <MenuIcon className="h-5 w-5" />
+          </Button>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Notifications */}
-          {/* <Button variant="ghost" size="icon" className="relative">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Notifications - Hidden on mobile */}
+          {/* <Button variant="ghost" size="icon" className="relative hidden md:flex">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 text-[10px] font-medium text-white flex items-center justify-center">
               3
@@ -79,11 +88,11 @@ export function AppNavbar() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex items-center gap-2 hover:bg-gray-100 p-2 py-6"
+                className="flex items-center gap-2 hover:bg-gray-100 p-2 py-4 md:py-6"
               >
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-7 w-7 md:h-8 md:w-8">
                   <AvatarImage src={user.photoUrl} alt={userFullName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -95,7 +104,7 @@ export function AppNavbar() {
                     {user.role.toLowerCase()}
                   </p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
+                <ChevronDown className="h-4 w-4 text-gray-500 hidden md:block" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

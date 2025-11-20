@@ -20,10 +20,7 @@ const ActionsComponent = ({ prescription }: { prescription: Prescription }) => {
   const clinicId = params.clinicId as string;
 
   const handlePrint = () => {
-    window.open(
-      `/clinic/${clinicId}/prescriptions/${prescription.id}/print`,
-      "_blank"
-    );
+    window.open(`/print/prescriptions/${prescription.id}`, "_blank");
   };
 
   return (

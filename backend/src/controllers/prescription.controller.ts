@@ -157,6 +157,7 @@ export const getAllPrescriptions = async (req: AuthRequest, res: Response) => {
         select: {
           id: true,
           prescriptions: true,
+          patientId: true,
           createdAt: true,
           patient: {
             select: {

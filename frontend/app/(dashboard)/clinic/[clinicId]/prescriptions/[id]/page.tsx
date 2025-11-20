@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { ApiResponse, Prescription, Clinic } from "@/types";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { formatDate, calculateAge } from "@/lib/utils/formatters";
-import { Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Loader from "@/components/shared/Loader";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { ArrowLeft, PrinterIcon } from "lucide-react";
 
 export default function PrintPrescriptionPage() {
   const params = useParams();
   const prescriptionId = params.id as string;
   const [isPrinting, setIsPrinting] = useState(false);
+  const { user } = useAuth();
+  const router = useRouter();
 
   const { data: prescriptionData } = useQuery<ApiResponse<Prescription>>({
     queryKey: ["prescription", prescriptionId],
@@ -27,7 +30,7 @@ export default function PrintPrescriptionPage() {
   const { data: clinicData } = useQuery<ApiResponse<Clinic>>({
     queryKey: ["clinic"],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/clinic/profile");
+      const response = await apiClient.get("/v1/staff/me");
       return response.data;
     },
   });
@@ -35,23 +38,8 @@ export default function PrintPrescriptionPage() {
   const prescription = prescriptionData?.data;
   const clinic = clinicData?.data;
 
-  useEffect(() => {
-    if (prescription && clinic && !isPrinting) {
-      const timer = setTimeout(() => {
-        setIsPrinting(true);
-        window.print();
-        setIsPrinting(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [prescription, clinic]);
-
   if (!prescription || !clinic) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Loading prescription...</p>
-      </div>
-    );
+    return <Loader />;
   }
 
   const patient = prescription.patient;
@@ -68,15 +56,29 @@ export default function PrintPrescriptionPage() {
   const age = calculateAge(patient.birthDate);
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="print:hidden fixed top-4 right-4 z-50">
-        <Button onClick={() => window.print()}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print
-        </Button>
-      </div>
-
+    <div className="min-h-screen">
       <div className="max-w-3xl mx-auto p-8 space-y-6">
+        <div className="flex justify-between">
+          <button
+            className="btn px-0"
+            onClick={() =>
+              router.push(`/clinic/${user?.clinicId}/prescriptions`)
+            }
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </button>
+
+          <button
+            className="btn btn-outline gap-2"
+            onClick={() =>
+              window.open(`/print/prescriptions/${prescription.id}`, "_blank")
+            }
+          >
+            <PrinterIcon size={16} /> Print
+          </button>
+        </div>
+        <br />
         <div className="border-b-2 border-gray-300 pb-6">
           <div className="flex justify-between items-start">
             <div>
@@ -85,7 +87,7 @@ export default function PrintPrescriptionPage() {
               </h1>
               <p className="text-sm text-gray-600">{clinic.address}</p>
               <p className="text-sm text-gray-600">
-                {clinic.city}, {clinic.state}
+                {clinic.city} {clinic.state && `, ${clinic.state}`}
               </p>
               <p className="text-sm text-gray-600">
                 Tel: {clinic.phone} | Email: {clinic.email}
@@ -128,7 +130,7 @@ export default function PrintPrescriptionPage() {
 
         {patient.allergies && patient.allergies.length > 0 && (
           <div className="bg-red-50 border-2 border-red-300 p-3 rounded">
-            <p className="text-sm font-bold text-red-900">⚠️ ALLERGIES:</p>
+            <p className="text-sm font-bold text-red-900">ALLERGIES:</p>
             <p className="text-sm text-red-800">
               {patient.allergies.join(", ")}
             </p>

@@ -207,7 +207,6 @@ export const getAllConsultations = async (req: AuthRequest, res: Response) => {
       prisma.consultation.count({ where }),
     ]);
 
-    // ✅ UNIFIED: Return consultations directly in data array
     return paginatedResponse(
       res,
       consultations,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { ApiResponse, Patient } from "@/types";
@@ -14,7 +14,6 @@ import PatientConsultations from "./_components/PatientConsultations";
 import PatientPrescriptions from "./_components/PatientPrescriptions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,6 +38,8 @@ function PatientDetailsContent() {
 
   const isEditMode = searchParams.get("edit") === "true";
   const [formData, setFormData] = useState<Partial<Patient>>({});
+  const [allergyInput, setAllergyInput] = useState("");
+  const [conditionInput, setConditionInput] = useState("");
 
   const { data, isLoading } = useQuery<ApiResponse<Patient>>({
     queryKey: ["patient", patientId],
@@ -46,12 +47,14 @@ function PatientDetailsContent() {
       const response = await apiClient.get(`/v1/patient/${patientId}`);
       return response.data;
     },
-    onSuccess: (data) => {
-      if (data?.data && isEditMode) {
-        setFormData(data.data);
-      }
-    },
   });
+
+  // Replace onSuccess with useEffect
+  useEffect(() => {
+    if (data?.data && isEditMode) {
+      setFormData(data.data);
+    }
+  }, [data, isEditMode]);
 
   const updateMutation = useMutation({
     mutationFn: async (updateData: Partial<Patient>) => {
@@ -71,7 +74,7 @@ function PatientDetailsContent() {
     },
   });
 
-  const patient = data.data;
+  const patient = data?.data;
 
   if (isLoading) {
     return (
@@ -104,9 +107,50 @@ function PatientDetailsContent() {
     router.push(`/clinic/${clinicId}/patients/${patientId}`);
   };
 
+  const handleAddAllergy = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && allergyInput.trim()) {
+      e.preventDefault();
+      const currentAllergies = formData.allergies || [];
+      if (!currentAllergies.includes(allergyInput.trim())) {
+        handleChange("allergies", [...currentAllergies, allergyInput.trim()]);
+      }
+      setAllergyInput("");
+    }
+  };
+
+  const handleRemoveAllergy = (allergyToRemove: string) => {
+    const currentAllergies = formData.allergies || [];
+    handleChange(
+      "allergies",
+      currentAllergies.filter((a) => a !== allergyToRemove)
+    );
+  };
+
+  const handleAddCondition = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && conditionInput.trim()) {
+      e.preventDefault();
+      const currentConditions = formData.chronicConditions || [];
+      if (!currentConditions.includes(conditionInput.trim())) {
+        handleChange("chronicConditions", [
+          ...currentConditions,
+          conditionInput.trim(),
+        ]);
+      }
+      setConditionInput("");
+    }
+  };
+
+  const handleRemoveCondition = (conditionToRemove: string) => {
+    const currentConditions = formData.chronicConditions || [];
+    handleChange(
+      "chronicConditions",
+      currentConditions.filter((c) => c !== conditionToRemove)
+    );
+  };
+
   if (isEditMode) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-6xl mx-auto">
         <div className="flex justify-between items-start">
           <div className="gap-4">
             <button
@@ -131,7 +175,7 @@ function PatientDetailsContent() {
               <CardTitle>Personal Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label>First Name *</Label>
                   <Input
@@ -187,7 +231,7 @@ function PatientDetailsContent() {
                   value={formData.bloodGroup || ""}
                   onValueChange={(value) => handleChange("bloodGroup", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,36 +302,56 @@ function PatientDetailsContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Known Allergies (comma-separated)</Label>
+                <Label>Known Allergies</Label>
                 <Input
-                  placeholder="e.g., Penicillin, Aspirin"
-                  value={formData.allergies?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "allergies",
-                      e.target.value
-                        .split(",")
-                        .map((a) => a.trim())
-                        .filter(Boolean)
-                    )
-                  }
+                  placeholder="Type an allergy and press Enter"
+                  value={allergyInput}
+                  onChange={(e) => setAllergyInput(e.target.value)}
+                  onKeyDown={handleAddAllergy}
                 />
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.allergies?.map((allergy, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm"
+                    >
+                      {allergy}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAllergy(allergy)}
+                        className="hover:bg-red-100 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
               <div>
-                <Label>Chronic Conditions (comma-separated)</Label>
+                <Label>Chronic Conditions</Label>
                 <Input
-                  placeholder="e.g., Hypertension, Diabetes"
-                  value={formData.chronicConditions?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "chronicConditions",
-                      e.target.value
-                        .split(",")
-                        .map((c) => c.trim())
-                        .filter(Boolean)
-                    )
-                  }
+                  placeholder="Type a condition and press Enter"
+                  value={conditionInput}
+                  onChange={(e) => setConditionInput(e.target.value)}
+                  onKeyDown={handleAddCondition}
                 />
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.chronicConditions?.map((condition, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                    >
+                      {condition}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCondition(condition)}
+                        className="hover:bg-blue-100 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -358,15 +422,19 @@ function PatientDetailsContent() {
               Add to Queue
             </Button>
           )}
-          <button
-            className="btn btn-block"
-            onClick={() =>
-              router.push(`/clinic/${clinicId}/patients/${patientId}?edit=true`)
-            }
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Patient
-          </button>
+          {["ADMIN", "CLERK"].includes(user?.role!) && (
+            <button
+              className="btn btn-block"
+              onClick={() =>
+                router.push(
+                  `/clinic/${clinicId}/patients/${patientId}?edit=true`
+                )
+              }
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Patient
+            </button>
+          )}
         </div>
       </div>
 

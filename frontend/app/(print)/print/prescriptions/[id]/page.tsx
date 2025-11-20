@@ -1,0 +1,236 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api/axios-instance";
+import { ApiResponse, Prescription, Clinic } from "@/types";
+import { useParams, useRouter } from "next/navigation";
+import { formatDate, calculateAge } from "@/lib/utils/formatters";
+import Loader from "@/components/shared/Loader";
+
+export default function PrintPrescriptionPage() {
+  const params = useParams();
+  const router = useRouter();
+  const prescriptionId = params.id as string;
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const { data: prescriptionData } = useQuery<ApiResponse<Prescription>>({
+    queryKey: ["prescription", prescriptionId],
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/v1/prescription/${prescriptionId}`
+      );
+      return response.data;
+    },
+  });
+
+  const { data: clinicData } = useQuery<ApiResponse<Clinic>>({
+    queryKey: ["clinic"],
+    queryFn: async () => {
+      const response = await apiClient.get("/v1/staff/me");
+      return response.data;
+    },
+  });
+
+  const prescription = prescriptionData?.data;
+  const clinic = clinicData?.data;
+
+  useEffect(() => {
+    if (prescription && clinic && !isPrinting) {
+      const timer = setTimeout(() => {
+        setIsPrinting(true);
+        window.print();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [prescription, clinic, isPrinting]);
+
+  // Handle after print - redirect back
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      router.back();
+    };
+
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, [router]);
+
+  if (!prescription || !clinic) {
+    return <Loader />;
+  }
+
+  const patient = prescription.patient;
+  const doctor = prescription.doctor;
+
+  if (!patient || !doctor) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Incomplete prescription data.</p>
+      </div>
+    );
+  }
+
+  const age = calculateAge(patient.birthDate);
+
+  return (
+    <>
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 0.5cm;
+          }
+
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-white">
+        <div className="max-w-3xl mx-auto p-8 space-y-6">
+          <div className="border-b-2 border-gray-300 pb-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {clinic.name}
+                </h1>
+                <p className="text-sm text-gray-600">{clinic.address}</p>
+                <p className="text-sm text-gray-600">
+                  {clinic.city} {clinic.state && `, ${clinic.state}`}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Tel: {clinic.phone} | Email: {clinic.email}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-semibold">PRESCRIPTION</p>
+                <p className="text-sm text-gray-600">
+                  Date: {formatDate(prescription.createdAt)}
+                </p>
+                <p className="text-xs text-gray-500 font-mono">
+                  Ref: {prescription.id.slice(0, 8).toUpperCase()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded">
+            <div>
+              <p className="text-xs text-gray-600 uppercase">Patient Name</p>
+              <p className="font-semibold">
+                {patient.firstName} {patient.lastName}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 uppercase">Patient ID</p>
+              <p className="font-semibold font-mono">{patient.patientNumber}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 uppercase">Age / Gender</p>
+              <p className="font-semibold">
+                {age} years / {patient.gender}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 uppercase">Phone</p>
+              <p className="font-semibold">{patient.phone}</p>
+            </div>
+          </div>
+
+          {patient.allergies && patient.allergies.length > 0 && (
+            <div className="bg-red-50 border-2 border-red-300 p-3 rounded">
+              <p className="text-sm font-bold text-red-900">ALLERGIES:</p>
+              <p className="text-sm text-red-800">
+                {patient.allergies.join(", ")}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 my-4">
+            <span className="text-4xl font-serif">℞</span>
+            <div className="flex-1 border-t-2 border-gray-300" />
+          </div>
+
+          <div className="space-y-4">
+            {prescription.prescriptions.map((med, index) => (
+              <div
+                key={index}
+                className="border-l-4 border-green-500 pl-4 py-2"
+              >
+                <p className="font-bold text-lg">
+                  {index + 1}. {med.drug}
+                </p>
+                <div className="text-sm text-gray-700 space-y-1 mt-2">
+                  <p>
+                    <span className="font-medium">Dosage:</span> {med.dosage}
+                  </p>
+                  <p>
+                    <span className="font-medium">Frequency:</span>{" "}
+                    {med.frequency}
+                  </p>
+                  <p>
+                    <span className="font-medium">Duration:</span>{" "}
+                    {med.duration}
+                  </p>
+                  {med.instructions && (
+                    <p>
+                      <span className="font-medium">Instructions:</span>{" "}
+                      {med.instructions}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {prescription.notes && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded">
+              <p className="text-sm font-semibold text-gray-900 mb-1">
+                Additional Notes:
+              </p>
+              <p className="text-sm text-gray-700">{prescription.notes}</p>
+            </div>
+          )}
+
+          <div className="mt-12 pt-6 border-t-2 border-gray-300">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-sm text-gray-600">Prescribed by:</p>
+                <p className="text-lg font-bold">
+                  Dr. {doctor.firstName} {doctor.lastName}
+                </p>
+                {doctor.licenseId && (
+                  <p className="text-xs text-gray-500">
+                    License: {doctor.licenseId}
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="border-t-2 border-gray-400 w-48 pt-2">
+                  <p className="text-xs text-gray-600">Doctor's Signature</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t">
+            <p>
+              This is a computer-generated prescription and does not require a
+              physical signature.
+            </p>
+            <p className="mt-1">
+              For verification, contact {clinic.phone} or {clinic.email}
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

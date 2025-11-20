@@ -30,7 +30,10 @@ interface Consultation {
   assessment: string;
   plan: string;
   prescriptions: Prescription[];
-  labOrders: string[];
+  labOrders: {
+    test: string;
+    instructions: string;
+  }[];
   followUpDate: string | null;
   createdAt: string;
   doctor: Doctor;
@@ -213,7 +216,7 @@ export default function PatientConsultations({
                 <div className="flex flex-wrap gap-2">
                   {consultation.labOrders.map((lab, idx) => (
                     <Badge key={idx} variant="secondary">
-                      {lab}
+                      {lab.test}
                     </Badge>
                   ))}
                 </div>

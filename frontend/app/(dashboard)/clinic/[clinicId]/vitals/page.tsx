@@ -12,12 +12,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { ApiResponse, Patient, RecordVitalsData } from "@/types";
-import { calculateBMI, getBMICategory } from "@/lib/utils/formatters";
+import {
+  calculateBMI,
+  getBMICategory,
+  calculateAge,
+} from "@/lib/utils/formatters";
 import {
   Heart,
   Activity,
@@ -26,20 +43,22 @@ import {
   Droplet,
   Scale,
   Ruler,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/helper";
+import { cn } from "@/lib/utils";
 
-// Local type for form state to handle string inputs before conversion
 interface VitalsFormState {
   systolic: string;
   diastolic: string;
-  temperature: string; // Celsius
-  pulse: string; // bpm
-  respiration: string; // breaths/min
-  weight: string; // kg
-  height: string; // cm
-  spo2: string; // Oxygen saturation %
-  bloodGlucose: string; // mg/dL
+  temperature: string;
+  pulse: string;
+  respiration: string;
+  weight: string;
+  height: string;
+  spo2: string;
+  bloodGlucose: string;
   notes: string;
 }
 
@@ -49,8 +68,9 @@ export default function VitalsPage() {
   const clinicId = params.clinicId as string;
   const queryClient = useQueryClient();
 
-  const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [comboboxOpen, setComboboxOpen] = useState(false);
   const [vitalsData, setVitalsData] = useState<VitalsFormState>({
     systolic: "",
     diastolic: "",
@@ -64,31 +84,27 @@ export default function VitalsPage() {
     notes: "",
   });
 
-  const searchPatient = async () => {
-    if (!patientSearch.trim()) {
-      toast.error("Please enter patient ID or name");
-      return;
-    }
-
-    try {
+  const { data: patientsData, isLoading: loadingPatients } = useQuery({
+    queryKey: ["patients-search", searchQuery],
+    queryFn: async () => {
       const response = await apiClient.get<ApiResponse<Patient[]>>(
-        `/v1/patient?search=${patientSearch}&limit=1`
+        "/v1/patient",
+        {
+          params: {
+            search: searchQuery,
+            limit: 50,
+          },
+        }
       );
-      if (response.data.data?.length === 1) {
-        setSelectedPatient(response.data.data[0]);
-      } else {
-        toast.error("Patient not found");
-      }
-    } catch (error) {
-      toast.error("Failed to find patient");
-    }
-  };
+      return response.data;
+    },
+  });
+
+  const patients: Patient[] = patientsData?.data || [];
 
   const weight = parseFloat(vitalsData.weight);
   const height = parseFloat(vitalsData.height);
-
   const bmi = weight > 0 && height > 0 ? calculateBMI(weight, height) : null;
-
   const bmiCategory = bmi ? getBMICategory(bmi) : null;
 
   const recordVitalsMutation = useMutation({
@@ -101,7 +117,7 @@ export default function VitalsPage() {
       queryClient.invalidateQueries({ queryKey: ["queue"] });
 
       setSelectedPatient(null);
-      setPatientSearch("");
+      setSearchQuery("");
       setVitalsData({
         systolic: "",
         diastolic: "",
@@ -130,7 +146,6 @@ export default function VitalsPage() {
       return;
     }
 
-    // Validate required BP fields if either is present
     const hasSystolic = !!vitalsData.systolic;
     const hasDiastolic = !!vitalsData.diastolic;
     const bloodPressure =
@@ -138,12 +153,11 @@ export default function VitalsPage() {
         ? `${vitalsData.systolic || "N/A"}/${vitalsData.diastolic || "N/A"}`
         : undefined;
 
-    // Convert strings to number or undefined
     const parseNum = (val: string) => (val ? parseFloat(val) : undefined);
 
     const payload: RecordVitalsData = {
       patientId: selectedPatient.id,
-      bloodPressure: bloodPressure || "", // bloodPressure is required in RecordVitalsData but can be empty if not measured
+      bloodPressure: bloodPressure || "",
       temperature: parseNum(vitalsData.temperature),
       pulse: parseNum(vitalsData.pulse),
       respiration: parseNum(vitalsData.respiration),
@@ -182,25 +196,104 @@ export default function VitalsPage() {
           <CardHeader>
             <CardTitle>Select Patient</CardTitle>
             <CardDescription>
-              Search by patient ID or name to record vitals
+              Search and select a patient to record vitals
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
-              <Input
-                placeholder="Enter patient ID or name"
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && searchPatient()}
-              />
-              <button onClick={searchPatient} className="btn btn-block">Search</button>
+            <div className="space-y-2">
+              <Label>Select Patient</Label>
+              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboboxOpen}
+                    className="w-full justify-between h-12"
+                  >
+                    <span className="text-muted-foreground">
+                      Search and select patient...
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search by name, ID, phone, or email..."
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                    />
+                    <CommandList>
+                      {loadingPatients ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Loading patients...
+                        </div>
+                      ) : patients.length === 0 ? (
+                        <CommandEmpty>
+                          {searchQuery
+                            ? "No patients found matching your search."
+                            : "Start typing to search for patients..."}
+                        </CommandEmpty>
+                      ) : (
+                        <CommandGroup>
+                          {patients.map((patient) => {
+                            const age = calculateAge(patient.birthDate);
+                            return (
+                              <CommandItem
+                                key={patient.id}
+                                value={patient.id}
+                                onSelect={() => {
+                                  setSelectedPatient(patient);
+                                  setComboboxOpen(false);
+                                }}
+                                className="flex items-center gap-3 py-3"
+                              >
+                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-green-600">
+                                    {patient.firstName[0]}
+                                    {patient.lastName[0]}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium truncate">
+                                      {patient.firstName} {patient.lastName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      {patient.patientNumber}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                    <span>{patient.gender}</span>
+                                    <span>{age} yrs</span>
+                                    {patient.phone && (
+                                      <span className="font-mono">
+                                        {patient.phone}
+                                      </span>
+                                    )}
+                                    {patient.email && (
+                                      <span className="truncate">
+                                        {patient.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
       )}
 
       {selectedPatient && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-green-50/10 border-green-200/70">
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
@@ -214,7 +307,7 @@ export default function VitalsPage() {
                 {selectedPatient.allergies &&
                   selectedPatient.allergies.length > 0 && (
                     <p className="text-xs text-red-600 mt-1 font-medium">
-                      ⚠️ Allergies: {selectedPatient.allergies.join(", ")}
+                      Allergies: {selectedPatient.allergies.join(", ")}
                     </p>
                   )}
               </div>

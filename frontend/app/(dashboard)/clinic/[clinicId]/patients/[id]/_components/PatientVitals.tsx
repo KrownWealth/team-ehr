@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { ApiResponse, Vitals } from "@/types";
 import { formatDateTime, formatTemperature } from "@/lib/utils/formatters";
+import Loader from "@/components/shared/Loader";
 
 export default function PatientVitals({ patientId }: { patientId: string }) {
   const { data, isLoading } = useQuery<ApiResponse<Vitals[]>>({
@@ -18,7 +19,7 @@ export default function PatientVitals({ patientId }: { patientId: string }) {
   const vitals = data?.data || [];
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading vitals...</div>;
+    return <Loader/>
   }
 
   if (vitals?.length === 0) {

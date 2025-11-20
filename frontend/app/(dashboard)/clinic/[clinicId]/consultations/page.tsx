@@ -22,7 +22,7 @@ export default function ConsultationsPage() {
         </div>
         <button
           className="btn btn-block"
-          onClick={() => router.push(`/clinic/${clinicId}/queue`)}
+          onClick={() => router.push(`/clinic/${clinicId}/consultations/create`)}
         >
           <Plus className="mr-2 h-4 w-4" />
           Start Consultation

@@ -13,10 +13,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Trash2, AlertTriangle, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  Save,
+  ChevronsUpDown,
+} from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import {
@@ -25,13 +45,14 @@ import {
   Medication,
   CreatePrescriptionData,
 } from "@/types";
+import { calculateAge } from "@/lib/utils/formatters";
+import { cn } from "@/lib/utils";
 
-// Local interface for current medication input, reflecting the simplified types
 interface CurrentMedInput {
   drug: string;
   dosage: string;
   frequency: string;
-  duration: number; // Storing as number for form input
+  duration: number;
   instructions: string;
 }
 
@@ -41,40 +62,37 @@ export default function CreatePrescriptionPage() {
   const clinicId = params.clinicId as string;
   const queryClient = useQueryClient();
 
-  const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [prescriptions, setPrescriptions] = useState<Medication[]>([]); // Using 'prescriptions' to match CreatePrescriptionData
+  const [searchQuery, setSearchQuery] = useState("");
+  const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [prescriptions, setPrescriptions] = useState<Medication[]>([]);
   const [notes, setNotes] = useState("");
   const [currentMed, setCurrentMed] = useState<CurrentMedInput>({
     drug: "",
     dosage: "1 tablet",
     frequency: "BD",
-    duration: 7, // days
+    duration: 7,
     instructions: "Take after meals",
   });
 
-  // Search patient
-  const searchPatient = async () => {
-    if (!patientSearch.trim()) {
-      toast.error("Please enter patient ID or name");
-      return;
-    }
-
-    try {
+  const { data: patientsData, isLoading: loadingPatients } = useQuery({
+    queryKey: ["patients-search", searchQuery],
+    queryFn: async () => {
       const response = await apiClient.get<ApiResponse<Patient[]>>(
-        `/v1/patient?search=${patientSearch}&limit=1`
+        "/v1/patient",
+        {
+          params: {
+            search: searchQuery,
+            limit: 50,
+          },
+        }
       );
-      if (response.data.data?.length === 1) {
-        setSelectedPatient(response.data.data[0]);
-      } else {
-        toast.error("Patient not found");
-      }
-    } catch (error) {
-      toast.error("Failed to find patient");
-    }
-  };
+      return response.data;
+    },
+  });
 
-  // Check for drug allergies
+  const patients: Patient[] = patientsData?.data || [];
+
   const checkAllergies = () => {
     if (!selectedPatient?.allergies) return [];
 
@@ -89,21 +107,19 @@ export default function CreatePrescriptionPage() {
 
   const allergyWarnings = checkAllergies();
 
-  // Add medication to list
   const addMedication = () => {
     if (!currentMed.drug || !currentMed.dosage) {
       toast.error("Please fill drug name and dosage");
       return;
     }
 
-    // Check for allergy
     if (
       selectedPatient?.allergies?.some((allergy) =>
         currentMed.drug.toLowerCase().includes(allergy.toLowerCase())
       )
     ) {
       toast.error(
-        `⚠️ ALLERGY ALERT: Patient may be allergic to a component of ${currentMed.drug}!`,
+        `ALLERGY ALERT: Patient may be allergic to a component of ${currentMed.drug}!`,
         {
           duration: 5000,
         }
@@ -115,8 +131,7 @@ export default function CreatePrescriptionPage() {
       ...prescriptions,
       {
         ...currentMed,
-        duration: `${currentMed.duration} days`, // Convert duration back to string for the API type
-        // Ensure all Medication properties are explicitly set
+        duration: `${currentMed.duration} days`,
         drug: currentMed.drug,
         dosage: currentMed.dosage,
         frequency: currentMed.frequency,
@@ -124,7 +139,6 @@ export default function CreatePrescriptionPage() {
       },
     ]);
 
-    // Reset current medication form
     setCurrentMed({
       drug: "",
       dosage: "1 tablet",
@@ -140,7 +154,6 @@ export default function CreatePrescriptionPage() {
     setPrescriptions(prescriptions.filter((_, i) => i !== index));
   };
 
-  // Save prescription mutation
   const savePrescriptionMutation = useMutation({
     mutationFn: async (data: CreatePrescriptionData) => {
       await apiClient.post("/v1/prescription/create", data);
@@ -202,16 +215,93 @@ export default function CreatePrescriptionPage() {
             <CardTitle>Select Patient</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
-              <Input
-                placeholder="Enter patient ID or name"
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && searchPatient()}
-              />
-              <button className="btn btn-block" onClick={searchPatient}>
-                Search
-              </button>
+            <div className="space-y-2">
+              <Label>Select Patient</Label>
+              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboboxOpen}
+                    className="w-full justify-between h-12"
+                  >
+                    <span className="text-muted-foreground">
+                      Search and select patient...
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search by name, ID, phone, or email..."
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                    />
+                    <CommandList>
+                      {loadingPatients ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Loading patients...
+                        </div>
+                      ) : patients.length === 0 ? (
+                        <CommandEmpty>
+                          {searchQuery
+                            ? "No patients found matching your search."
+                            : "Start typing to search for patients..."}
+                        </CommandEmpty>
+                      ) : (
+                        <CommandGroup>
+                          {patients.map((patient) => {
+                            const age = calculateAge(patient.birthDate);
+                            return (
+                              <CommandItem
+                                key={patient.id}
+                                value={patient.id}
+                                onSelect={() => {
+                                  setSelectedPatient(patient);
+                                  setComboboxOpen(false);
+                                }}
+                                className="flex items-center gap-3 py-3"
+                              >
+                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-green-600">
+                                    {patient.firstName[0]}
+                                    {patient.lastName[0]}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium truncate">
+                                      {patient.firstName} {patient.lastName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      {patient.patientNumber}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                    <span>{patient.gender}</span>
+                                    <span>{age} yrs</span>
+                                    {patient.phone && (
+                                      <span className="font-mono">
+                                        {patient.phone}
+                                      </span>
+                                    )}
+                                    {patient.email && (
+                                      <span className="truncate">
+                                        {patient.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>

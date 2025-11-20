@@ -37,14 +37,18 @@ const ActionsComponent = ({ patient }: { patient: Patient }) => {
           <Eye className="mr-2 h-4 w-4" />
           View Details
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            router.push(`/clinic/${clinicId}/patients/${patient.id}?edit=true`)
-          }
-        >
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Patient
-        </DropdownMenuItem>
+        {["CLERK", "ADMIN"].includes(user?.role!) && (
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(
+                `/clinic/${clinicId}/patients/${patient.id}?edit=true`
+              )
+            }
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Patient
+          </DropdownMenuItem>
+        )}
 
         {["CLERK", "NURSE"].includes(user?.role!) && (
           <DropdownMenuItem
