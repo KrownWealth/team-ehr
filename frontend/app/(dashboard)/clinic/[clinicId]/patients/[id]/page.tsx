@@ -1,23 +1,44 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { ApiResponse, Patient } from "@/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, UserPlus } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Edit, InfoIcon, UserPlus, Save, X } from "lucide-react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientOverview from "./_components/PatientOverview";
 import PatientVitals from "./_components/PatientVitals";
 import PatientConsultations from "./_components/PatientConsultations";
 import PatientPrescriptions from "./_components/PatientPrescriptions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
-export default function PatientDetailsPage() {
+function PatientDetailsContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const patientId = params.id as string;
   const clinicId = params.clinicId as string;
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const isEditMode = searchParams.get("edit") === "true";
+  const [formData, setFormData] = useState<Partial<Patient>>({});
 
   const { data, isLoading } = useQuery<ApiResponse<Patient>>({
     queryKey: ["patient", patientId],
@@ -25,9 +46,32 @@ export default function PatientDetailsPage() {
       const response = await apiClient.get(`/v1/patient/${patientId}`);
       return response.data;
     },
+    onSuccess: (data) => {
+      if (data?.data && isEditMode) {
+        setFormData(data.data);
+      }
+    },
   });
 
-  const patient = data?.data;
+  const updateMutation = useMutation({
+    mutationFn: async (updateData: Partial<Patient>) => {
+      const response = await apiClient.put(
+        `/v1/patient/${patientId}`,
+        updateData
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Patient updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
+      router.push(`/clinic/${clinicId}/patients/${patientId}`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to update patient");
+    },
+  });
+
+  const patient = data.data;
 
   if (isLoading) {
     return (
@@ -48,18 +92,234 @@ export default function PatientDetailsPage() {
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
 
+  const handleChange = (field: keyof Patient, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    updateMutation.mutate(formData);
+  };
+
+  const handleCancel = () => {
+    router.push(`/clinic/${clinicId}/patients/${patientId}`);
+  };
+
+  if (isEditMode) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-start">
+          <div className="gap-4">
+            <button
+              className="btn px-0"
+              onClick={() =>
+                router.push(`/clinic/${clinicId}/patients/${patientId}`)
+              }
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </button>
+            <br />
+            <h1 className="text-2xl font-bold text-gray-900 mt-2">
+              Edit Patient
+            </h1>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>First Name *</Label>
+                  <Input
+                    value={formData.firstName || ""}
+                    onChange={(e) => handleChange("firstName", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Last Name *</Label>
+                  <Input
+                    value={formData.lastName || ""}
+                    onChange={(e) => handleChange("lastName", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Gender *</Label>
+                  <Select
+                    value={formData.gender || ""}
+                    onValueChange={(value) => handleChange("gender", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Date of Birth *</Label>
+                  <Input
+                    type="date"
+                    value={
+                      formData.birthDate
+                        ? new Date(formData.birthDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) => handleChange("birthDate", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Blood Group</Label>
+                <Select
+                  value={formData.bloodGroup || ""}
+                  onValueChange={(value) => handleChange("bloodGroup", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A+">A+</SelectItem>
+                    <SelectItem value="A-">A-</SelectItem>
+                    <SelectItem value="B+">B+</SelectItem>
+                    <SelectItem value="B-">B-</SelectItem>
+                    <SelectItem value="AB+">AB+</SelectItem>
+                    <SelectItem value="AB-">AB-</SelectItem>
+                    <SelectItem value="O+">O+</SelectItem>
+                    <SelectItem value="O-">O-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Phone *</Label>
+                <Input
+                  value={formData.phone || ""}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={formData.email || ""}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Address *</Label>
+                <Textarea
+                  value={formData.addressLine || ""}
+                  onChange={(e) => handleChange("addressLine", e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>City *</Label>
+                  <Input
+                    value={formData.city || ""}
+                    onChange={(e) => handleChange("city", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>State *</Label>
+                  <Input
+                    value={formData.state || ""}
+                    onChange={(e) => handleChange("state", e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Medical Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Known Allergies (comma-separated)</Label>
+                <Input
+                  placeholder="e.g., Penicillin, Aspirin"
+                  value={formData.allergies?.join(", ") || ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "allergies",
+                      e.target.value
+                        .split(",")
+                        .map((a) => a.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <Label>Chronic Conditions (comma-separated)</Label>
+                <Input
+                  placeholder="e.g., Hypertension, Diabetes"
+                  value={formData.chronicConditions?.join(", ") || ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "chronicConditions",
+                      e.target.value
+                        .split(",")
+                        .map((c) => c.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={handleCancel}>
+            <X className="mr-2 h-4 w-4" />
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={updateMutation.isPending}>
+            <Save className="mr-2 h-4 w-4" />
+            {updateMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
-        <div className="flex items-start gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
+        <div className="gap-4">
+          <button
+            className="btn px-0"
             onClick={() => router.push(`/clinic/${clinicId}/patients`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
-          </Button>
+          </button>
+
+          <br />
 
           <div className="flex items-start gap-4">
             <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
@@ -75,41 +335,55 @@ export default function PatientDetailsPage() {
                 ID: {patient.patientNumber} · {patient.gender}
               </p>
               {patient.allergies && patient.allergies.length > 0 && (
-                <p className="text-xs text-red-600 mt-1 font-medium">
-                  ⚠️ Allergies: {patient.allergies.join(", ")}
-                </p>
+                <div className="flex gap-2 text-red-600 items-center mt-2">
+                  <InfoIcon size={16} />
+                  <p className="text-xs font-medium">
+                    Allergies: {patient.allergies.join(", ")}
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              router.push(`/clinic/${clinicId}/queue?add=${patientId}`)
-            }
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add to Queue
-          </Button>
-          <Button
+          {["CLERK", "NURSE"].includes(user?.role!) && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push(`/clinic/${clinicId}/queue?add=${patientId}`)
+              }
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add to Queue
+            </Button>
+          )}
+          <button
+            className="btn btn-block"
             onClick={() =>
               router.push(`/clinic/${clinicId}/patients/${patientId}?edit=true`)
             }
           >
             <Edit className="mr-2 h-4 w-4" />
             Edit Patient
-          </Button>
+          </button>
         </div>
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="vitals">Vitals History</TabsTrigger>
-          <TabsTrigger value="consultations">Consultations</TabsTrigger>
-          <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+        <TabsList className="p-2 h-fit">
+          <TabsTrigger className="p-2 px-4" value="overview">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger className="p-2 px-4" value="vitals">
+            Vitals History
+          </TabsTrigger>
+          <TabsTrigger className="p-2 px-4" value="consultations">
+            Consultations
+          </TabsTrigger>
+          <TabsTrigger className="p-2 px-4" value="prescriptions">
+            Prescriptions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -129,5 +403,13 @@ export default function PatientDetailsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function PatientDetailsPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+      <PatientDetailsContent />
+    </Suspense>
   );
 }

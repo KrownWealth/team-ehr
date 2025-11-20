@@ -35,7 +35,7 @@ interface VitalsFormState {
   diastolic: string;
   temperature: string; // Celsius
   pulse: string; // bpm
-  respiratoryRate: string; // breaths/min
+  respiration: string; // breaths/min
   weight: string; // kg
   height: string; // cm
   spo2: string; // Oxygen saturation %
@@ -56,7 +56,7 @@ export default function VitalsPage() {
     diastolic: "",
     temperature: "",
     pulse: "",
-    respiratoryRate: "",
+    respiration: "",
     weight: "",
     height: "",
     spo2: "",
@@ -107,7 +107,7 @@ export default function VitalsPage() {
         diastolic: "",
         temperature: "",
         pulse: "",
-        respiratoryRate: "",
+        respiration: "",
         weight: "",
         height: "",
         spo2: "",
@@ -146,7 +146,7 @@ export default function VitalsPage() {
       bloodPressure: bloodPressure || "", // bloodPressure is required in RecordVitalsData but can be empty if not measured
       temperature: parseNum(vitalsData.temperature),
       pulse: parseNum(vitalsData.pulse),
-      respiratoryRate: parseNum(vitalsData.respiratoryRate),
+      respiration: parseNum(vitalsData.respiration),
       weight: parseNum(vitalsData.weight),
       height: parseNum(vitalsData.height),
       spo2: parseNum(vitalsData.spo2),
@@ -167,7 +167,7 @@ export default function VitalsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl w-full mx-auto space-y-6 pt-4">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
           Record Patient Vitals
@@ -193,7 +193,7 @@ export default function VitalsPage() {
                 onChange={(e) => setPatientSearch(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && searchPatient()}
               />
-              <Button onClick={searchPatient}>Search</Button>
+              <button onClick={searchPatient} className="btn btn-block">Search</button>
             </div>
           </CardContent>
         </Card>
@@ -293,8 +293,8 @@ export default function VitalsPage() {
                     onChange={(e) =>
                       handleChange("temperature", e.target.value)
                     }
-                    min="30"
-                    max="45"
+                    min="0"
+                    max="100"
                   />
                 </div>
 
@@ -323,9 +323,9 @@ export default function VitalsPage() {
                   <Input
                     type="number"
                     placeholder="e.g., 16"
-                    value={vitalsData.respiratoryRate}
+                    value={vitalsData.respiration}
                     onChange={(e) =>
-                      handleChange("respiratoryRate", e.target.value)
+                      handleChange("respiration", e.target.value)
                     }
                     min="5"
                     max="60"

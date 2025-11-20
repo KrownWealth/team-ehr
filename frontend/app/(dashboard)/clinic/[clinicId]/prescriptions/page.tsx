@@ -20,14 +20,15 @@ export default function PrescriptionsPage() {
             View and manage patient prescriptions
           </p>
         </div>
-        <Button
+        <button
+          className="btn btn-block"
           onClick={() =>
             router.push(`/clinic/${clinicId}/prescriptions/create`)
           }
         >
           <Plus className="mr-2 h-4 w-4" />
           New Prescription
-        </Button>
+        </button>
       </div>
 
       <TableList

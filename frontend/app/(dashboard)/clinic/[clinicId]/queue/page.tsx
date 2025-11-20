@@ -7,11 +7,13 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import AddToQueueDialog from "./_components/AddToQueueDialog";
 import QueueStatusTabs from "./_components/QueueStatusTabs";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export default function QueuePage() {
   const [addOpen, setAddOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["queue"] });
@@ -26,12 +28,17 @@ export default function QueuePage() {
             Real-time patient queue management
           </p>
         </div>
-        <div className="flex gap-2">
-          <button className="btn btn-outline" onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add to Queue
-          </button>
-        </div>
+        {["CLERK", "NURSE"].includes(user?.role!) && (
+          <div className="flex gap-2">
+            <button
+              className="btn btn-outline"
+              onClick={() => setAddOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add to Queue
+            </button>
+          </div>
+        )}
       </div>
 
       <TableList

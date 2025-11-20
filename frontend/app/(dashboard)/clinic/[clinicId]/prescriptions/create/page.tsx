@@ -143,7 +143,7 @@ export default function CreatePrescriptionPage() {
   // Save prescription mutation
   const savePrescriptionMutation = useMutation({
     mutationFn: async (data: CreatePrescriptionData) => {
-      await apiClient.post("/v1/prescription", data);
+      await apiClient.post("/v1/prescription/create", data);
     },
     onSuccess: () => {
       toast.success("Prescription created successfully!");
@@ -178,16 +178,16 @@ export default function CreatePrescriptionPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="max-w-6xl mx-auto space-y-6 mt-4">
+      <div className="gap-4">
+        <button
+          className="btn px-0"
           onClick={() => router.push(`/clinic/${clinicId}/prescriptions`)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
-        </Button>
+        </button>
+        <br />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">New Prescription</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -209,14 +209,16 @@ export default function CreatePrescriptionPage() {
                 onChange={(e) => setPatientSearch(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && searchPatient()}
               />
-              <Button onClick={searchPatient}>Search</Button>
+              <button className="btn btn-block" onClick={searchPatient}>
+                Search
+              </button>
             </div>
           </CardContent>
         </Card>
       )}
 
       {selectedPatient && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-green-50/20 border-green-200/10">
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
@@ -239,7 +241,7 @@ export default function CreatePrescriptionPage() {
                             <Badge
                               key={i}
                               variant="destructive"
-                              className="text-xs"
+                              className="text-xs px-2 py-1"
                             >
                               {allergy}
                             </Badge>
@@ -249,13 +251,12 @@ export default function CreatePrescriptionPage() {
                     </div>
                   )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                className="btn btn-outline"
                 onClick={() => setSelectedPatient(null)}
               >
                 Change Patient
-              </Button>
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -340,10 +341,14 @@ export default function CreatePrescriptionPage() {
                 />
               </div>
 
-              <Button type="button" onClick={addMedication} className="w-full">
+              <button
+                type="button"
+                onClick={addMedication}
+                className="btn btn-block py-3 w-full"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add to Prescription
-              </Button>
+              </button>
             </CardContent>
           </Card>
 
@@ -422,13 +427,14 @@ export default function CreatePrescriptionPage() {
           )}
 
           <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
+            <button
+              className="btn btn-outline"
               onClick={() => router.push(`/clinic/${clinicId}/prescriptions`)}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              className="btn btn-block"
               onClick={handleSubmit}
               disabled={
                 savePrescriptionMutation.isPending || prescriptions.length === 0
@@ -438,7 +444,7 @@ export default function CreatePrescriptionPage() {
               {savePrescriptionMutation.isPending
                 ? "Saving..."
                 : "Create Prescription"}
-            </Button>
+            </button>
           </div>
         </>
       )}

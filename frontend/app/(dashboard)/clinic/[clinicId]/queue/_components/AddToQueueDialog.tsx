@@ -67,7 +67,7 @@ export default function AddToQueueDialog({
     enabled: open,
   });
 
-  const patients: Patient[] = patientsData?.data?.items || [];
+  const patients: Patient[] = patientsData?.data || [];
 
   const addToQueueMutation = useMutation({
     mutationFn: async (data: AddToQueueData) => {

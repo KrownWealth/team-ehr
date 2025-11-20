@@ -1,6 +1,13 @@
 "use client";
 
-import { Bell, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import {
+  Bell,
+  Settings,
+  LogOut,
+  User,
+  ChevronDown,
+  MenuIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -52,19 +59,20 @@ export function AppNavbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
-      <div className="flex h-16 items-center justify-between px-6">
-        {/* Left side - could add breadcrumbs or page title here */}
-        <div className="flex-1" />
-
-        {/* Right side - notifications and user menu */}
+      <div className="flex h-20 items-center justify-between px-6">
+        <div className="flex-1">
+          <button className="w-5 h-5">
+            <MenuIcon />
+          </button>
+        </div>
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
+          {/* <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 text-[10px] font-medium text-white flex items-center justify-center">
               3
             </span>
-          </Button>
+          </Button> */}
 
           {/* User Menu */}
           <DropdownMenu>

@@ -259,7 +259,7 @@ export interface Vitals {
   weight?: number; // kg
   height?: number; // cm
   bmi?: number; // Auto-calculated
-  respiratoryRate?: number;
+  respiration?: number;
   spo2?: number; // Oxygen saturation %
   bloodGlucose?: number; // mg/dL
   flags?: string[]; // Abnormal flags
@@ -276,7 +276,7 @@ export interface RecordVitalsData {
   pulse?: number;
   weight?: number;
   height?: number;
-  respiratoryRate?: number;
+  respiration?: number;
   spo2?: number;
   bloodGlucose?: number;
   notes?: string;
@@ -633,8 +633,7 @@ export interface ApiResponse<T = unknown> {
   status: "success" | "error";
   message?: string;
   data?: T;
-  items?: T;
-  meta?: PaginationMeta;
+  pagination?: PaginationMeta;
 }
 
 export interface ApiError {

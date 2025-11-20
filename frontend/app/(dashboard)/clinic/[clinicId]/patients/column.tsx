@@ -13,10 +13,12 @@ import { useRouter, useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Patient } from "@/types";
 import { calculateAge, formatDate } from "@/lib/utils/formatters";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 const ActionsComponent = ({ patient }: { patient: Patient }) => {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
   const clinicId = params.clinicId as string;
 
   return (
@@ -43,14 +45,17 @@ const ActionsComponent = ({ patient }: { patient: Patient }) => {
           <Edit className="mr-2 h-4 w-4" />
           Edit Patient
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            router.push(`/clinic/${clinicId}/queue?add=${patient.id}`)
-          }
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add to Queue
-        </DropdownMenuItem>
+
+        {["CLERK", "NURSE"].includes(user?.role!) && (
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/clinic/${clinicId}/queue?add=${patient.id}`)
+            }
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add to Queue
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

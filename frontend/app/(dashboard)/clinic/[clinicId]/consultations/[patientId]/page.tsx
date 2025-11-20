@@ -241,11 +241,11 @@ export default function ConsultationPage() {
                     <span className="font-medium">{latestVitals.bmi}</span>
                   </div>
                 )}
-                {latestVitals.respiratoryRate && (
+                {latestVitals.respiration && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Resp. Rate:</span>
                     <span className="font-medium">
-                      {latestVitals.respiratoryRate} /min
+                      {latestVitals.respiration} /min
                     </span>
                   </div>
                 )}

@@ -20,10 +20,13 @@ export default function ConsultationsPage() {
             View and manage patient consultations
           </p>
         </div>
-        <Button onClick={() => router.push(`/clinic/${clinicId}/queue`)}>
+        <button
+          className="btn btn-block"
+          onClick={() => router.push(`/clinic/${clinicId}/queue`)}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Start Consultation
-        </Button>
+        </button>
       </div>
 
       <TableList
