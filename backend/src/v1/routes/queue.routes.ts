@@ -20,7 +20,7 @@ router.use(tenantIsolation);
 
 router.post(
   "/add",
-  authorize(["CLERK", "NURSE"]),
+  authorize(["CLERK", "NURSE", "DOCTOR", "ADMIN"]),
   addToQueueValidator,
   validate,
   addToQueue
