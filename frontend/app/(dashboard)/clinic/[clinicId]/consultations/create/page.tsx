@@ -15,9 +15,11 @@ import {
   Save,
   FileText,
   Calendar,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { ApiResponse, Patient, Medication } from "@/types";
@@ -28,6 +30,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { calculateAge } from "@/lib/utils/formatters"; // Assuming this utility exists
 
 interface LabOrder {
   test: string;
@@ -64,8 +81,10 @@ export default function CreateConsultationPage() {
   const clinicId = params.clinicId as string;
   const queryClient = useQueryClient();
 
-  const [patientSearch, setPatientSearch] = useState("");
+  // Patient Selection State
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [comboboxOpen, setComboboxOpen] = useState(false);
 
   // SOAP Notes
   const [subjective, setSubjective] = useState("");
@@ -91,26 +110,26 @@ export default function CreateConsultationPage() {
     instructions: "",
   });
 
-  // Search patient
-  const searchPatient = async () => {
-    if (!patientSearch.trim()) {
-      toast.error("Please enter patient ID or name");
-      return;
-    }
-
-    try {
+  // Fetch patients for search combobox
+  const { data: patientsData, isLoading: loadingPatients } = useQuery({
+    queryKey: ["patients-search", searchQuery],
+    queryFn: async () => {
       const response = await apiClient.get<ApiResponse<Patient[]>>(
-        `/v1/patient?search=${patientSearch}&limit=1`
+        "/v1/patient",
+        {
+          params: {
+            search: searchQuery,
+            limit: 50,
+          },
+        }
       );
-      if (response.data.data?.length === 1) {
-        setSelectedPatient(response.data.data[0]);
-      } else {
-        toast.error("Patient not found");
-      }
-    } catch (error) {
-      toast.error("Failed to find patient");
-    }
-  };
+      return response.data;
+    },
+  });
+
+  const patients: Patient[] = patientsData?.data || [];
+
+  // Remove the old searchPatient function
 
   // Check for drug allergies
   const checkAllergies = () => {
@@ -197,6 +216,7 @@ export default function CreateConsultationPage() {
     onSuccess: () => {
       toast.success("Consultation created successfully!");
       queryClient.invalidateQueries({ queryKey: ["consultations"] });
+      queryClient.invalidateQueries({ queryKey: ["queue"] }); // Potentially invalidate queue on consultation completion
       router.push(`/clinic/${clinicId}/consultations`);
     },
     onError: (error: any) => {
@@ -250,23 +270,98 @@ export default function CreateConsultationPage() {
         </div>
       </div>
 
-      {/* Patient Selection */}
+      {/* Patient Selection Combobox */}
       {!selectedPatient && (
         <Card>
-          <CardHeader>
-            <CardTitle>Select Patient</CardTitle>
-          </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
-              <Input
-                placeholder="Enter patient ID or name"
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && searchPatient()}
-              />
-              <button className="btn btn-block" onClick={searchPatient}>
-                Search
-              </button>
+            <div className="space-y-2">
+              <Label>Select Patient</Label>
+              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboboxOpen}
+                    className="w-full justify-between h-12"
+                  >
+                    <span className="text-muted-foreground">
+                      Search and select patient...
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search by name, ID, phone, or email..."
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                    />
+                    <CommandList>
+                      {loadingPatients ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Loading patients...
+                        </div>
+                      ) : patients.length === 0 ? (
+                        <CommandEmpty>
+                          {searchQuery
+                            ? "No patients found matching your search."
+                            : "Start typing to search for patients..."}
+                        </CommandEmpty>
+                      ) : (
+                        <CommandGroup>
+                          {patients.map((patient) => {
+                            const age = calculateAge(patient.birthDate);
+                            return (
+                              <CommandItem
+                                key={patient.id}
+                                value={patient.id}
+                                onSelect={() => {
+                                  setSelectedPatient(patient);
+                                  setComboboxOpen(false);
+                                }}
+                                className="flex items-center gap-3 py-3"
+                              >
+                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-green-600">
+                                    {patient.firstName[0]}
+                                    {patient.lastName[0]}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium truncate">
+                                      {patient.firstName} {patient.lastName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      {patient.patientNumber}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                    <span>{patient.gender}</span>
+                                    <span>{age} yrs</span>
+                                    {patient.phone && (
+                                      <span className="font-mono">
+                                        {patient.phone}
+                                      </span>
+                                    )}
+                                    {patient.email && (
+                                      <span className="truncate">
+                                        {patient.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <Check className={cn("ml-auto h-4 w-4")} />
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
@@ -318,7 +413,10 @@ export default function CreateConsultationPage() {
               </div>
               <button
                 className="btn btn-outline"
-                onClick={() => setSelectedPatient(null)}
+                onClick={() => {
+                  setSelectedPatient(null);
+                  setSearchQuery(""); // Reset search query on change
+                }}
               >
                 Change Patient
               </button>

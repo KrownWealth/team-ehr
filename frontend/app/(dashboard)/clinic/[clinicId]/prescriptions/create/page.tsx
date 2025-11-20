@@ -211,9 +211,6 @@ export default function CreatePrescriptionPage() {
 
       {!selectedPatient && (
         <Card>
-          <CardHeader>
-            <CardTitle>Select Patient</CardTitle>
-          </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <Label>Select Patient</Label>

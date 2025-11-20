@@ -193,12 +193,6 @@ export default function VitalsPage() {
 
       {!selectedPatient && (
         <Card>
-          <CardHeader>
-            <CardTitle>Select Patient</CardTitle>
-            <CardDescription>
-              Search and select a patient to record vitals
-            </CardDescription>
-          </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <Label>Select Patient</Label>
