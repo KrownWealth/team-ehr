@@ -53,7 +53,7 @@ export default function SettingsPage() {
   const { isLoading, data } = useQuery<ApiResponse<Clinic>>({
     queryKey: ["clinic", clinicId],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/clinic/profile");
+      const response = await apiClient.get("/v1/clinic");
       return response.data;
     },
   });

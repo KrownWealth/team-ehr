@@ -50,7 +50,7 @@ export function AppNavbar({ onMenuClick }: AppNavbarProps) {
       if (user.role === "PATIENT") {
         router.push(`/clinic/${clinicId}/portal/profile`);
       } else {
-        router.push(`/clinic/${clinicId}/settings`);
+        router.push(`/clinic/${clinicId}/profile`);
       }
     }
   };

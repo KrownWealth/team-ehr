@@ -21,7 +21,7 @@ import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
-import { Mail, User, Phone, Briefcase, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, User, Phone, Briefcase } from "lucide-react";
 import { CreateStaffData } from "@/types";
 import { getErrorMessage } from "@/lib/helper";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -32,12 +32,6 @@ interface InviteStaffDialogProps {
 }
 
 type StaffRole = "CLERK" | "NURSE" | "DOCTOR" | "CASHIER";
-
-// Updated type to include confirmPassword
-type RegisterStaffData = CreateStaffData & {
-  password: string;
-  confirmPassword: string;
-};
 
 const countries = [
   { name: "Nigeria", code: "+234" },
@@ -53,31 +47,24 @@ export default function InviteStaffDialog({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formData, setFormData] = useState<
-    Omit<RegisterStaffData, "role"> & { role: StaffRole }
+    CreateStaffData & { role: StaffRole }
   >({
     email: "",
     firstName: "",
     lastName: "",
     phone: "",
-    password: "",
-    confirmPassword: "",
     role: "CLERK",
   });
   const [selectedCountryCode, setSelectedCountryCode] = useState(
     countries[0].code
   );
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: Omit<RegisterStaffData, "confirmPassword">) => {
-      await apiClient.post("/v1/auth/register", {
-        ...data,
-        clinicId: user?.clinicId,
-      });
+  const inviteStaffMutation = useMutation({
+    mutationFn: async (data: CreateStaffData) => {
+      await apiClient.post("/v1/staff/create", data);
     },
     onSuccess: () => {
-      toast.success("Staff member registered! Verification email sent.");
+      toast.success("Staff member invited! Invitation email sent.");
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onClose();
       resetForm();
@@ -93,8 +80,6 @@ export default function InviteStaffDialog({
       firstName: "",
       lastName: "",
       phone: "",
-      password: "",
-      confirmPassword: "",
       role: "CLERK",
     });
     setSelectedCountryCode(countries[0].code);
@@ -103,39 +88,27 @@ export default function InviteStaffDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation check
     if (
       !formData.email ||
       !formData.firstName ||
       !formData.lastName ||
-      !formData.phone ||
-      !formData.password ||
-      !formData.confirmPassword
+      !formData.phone
     ) {
       toast.error("Please fill all required fields");
       return;
     }
 
-    // New: Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    // New: Concatenate phone number with selected country code
     const formattedPhone = `${selectedCountryCode}${formData.phone}`;
 
-    // Data structure for the API call (excluding confirmPassword)
-    const apiData = {
+    const apiData: CreateStaffData = {
       email: formData.email,
       firstName: formData.firstName,
       lastName: formData.lastName,
-      phone: formattedPhone, // Formatted number
-      password: formData.password,
+      phone: formattedPhone,
       role: formData.role,
     };
 
-    registerMutation.mutate(apiData);
+    inviteStaffMutation.mutate(apiData);
   };
 
   const handleChange = (
@@ -148,17 +121,13 @@ export default function InviteStaffDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl">
-        {" "}
-        {/* Increased width slightly */}
         <DialogHeader>
-          <DialogTitle>Register New Staff Member</DialogTitle>
+          <DialogTitle>Invite New Staff Member</DialogTitle>
           <DialogDescription>
-            Register a new staff member and send an email verification link.
+            Enter the staff member details to send an invitation email.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
-          {" "}
-          {/* Increased spacing */}
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -209,7 +178,6 @@ export default function InviteStaffDialog({
               <Phone className="h-4 w-4" />
               Phone Number <span className="text-red-500">*</span>
             </Label>
-            {/* Split Phone Number Input */}
             <div className="flex gap-2">
               <Select
                 value={selectedCountryCode}
@@ -241,76 +209,6 @@ export default function InviteStaffDialog({
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Initial Password <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                className="h-12 pr-10"
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Set a temporary password"
-                value={formData.password}
-                onChange={(e) => handleChange("password", e.target.value)}
-                required
-                minLength={8}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500">
-              Must be at least 8 characters and include uppercase, lowercase,
-              and a number.
-            </p>
-          </div>
-          {/* New: Confirm Password Field */}
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">
-              Confirm Password <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                className="h-12 pr-10"
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm temporary password"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  handleChange("confirmPassword", e.target.value)
-                }
-                required
-                minLength={8}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-            {/* Simple feedback if the two password fields don't match */}
-            {formData.password &&
-              formData.confirmPassword &&
-              formData.password !== formData.confirmPassword && (
-                <p className="text-sm text-red-600">Passwords do not match</p>
-              )}
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="role" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               Role <span className="text-red-500">*</span>
@@ -326,14 +224,14 @@ export default function InviteStaffDialog({
                 <SelectItem value="CLERK">Front Desk Clerk</SelectItem>
                 <SelectItem value="NURSE">Nurse</SelectItem>
                 <SelectItem value="DOCTOR">Doctor</SelectItem>
-                {/* <SelectItem value="CASHIER">Cashier</SelectItem> */}
               </SelectContent>
             </Select>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <p className="text-xs text-green-800">
-              The staff member will receive an email to verify their account and
-              set their permanent password after initial registration.
+              The staff member will receive an invitation email with a
+              system-generated temporary password and be forced to set their
+              permanent password on first login.
             </p>
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -347,10 +245,10 @@ export default function InviteStaffDialog({
             </Button>
             <Button
               type="submit"
-              disabled={registerMutation.isPending}
+              disabled={inviteStaffMutation.isPending}
               className="h-12"
             >
-              {registerMutation.isPending ? "Registering..." : "Register Staff"}
+              {inviteStaffMutation.isPending ? "Inviting..." : "Invite Staff"}
             </Button>
           </div>
         </form>

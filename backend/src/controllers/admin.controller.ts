@@ -406,6 +406,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         phone: true,
         role: true,
         licenseId: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
         photoUrl: true,
       },
     });
