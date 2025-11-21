@@ -30,7 +30,6 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Check for conflicting appointments
     const conflictingAppointment = await prisma.appointment.findFirst({
       where: {
         patientId,
@@ -67,7 +66,6 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // ✅ Publish appointment scheduled event to Pub/Sub
     if (patient.email) {
       await pubsubService.publishAppointmentScheduled({
         appointmentId: appointment.id,
@@ -93,9 +91,6 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get all appointments (with filtering)
- */
 export const getAllAppointments = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
@@ -165,9 +160,6 @@ export const getAllAppointments = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get appointment by ID
- */
 export const getAppointmentById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -203,9 +195,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Update appointment
- */
 export const updateAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -258,9 +247,6 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Check in patient for appointment
- */
 export const checkInAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -319,9 +305,6 @@ export const checkInAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Start consultation for appointment
- */
 export const startConsultation = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -368,9 +351,6 @@ export const startConsultation = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Complete appointment
- */
 export const completeAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -410,9 +390,6 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Cancel appointment
- */
 export const cancelAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -449,7 +426,6 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // ✅ Publish appointment cancelled event to Pub/Sub
     if (appointment.patient.email) {
       await pubsubService.publishAppointmentCancelled({
         appointmentId: appointment.id,
@@ -475,9 +451,6 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Get today's appointments
- */
 export const getTodayAppointments = async (req: AuthRequest, res: Response) => {
   try {
     const { clinicId } = req;
