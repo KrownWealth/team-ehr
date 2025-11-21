@@ -599,3 +599,370 @@ export const logoutAllDevices = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+/**
+ * Patient Login - Step 1: Request OTP
+ * Accepts email or phone number
+ */
+export const patientRequestOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, phone } = req.body;
+
+    // Validate that at least one identifier is provided
+    if (!email && !phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email or phone number is required",
+      });
+    }
+
+    // Find patient by email or phone
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          email ? { email: email.toLowerCase().trim() } : {},
+          phone ? { phone: phone.trim() } : {},
+        ].filter((condition) => Object.keys(condition).length > 0),
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        patientNumber: true,
+        isActive: true,
+      },
+    });
+
+    if (!patient) {
+      // Don't reveal if patient exists or not for security
+      return res.json({
+        status: "success",
+        message: "If a patient account exists, an OTP has been sent",
+      });
+    }
+
+    if (!patient.isActive) {
+      return res.status(403).json({
+        status: "error",
+        message: "Patient account is deactivated. Please contact the clinic.",
+      });
+    }
+
+    // Check if patient has an email (required for OTP delivery)
+    if (!patient.email) {
+      return res.status(400).json({
+        status: "error",
+        message:
+          "No email address on file. Please contact the clinic to update your information.",
+      });
+    }
+
+    // Delete any existing unverified OTPs for this patient
+    await prisma.oTP.deleteMany({
+      where: {
+        email: patient.email,
+        verified: false,
+      },
+    });
+
+    // Generate new OTP
+    const otpCode = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in database
+    await prisma.oTP.create({
+      data: {
+        email: patient.email,
+        code: otpCode,
+        expiresAt: otpExpiry,
+      },
+    });
+
+    // Send OTP via email
+    await emailService.sendPatientOTPEmail(
+      patient.email,
+      otpCode,
+      patient.firstName
+    );
+
+    logger.info(`Patient OTP sent to: ${patient.email}`);
+
+    res.json({
+      status: "success",
+      message: "OTP has been sent to your email address",
+      data: {
+        email: patient.email.replace(/(.{2})(.*)(@.*)/, "$1***$3"), // Masked email
+        expiresIn: "10 minutes",
+      },
+    });
+  } catch (error: any) {
+    logger.error("Patient request OTP error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP. Please try again.",
+    });
+  }
+};
+
+/**
+ * Patient Login - Step 2: Verify OTP and Authenticate
+ * Verifies the OTP and returns authentication tokens
+ */
+export const patientVerifyOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, phone, code } = req.body;
+
+    // Validate inputs
+    if ((!email && !phone) || !code) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email/phone and OTP code are required",
+      });
+    }
+
+    const normalizedCode = String(code).trim();
+
+    // Find patient by email or phone
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          email ? { email: email.toLowerCase().trim() } : {},
+          phone ? { phone: phone.trim() } : {},
+        ].filter((condition) => Object.keys(condition).length > 0),
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        patientNumber: true,
+        clinicId: true,
+        isActive: true,
+        birthDate: true,
+        gender: true,
+        bloodGroup: true,
+        allergies: true,
+        chronicConditions: true,
+        photoUrl: true,
+        createdAt: true,
+      },
+    });
+
+    if (!patient || !patient.email) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid credentials",
+      });
+    }
+
+    if (!patient.isActive) {
+      return res.status(403).json({
+        status: "error",
+        message: "Account is deactivated. Please contact the clinic.",
+      });
+    }
+
+    // Verify OTP
+    const otp = await prisma.oTP.findFirst({
+      where: {
+        email: patient.email,
+        code: normalizedCode,
+        verified: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!otp) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    // Mark OTP as verified
+    await prisma.oTP.update({
+      where: { id: otp.id },
+      data: { verified: true },
+    });
+
+    // Generate authentication tokens
+    // Note: We'll use the patient.id as the userId in the token
+    const accessToken = generateAccessToken(patient.id);
+    const refreshToken = generateRefreshToken(patient.id);
+
+    // Create or update user record for patient (if needed for portal access)
+    let patientUser = await prisma.user.findFirst({
+      where: {
+        email: patient.email,
+        role: "PATIENT",
+      },
+    });
+
+    if (!patientUser) {
+      // Create a user account for the patient
+      patientUser = await prisma.user.create({
+        data: {
+          email: patient.email,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          phone: patient.phone || undefined,
+          role: "PATIENT",
+          clinicId: patient.clinicId,
+          isVerified: true,
+          isActive: true,
+          // No password needed for OTP-based login
+        },
+      });
+    }
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: patientUser.id },
+      data: { lastLogin: new Date() },
+    });
+
+    logger.info(`Patient logged in via OTP: ${patient.email}`);
+
+    res.json({
+      status: "success",
+      message: "Login successful",
+      data: {
+        token: accessToken,
+        refreshToken,
+        user: {
+          id: patientUser.id,
+          patientId: patient.id,
+          email: patient.email,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          phone: patient.phone,
+          role: "PATIENT",
+          patientNumber: patient.patientNumber,
+          clinicId: patient.clinicId,
+          photoUrl: patient.photoUrl,
+          birthDate: patient.birthDate,
+          gender: patient.gender,
+          bloodGroup: patient.bloodGroup,
+          allergies: patient.allergies,
+          chronicConditions: patient.chronicConditions,
+          isActive: patient.isActive,
+          createdAt: patient.createdAt,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Patient verify OTP error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Authentication failed. Please try again.",
+    });
+  }
+};
+
+/**
+ * Resend OTP for Patient
+ */
+export const patientResendOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, phone } = req.body;
+
+    if (!email && !phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email or phone number is required",
+      });
+    }
+
+    // Find patient
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          email ? { email: email.toLowerCase().trim() } : {},
+          phone ? { phone: phone.trim() } : {},
+        ].filter((condition) => Object.keys(condition).length > 0),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        isActive: true,
+      },
+    });
+
+    if (!patient || !patient.email) {
+      // Don't reveal if patient exists
+      return res.json({
+        status: "success",
+        message: "If a patient account exists, an OTP has been sent",
+      });
+    }
+
+    if (!patient.isActive) {
+      return res.status(403).json({
+        status: "error",
+        message: "Account is deactivated",
+      });
+    }
+
+    // Check rate limiting - prevent OTP spam
+    const recentOTP = await prisma.oTP.findFirst({
+      where: {
+        email: patient.email,
+        createdAt: {
+          gte: new Date(Date.now() - 2 * 60 * 1000), // Last 2 minutes
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (recentOTP) {
+      return res.status(429).json({
+        status: "error",
+        message: "Please wait before requesting a new OTP",
+      });
+    }
+
+    // Delete old OTPs
+    await prisma.oTP.deleteMany({
+      where: {
+        email: patient.email,
+        verified: false,
+      },
+    });
+
+    // Generate new OTP
+    const otpCode = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.oTP.create({
+      data: {
+        email: patient.email,
+        code: otpCode,
+        expiresAt: otpExpiry,
+      },
+    });
+
+    // Send OTP
+    await emailService.sendPatientOTPEmail(
+      patient.email,
+      otpCode,
+      patient.firstName
+    );
+
+    logger.info(`Patient OTP resent to: ${patient.email}`);
+
+    res.json({
+      status: "success",
+      message: "New OTP has been sent to your email",
+    });
+  } catch (error: any) {
+    logger.error("Patient resend OTP error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to resend OTP",
+    });
+  }
+};

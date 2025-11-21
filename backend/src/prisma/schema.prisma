@@ -76,6 +76,7 @@ model Clinic {
 model User {
   id                 String    @id @default(cuid())
   clinicId           String?
+  patientId          String?
   email              String    @unique
   password           String?
   firstName          String
@@ -92,13 +93,14 @@ model User {
   updatedAt          DateTime  @updatedAt
 
   clinic        Clinic?        @relation(fields: [clinicId], references: [id])
-  //clinic        Clinic         @relation(fields: [clinicId], references: [id])
+  patient       Patient?       @relation(fields: [patientId], references: [id]) // New relation
   consultations Consultation[]
   vitals        Vitals[]
 
   onboardingStatus OnboardingStatus @default(COMPLETED)
 
   @@index([clinicId])
+  @@index([patientId])
   @@index([email])
   @@map("users")
 }
@@ -158,6 +160,7 @@ model Patient {
   appointments  Appointment[]
   bills         Bill[]
   queues        Queue[]
+  users         User[]
 
   @@index([clinicId])
   @@index([patientNumber])
