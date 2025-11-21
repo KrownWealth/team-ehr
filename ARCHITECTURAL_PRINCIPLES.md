@@ -1,6 +1,6 @@
 # 🏥 Architectural Principles to Code By: wecareEHR
 
-These principles are the **non-negotiable guidelines** for all development, ensuring our technology aligns with the core values of **Accessibility, Simplicity, and Trust**. They are adapted to our specific technology stack and resource constraints (GCP $300 credits).
+These principles are the **non-negotiable guidelines** for all development, ensuring our technology aligns with the core values of **Accessibility, Simplicity, and Trust**. They are adapted to our specific technology stack and resource constraints.
 
 ---
 

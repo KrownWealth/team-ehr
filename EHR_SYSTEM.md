@@ -282,7 +282,7 @@ The wecareEHR system is built to ensure:
 - **Frontend**: Next.JS
 - **Backend**: Cloud Run (Node.js, Express.JS, Typescript)
 - **Database**: Cloud SQL (PostgreSQL)
-- **Authentication**: Firebase Authentication
+- **Authentication**: JWT
 - **Async Processing**: Cloud Functions + Pub/Sub
 - **Storage**: Cloud Storage
 
