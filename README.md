@@ -1,6 +1,4 @@
-# WeCareEHR - Comprehensive Electronic Health Records System
-## Codematic Hackathon Submission Documentation
-
+# wecareEHR - Electronic Health Records System
 ---
 
 # 1.0 Business Value & Strategy (The "Why")
@@ -574,4 +572,5 @@ LOG_LEVEL=debug
 **Team**: 
 - Adeola Abdulramon - Backend Developer(Team Lead)
 - Fadamintan Daniel - Frontend Developer
+
 - Testimony Everest - Frontend Developer
