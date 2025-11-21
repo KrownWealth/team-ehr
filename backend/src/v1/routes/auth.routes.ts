@@ -13,6 +13,9 @@ import {
   googleCallback,
   logout,
   logoutAllDevices,
+  patientVerifyOTP,
+  patientRequestOTP,
+  patientResendOTP,
 } from "../../controllers/auth.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validation.middleware";
@@ -23,6 +26,11 @@ import {
   changePasswordValidator,
   resendOtpValidator,
 } from "../../validators/auth.validator";
+import {
+  patientRequestOTPValidator,
+  patientResendOTPValidator,
+  patientVerifyOTPValidator,
+} from "../../validators/patient-auth.validator";
 
 const router = Router();
 
@@ -50,5 +58,26 @@ router.post(
 );
 router.post("/logout", authenticate, logout);
 router.post("/logout-all", authenticate, logoutAllDevices);
+
+router.post(
+  "/patient/request-otp",
+  patientRequestOTPValidator,
+  validate,
+  patientRequestOTP
+);
+
+router.post(
+  "/patient/verify-otp",
+  patientVerifyOTPValidator,
+  validate,
+  patientVerifyOTP
+);
+
+router.post(
+  "/patient/resend-otp",
+  patientResendOTPValidator,
+  validate,
+  patientResendOTP
+);
 
 export default router;

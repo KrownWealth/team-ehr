@@ -355,6 +355,213 @@ export class EmailService {
     }
   }
 
+  async sendPatientOTPEmail(
+    to: string,
+    otpCode: string,
+    firstName: string
+  ): Promise<void> {
+    try {
+      const PRIMARY_COLOR = "#135d1d";
+      const portalUrl = `${this.frontendUrl}/patient/dashboard`;
+
+      await this.transporter.sendMail({
+        from: config.email.from,
+        to,
+        subject: "Your Patient Portal Login Code - WeCareEHR",
+        html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Patient Portal Login</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              line-height: 1.6;
+              color: #333333;
+              background-color: #f4f7f6;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 600px;
+              margin: 40px auto;
+              background-color: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            }
+            .header {
+              background-color: ${PRIMARY_COLOR};
+              padding: 30px 20px;
+              text-align: center;
+            }
+            .header h1 {
+              color: white;
+              font-size: 24px;
+              margin: 0;
+            }
+            .content {
+              padding: 40px 30px;
+            }
+            .greeting {
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 20px;
+              color: #333;
+            }
+            .otp-box {
+              background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+              padding: 30px;
+              border-radius: 12px;
+              text-align: center;
+              margin: 30px 0;
+              border: 2px solid ${PRIMARY_COLOR};
+            }
+            .otp-label {
+              font-size: 14px;
+              color: #555;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin-bottom: 10px;
+            }
+            .otp-code {
+              font-size: 42px;
+              font-weight: bold;
+              color: ${PRIMARY_COLOR};
+              letter-spacing: 8px;
+              font-family: 'Courier New', monospace;
+              margin: 10px 0;
+            }
+            .expiry-notice {
+              font-size: 13px;
+              color: #666;
+              margin-top: 10px;
+            }
+            .info-box {
+              background-color: #fff3cd;
+              border-left: 4px solid #ffc107;
+              padding: 15px;
+              margin: 20px 0;
+              border-radius: 4px;
+            }
+            .info-box p {
+              margin: 5px 0;
+              font-size: 14px;
+              color: #856404;
+            }
+            .button {
+              display: inline-block;
+              padding: 14px 32px;
+              background-color: ${PRIMARY_COLOR};
+              color: white !important;
+              text-decoration: none;
+              font-weight: 600;
+              border-radius: 8px;
+              margin: 20px 0;
+              font-size: 16px;
+            }
+            .security-notice {
+              background-color: #f8f9fa;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            .security-notice h3 {
+              color: ${PRIMARY_COLOR};
+              margin-top: 0;
+              font-size: 16px;
+            }
+            .security-notice ul {
+              margin: 10px 0;
+              padding-left: 20px;
+            }
+            .security-notice li {
+              margin: 8px 0;
+              font-size: 14px;
+              color: #555;
+            }
+            .footer {
+              text-align: center;
+              padding: 20px;
+              color: #999999;
+              font-size: 12px;
+              border-top: 1px solid #eeeeee;
+            }
+            @media only screen and (max-width: 600px) {
+              .container {
+                margin: 20px;
+              }
+              .content {
+                padding: 30px 20px;
+              }
+              .otp-code {
+                font-size: 36px;
+                letter-spacing: 6px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Patient Portal Login</h1>
+            </div>
+            
+            <div class="content">
+              <p class="greeting">Hello ${firstName},</p>
+              
+              <p>You requested to log in to your Patient Portal. Use the verification code below to complete your login:</p>
+              
+              <div class="otp-box">
+                <div class="otp-label">Your Login Code</div>
+                <div class="otp-code">${otpCode}</div>
+                <div class="expiry-notice">⏱ This code expires in 10 minutes</div>
+              </div>
+              
+              <div class="info-box">
+                <p><strong>💡 Quick Tip:</strong> Copy this code and paste it on the login page to access your patient portal.</p>
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${portalUrl}" class="button">Go to Patient Portal</a>
+              </div>
+              
+              <div class="security-notice">
+                <h3>🔒 Security Reminder</h3>
+                <ul>
+                  <li>Never share this code with anyone, including clinic staff</li>
+                  <li>This code can only be used once</li>
+                  <li>If you didn't request this code, please ignore this email</li>
+                  <li>For security concerns, contact your clinic immediately</li>
+                </ul>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                Need help? Contact your healthcare provider or clinic reception.
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} WeCareEHR. All rights reserved.</p>
+              <p>This email was sent to ${to}</p>
+              <p style="margin-top: 10px;">
+                This is an automated message. Please do not reply to this email.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      });
+
+      logger.info(`Patient OTP email sent to: ${to}`);
+    } catch (error) {
+      logger.error("Failed to send patient OTP email:", error);
+      throw error;
+    }
+  }
   async sendPrescriptionEmail(
     to: string,
     prescriptions: any[],
