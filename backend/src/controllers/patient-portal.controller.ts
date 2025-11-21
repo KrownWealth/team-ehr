@@ -14,7 +14,7 @@ import {
 
 export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
   try {
-    const patientId = req.user!.patientId;
+    const patientId = req.user?.patientId;
 
     if (!patientId) {
       return forbiddenResponse(res, "Access denied. Patient account required.");
@@ -34,6 +34,13 @@ export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
             bloodGroup: true,
             allergies: true,
             chronicConditions: true,
+            phone: true,
+            photoUrl: true,
+            email: true,
+            addressLine: true,
+            state: true,
+            city: true,
+            country: true,
           },
         }),
         prisma.appointment.findMany({
@@ -76,8 +83,13 @@ export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
       return notFoundResponse(res, "Patient record not found");
     }
 
-    const age =
-      new Date().getFullYear() - new Date(patient.birthDate).getFullYear();
+    // More precise age calculation
+    const birthDate = new Date(patient.birthDate);
+    let age = new Date().getFullYear() - birthDate.getFullYear();
+    const m = new Date().getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
+      age -= 1;
+    }
 
     const latestVital = recentVitals[0];
     const healthAlerts = latestVital?.flags || [];
@@ -107,20 +119,25 @@ export const getPatientDashboard = async (req: AuthRequest, res: Response) => {
 
 export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
   try {
-    const patientId = req.user!.patientId;
-    const { bloodPressure, temperature, pulse, weight, bloodGlucose, notes } =
-      req.body;
+    const patientId = req.user?.patientId;
+    const userId = req.user?.id;
 
-    if (!patientId) {
+    if (!patientId || !userId) {
       return forbiddenResponse(res, "Access denied. Patient account required.");
     }
 
+    const { bloodPressure, temperature, pulse, weight, bloodGlucose, notes } =
+      req.body;
+
     const vitalsData: any = {};
     if (bloodPressure) vitalsData.bloodPressure = bloodPressure;
-    if (temperature) vitalsData.temperature = parseFloat(temperature);
-    if (pulse) vitalsData.pulse = parseInt(pulse);
-    if (weight) vitalsData.weight = parseFloat(weight);
-    if (bloodGlucose) vitalsData.bloodGlucose = parseFloat(bloodGlucose);
+    if (temperature && !isNaN(Number(temperature)))
+      vitalsData.temperature = parseFloat(temperature);
+    if (pulse && !isNaN(Number(pulse))) vitalsData.pulse = parseInt(pulse);
+    if (weight && !isNaN(Number(weight)))
+      vitalsData.weight = parseFloat(weight);
+    if (bloodGlucose && !isNaN(Number(bloodGlucose)))
+      vitalsData.bloodGlucose = parseFloat(bloodGlucose);
     if (notes) vitalsData.notes = notes;
 
     const flags = checkVitalFlags(vitalsData);
@@ -128,7 +145,7 @@ export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
     const vitals = await prisma.vitals.create({
       data: {
         patientId,
-        recordedById: patientId,
+        recordedById: userId,
         ...vitalsData,
         flags,
       },
@@ -136,7 +153,6 @@ export const recordSelfVitals = async (req: AuthRequest, res: Response) => {
 
     const criticalFlags = flags.filter((f: string) => f.startsWith("CRITICAL"));
     if (criticalFlags.length > 0) {
-      // TODO: Send notification to clinic staff
       logger.warn(
         `Critical vitals self-recorded by patient ${patientId}: ${criticalFlags.join(
           ", "
@@ -172,11 +188,12 @@ export const getMedicationReminders = async (
   res: Response
 ) => {
   try {
-    const patientId = req.user!.patientId;
+    const patientId = req.user?.patientId;
 
     if (!patientId) {
       return forbiddenResponse(res, "Access denied. Patient account required.");
     }
+
     const recentConsultations = await prisma.consultation.findMany({
       where: {
         patientId,
@@ -226,7 +243,7 @@ export const getMedicationReminders = async (
 
 export const requestAppointment = async (req: AuthRequest, res: Response) => {
   try {
-    const patientId = req.user!.patientId;
+    const patientId = req.user?.patientId;
     const { preferredDate, reason, notes } = req.body;
 
     if (!patientId) {
@@ -262,7 +279,7 @@ export const requestAppointment = async (req: AuthRequest, res: Response) => {
 
 export const getMyMedicalRecords = async (req: AuthRequest, res: Response) => {
   try {
-    const patientId = req.user!.patientId;
+    const patientId = req.user?.patientId;
     const { type, limit = 20, page = 1 } = req.query;
 
     if (!patientId) {
@@ -312,6 +329,42 @@ export const getMyMedicalRecords = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    if (type === "prescriptions") {
+      const consultations = await prisma.consultation.findMany({
+        where: {
+          patientId,
+          prescriptions: { not: Prisma.JsonNull },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          doctor: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      });
+
+      const prescriptions: any[] = [];
+
+      consultations.forEach((c) => {
+        // Make sure prescriptions is an array of objects
+        const rxList = Array.isArray(c.prescriptions)
+          ? (c.prescriptions as Record<string, any>[])
+          : [];
+
+        rxList.forEach((rx) =>
+          prescriptions.push({
+            ...(typeof rx === "object" && rx !== null ? rx : {}),
+            prescribed_date: c.createdAt,
+            prescribed_by: `Dr. ${c.doctor?.firstName ?? ""} ${
+              c.doctor?.lastName ?? ""
+            }`,
+          })
+        );
+      });
+
+      records.prescriptions = prescriptions;
+    }
+
     res.json({
       status: "success",
       data: records,
@@ -330,7 +383,7 @@ export const getPersonalizedHealthTips = async (
   res: Response
 ) => {
   try {
-    const patientId = req.user!.patientId;
+    const patientId = req.user?.patientId;
 
     if (!patientId) {
       return forbiddenResponse(res, "Access denied. Patient account required.");
@@ -354,7 +407,6 @@ export const getPersonalizedHealthTips = async (
       });
     }
 
-    // Generate personalized tips based on conditions
     const tips: string[] = [];
     const resources: any[] = [];
 
@@ -380,7 +432,6 @@ export const getPersonalizedHealthTips = async (
       }
     });
 
-    // Add general tips
     if (tips.length === 0) {
       tips.push("Maintain a balanced diet with fruits and vegetables");
       tips.push("Stay physically active");

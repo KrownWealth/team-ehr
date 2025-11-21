@@ -15,6 +15,9 @@ import {
   CreditCard,
   LogOut,
   ListChecks,
+  UserIcon,
+  NotebookIcon,
+  MessageSquareTextIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -82,6 +85,38 @@ const navigation: NavItem[] = [
     icon: Settings,
     roles: ["ADMIN"],
   },
+  /// Patients
+
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    roles: ["PATIENT"],
+  },
+  {
+    title: "Appointments",
+    href: "/appointments",
+    icon: MessageSquareTextIcon,
+    roles: ["PATIENT"],
+  },
+  {
+    title: "Records",
+    href: "/records",
+    icon: ListChecks,
+    roles: ["PATIENT"],
+  },
+  {
+    title: "Vitals",
+    href: "/vitals",
+    icon: Heart,
+    roles: ["PATIENT"],
+  },
+  {
+    title: "Profile",
+    href: "/profile",
+    icon: UserIcon,
+    roles: ["PATIENT"],
+  },
 ];
 
 export default function Sidebar({ onNavigate }: SidebarProps) {
@@ -117,7 +152,10 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-6 md:py-8 px-4 md:px-5">
         <ul className="space-y-3 md:space-y-4">
           {allowedItems.map((item) => {
-            const href = `/clinic/${clinicId}${item.href}`;
+            const href =
+              user?.role !== "PATIENT"
+                ? `/clinic/${clinicId}${item.href}`
+                : `/patient-portal${item.href}`;
             const isActive = pathname.startsWith(href);
             const Icon = item.icon;
 
@@ -143,7 +181,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
       </nav>
 
       <div className="p-4 md:p-5 border-t border-gray-100">
-        <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-gray-50">
+        <div className="flex items-center gap-3 mb-0 p-3 rounded-xl bg-gray-50">
           <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs md:text-sm font-semibold flex-shrink-0">
             {user?.firstName?.[0]}
             {user?.lastName?.[0]}

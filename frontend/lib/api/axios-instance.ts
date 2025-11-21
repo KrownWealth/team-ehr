@@ -71,12 +71,12 @@ apiClient.interceptors.response.use(
       const refreshToken = getCookie("refresh_token");
 
       if (!refreshToken) {
-        deleteCookie("auth_token");
-        deleteCookie("refresh_token");
-        deleteCookie("user_data");
-        if (typeof window !== "undefined") {
-          window.location.href = "/auth/login";
-        }
+        // deleteCookie("auth_token");
+        // deleteCookie("refresh_token");
+        // deleteCookie("user_data");
+        // if (typeof window !== "undefined") {
+        //   window.location.href = "/auth/login";
+        // }
         return Promise.reject(error);
       }
 
@@ -107,12 +107,12 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        deleteCookie("auth_token");
-        deleteCookie("refresh_token");
-        deleteCookie("user_data");
-        if (typeof window !== "undefined") {
-          window.location.href = "/auth/login";
-        }
+        // deleteCookie("auth_token");
+        // deleteCookie("refresh_token");
+        // deleteCookie("user_data");
+        // if (typeof window !== "undefined") {
+        //   window.location.href = "/auth/login";
+        // }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

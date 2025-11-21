@@ -1,3 +1,5 @@
+// src/lib/hooks/use-auth.ts
+
 "use client";
 
 import { useAuthStore } from "@/lib/store/auth-store";
@@ -29,12 +31,34 @@ interface LoginResponseData extends Omit<LoginResponse, "user"> {
   user: User;
 }
 
+interface PatientLoginResponseData {
+  token: string;
+  refreshToken: string;
+  user: User; // Patient User will be of role PATIENT
+}
+
 interface RegisterResponseData {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   role: string;
+}
+
+interface PatientRequestOtpData {
+  email?: string;
+  phone?: string;
+}
+
+interface PatientRequestOtpResponse {
+  email: string; // Masked email
+  expiresIn: string;
+}
+
+interface PatientVerifyOtpData {
+  email?: string;
+  phone?: string;
+  code: string;
 }
 
 export function useAuth() {
@@ -67,6 +91,8 @@ export function useAuth() {
   };
 }
 
+// --- Staff/Admin Login ---
+
 export function useLogin() {
   const { setAuth } = useAuthStore();
   const router = useRouter();
@@ -88,7 +114,7 @@ export function useLogin() {
     },
     onSuccess: (data: LoginResponseData) => {
       setAuth(data.token, data.refreshToken, data.user);
-      toast.success("Login successful!");
+      toast.success("Staff Login successful!");
 
       if (data.user.mustChangePassword) {
         router.replace("/auth/change-password");
@@ -114,22 +140,118 @@ export function useLogin() {
     onError: (error: any, variables: LoginCredentials) => {
       const message = error.response?.data?.message || "Login failed";
 
-      // If the error message indicates the user needs to verify OTP, redirect to verify-otp with email
       if (
         message &&
         (message.toLowerCase().includes("verify otp") ||
-          message.toLowerCase().includes("email not verified") || message.toLowerCase().includes("verify your email"))
+          message.toLowerCase().includes("email not verified") ||
+          message.toLowerCase().includes("verify your email"))
       ) {
         router.replace(
           `/auth/verify-otp?email=${encodeURIComponent(variables.email)}`
         );
         return;
       }
-
-      // toast.error(message);
     },
   });
 }
+
+// --- Patient OTP Auth Hooks (New) ---
+
+export function usePatientRequestOtp() {
+  return useMutation({
+    mutationFn: async (
+      data: PatientRequestOtpData
+    ): Promise<PatientRequestOtpResponse> => {
+      const response = await apiClient.post<
+        ApiResponse<PatientRequestOtpResponse>
+      >("/v1/auth/patient/request-otp", data);
+
+      if (response.data.status === "error") {
+        throw new Error(response.data.message || "Request failed");
+      }
+
+      if (!response.data.data) {
+        return { email: "", expiresIn: "" };
+      }
+
+      return response.data.data;
+    },
+    onSuccess: (data) => {
+      if (data.email) {
+        toast.success(
+          `OTP sent to your email: ${data.email}. It expires in ${data.expiresIn}.`
+        );
+      } else {
+        toast.success(
+          "If a patient account exists, an OTP has been sent to your email address."
+        );
+      }
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to send OTP";
+      throw new Error(message);
+    },
+  });
+}
+
+export function usePatientVerifyOtp() {
+  const { setAuth } = useAuthStore();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async (
+      data: PatientVerifyOtpData
+    ): Promise<PatientLoginResponseData> => {
+      const response = await apiClient.post<
+        ApiResponse<PatientLoginResponseData>
+      >("/v1/auth/patient/verify-otp", data);
+
+      if (!response.data.data) {
+        throw new Error("Invalid response from server");
+      }
+
+      return response.data.data;
+    },
+    onSuccess: (data: PatientLoginResponseData) => {
+      setAuth(data.token, data.refreshToken, data.user);
+      toast.success("Patient Login successful!");
+
+      if (data.user.clinicId) {
+        const redirectUrl = getDefaultRouteForRole(
+          data.user.role,
+          data.user.clinicId
+        );
+        router.replace(redirectUrl);
+      } else {
+        router.replace("/patient-dashboard");
+      }
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Invalid or expired OTP";
+    },
+  });
+}
+
+export function usePatientResendOtp() {
+  return useMutation({
+    mutationFn: async (data: PatientRequestOtpData) => {
+      const response = await apiClient.post<ApiResponse<void>>(
+        "/v1/auth/patient/resend-otp",
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (response) => {
+      const message = response.message || "New OTP has been sent to your email";
+      toast.success(message);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to resend OTP";
+    },
+  });
+}
+
+// --- Other Auth Hooks (Existing, slightly modified for flow control) ---
 
 export function useRegister() {
   const router = useRouter();
@@ -261,7 +383,6 @@ export function useResendOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to resend OTP";
-      toast.error(message);
     },
   });
 }

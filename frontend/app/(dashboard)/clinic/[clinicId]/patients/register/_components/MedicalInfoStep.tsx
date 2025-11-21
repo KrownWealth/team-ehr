@@ -96,7 +96,7 @@ export default function MedicalInfoStep({
               e.key === "Enter" && (e.preventDefault(), addAllergy())
             }
           />
-          <Button type="button" onClick={addAllergy}>
+          <Button type="button" onClick={addAllergy} className="">
             Add
           </Button>
         </div>
@@ -106,7 +106,7 @@ export default function MedicalInfoStep({
               <Badge
                 key={index}
                 variant="destructive"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 py-1 px-2.5"
               >
                 {allergy}
                 <X
@@ -140,7 +140,7 @@ export default function MedicalInfoStep({
               <Badge
                 key={index}
                 variant="secondary"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 py-1 px-2.5"
               >
                 {condition}
                 <X

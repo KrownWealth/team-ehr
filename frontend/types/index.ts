@@ -2,11 +2,25 @@
 // CORE AUTH TYPES
 // ============================================================================
 
-export type Role = "ADMIN" | "DOCTOR" | "NURSE" | "CLERK" | "CASHIER" | "PATIENT";
+export type Role =
+  | "ADMIN"
+  | "DOCTOR"
+  | "NURSE"
+  | "CLERK"
+  | "CASHIER"
+  | "PATIENT";
 
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 
-export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type BloodGroup =
+  | "A+"
+  | "A-"
+  | "B+"
+  | "B-"
+  | "AB+"
+  | "AB-"
+  | "O+"
+  | "O-";
 
 // ============================================================================
 // USER & AUTHENTICATION
@@ -188,12 +202,13 @@ export interface CreateStaffData {
 // APPOINTMENT
 // ============================================================================
 
-export type AppointmentStatus = 
-  | "SCHEDULED" 
-  | "CHECKED_IN" 
-  | "IN_CONSULTATION" 
-  | "COMPLETED" 
-  | "CANCELLED";
+export type AppointmentStatus =
+  | "SCHEDULED"
+  | "CHECKED_IN"
+  | "IN_CONSULTATION"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "CONFIRMED";
 
 export interface Appointment {
   id: string;
@@ -205,6 +220,7 @@ export interface Appointment {
   createdAt: string;
   updatedAt?: string;
   patient?: Patient;
+  doctor?: User;
 }
 
 export interface CreateAppointmentData {
@@ -577,7 +593,12 @@ export interface DashboardStats {
 
 export type SyncAction = "CREATE" | "UPDATE" | "DELETE";
 
-export type SyncEntity = "patient" | "vitals" | "consultation" | "bill" | "appointment";
+export type SyncEntity =
+  | "patient"
+  | "vitals"
+  | "consultation"
+  | "bill"
+  | "appointment";
 
 export interface PendingAction {
   action: SyncAction;

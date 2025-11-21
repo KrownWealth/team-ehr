@@ -21,11 +21,17 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
     const { clinicId } = req;
     const patientData = req.body;
 
+    if (!clinicId) {
+      return res.status(400).json({
+        status: "error",
+        message: "Clinic ID not found in request context",
+      });
+    }
+
     // Generate patient number
     const patientCount = await prisma.patient.count({ where: { clinicId } });
     const patientNumber = generatePatientNumber(patientCount);
 
-    // Create patient
     const patient = await prisma.patient.create({
       data: {
         ...patientData,
@@ -35,15 +41,36 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Add to queue
+    // Upsert patient User
+    await prisma.user.upsert({
+      where: {
+        email: patient.email ?? `patient+${patient.patientNumber}@clinic.com`,
+      },
+      update: {
+        patientId: patient.id,
+        clinicId,
+        lastLogin: new Date(),
+      },
+      create: {
+        email: patient.email ?? `patient+${patient.patientNumber}@clinic.com`,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        role: "PATIENT",
+        isActive: true,
+        isVerified: true,
+        clinicId,
+        patientId: patient.id,
+        password: null,
+      },
+    });
+
     await queueService.addToQueue(
       patient.id,
       `${patient.firstName} ${patient.lastName}`,
-      clinicId!,
+      clinicId,
       0
     );
 
-    // Send welcome email
     if (patient.email) {
       await emailService.sendWelcomeEmail(
         patient.email,
@@ -53,7 +80,6 @@ export const registerPatient = async (req: AuthRequest, res: Response) => {
     }
 
     logger.info(`Patient registered: ${patient.patientNumber}`);
-
     return createdResponse(res, patient, "Patient registered successfully");
   } catch (error: any) {
     logger.error("Register patient error:", error);

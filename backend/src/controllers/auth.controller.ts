@@ -46,7 +46,6 @@ export const registerAdmin = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, phone, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -58,10 +57,8 @@ export const registerAdmin = async (req: Request, res: Response) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with pending clinic status
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -83,7 +80,6 @@ export const registerAdmin = async (req: Request, res: Response) => {
       },
     });
 
-    // Create and send OTP
     await createAndSendOTP(email);
 
     logger.info(`Admin registered: ${email}`);
@@ -139,7 +135,6 @@ export const register = async (req: AuthRequest, res: Response) => {
         password: hashedPassword,
         role: role || "CLERK",
         isVerified: false,
-        // 2. IMPORTANT: Assign the staff to the Admin's clinic
         clinicId: clinicId,
       },
       select: {
@@ -152,7 +147,6 @@ export const register = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Create and send OTP
     await createAndSendOTP(email);
 
     logger.info(`Staff registered: ${email} for Clinic ID: ${clinicId}`);
@@ -178,7 +172,6 @@ export const resendOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    // Check if user exists and is not verified
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -197,7 +190,6 @@ export const resendOtp = async (req: Request, res: Response) => {
       });
     }
 
-    // Create and send new OTP
     await createAndSendOTP(email);
 
     logger.info(`OTP resent to: ${email}`);
@@ -256,13 +248,11 @@ export const verifyOtp = async (req: Request, res: Response) => {
       });
     }
 
-    // Mark OTP as verified
     await prisma.oTP.update({
       where: { id: otp.id },
       data: { verified: true },
     });
 
-    // Mark user as verified
     await prisma.user.update({
       where: { email: normalizedEmail },
       data: { isVerified: true },
@@ -325,7 +315,6 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() },
@@ -468,7 +457,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      // Don't reveal if email exists
       return res.json({
         status: "success",
         message: "If the email exists, a reset link has been sent",
@@ -541,10 +529,8 @@ export const logout = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
 
     if (userId) {
-      // Log the logout event
       logger.info(`User logged out: ${req.user.email}`);
 
-      // Optional: Update lastLogout timestamp
       await prisma.user.update({
         where: { id: userId },
         data: {
@@ -577,11 +563,6 @@ export const logoutAllDevices = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // In a production system, you would:
-    // 1. Increment a token version number in the user record
-    // 2. Add current tokens to a blacklist with expiry
-    // 3. Invalidate all refresh tokens in database
-
     logger.info(`User logged out from all devices: ${req.user.email}`);
 
     res.json({
@@ -607,102 +588,61 @@ export const logoutAllDevices = async (req: AuthRequest, res: Response) => {
 export const patientRequestOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone } = req.body;
-
-    // Validate that at least one identifier is provided
-    if (!email && !phone) {
+    if (!email && !phone)
       return res.status(400).json({
         status: "error",
         message: "Email or phone number is required",
       });
-    }
 
-    // Find patient by email or phone
     const patient = await prisma.patient.findFirst({
       where: {
         OR: [
           email ? { email: email.toLowerCase().trim() } : {},
           phone ? { phone: phone.trim() } : {},
-        ].filter((condition) => Object.keys(condition).length > 0),
+        ].filter((c) => Object.keys(c).length > 0),
       },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        patientNumber: true,
-        isActive: true,
-      },
+      select: { id: true, email: true, firstName: true, isActive: true },
     });
 
-    if (!patient) {
-      // Don't reveal if patient exists or not for security
+    if (!patient || !patient.email)
       return res.json({
         status: "success",
         message: "If a patient account exists, an OTP has been sent",
       });
-    }
+    if (!patient.isActive)
+      return res
+        .status(403)
+        .json({ status: "error", message: "Patient account is deactivated" });
 
-    if (!patient.isActive) {
-      return res.status(403).json({
-        status: "error",
-        message: "Patient account is deactivated. Please contact the clinic.",
-      });
-    }
-
-    // Check if patient has an email (required for OTP delivery)
-    if (!patient.email) {
-      return res.status(400).json({
-        status: "error",
-        message:
-          "No email address on file. Please contact the clinic to update your information.",
-      });
-    }
-
-    // Delete any existing unverified OTPs for this patient
+    // Delete old unverified OTPs
     await prisma.oTP.deleteMany({
-      where: {
-        email: patient.email,
-        verified: false,
-      },
+      where: { email: patient.email, verified: false },
     });
 
-    // Generate new OTP
     const otpCode = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Store OTP in database
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await prisma.oTP.create({
-      data: {
-        email: patient.email,
-        code: otpCode,
-        expiresAt: otpExpiry,
-      },
+      data: { email: patient.email, code: otpCode, expiresAt: otpExpiry },
     });
 
-    // Send OTP via email
     await emailService.sendPatientOTPEmail(
       patient.email,
       otpCode,
       patient.firstName
     );
-
     logger.info(`Patient OTP sent to: ${patient.email}`);
 
     res.json({
       status: "success",
-      message: "OTP has been sent to your email address",
+      message: "OTP has been sent to your email",
       data: {
-        email: patient.email.replace(/(.{2})(.*)(@.*)/, "$1***$3"), // Masked email
+        email: patient.email.replace(/(.{2})(.*)(@.*)/, "$1***$3"),
         expiresIn: "10 minutes",
       },
     });
   } catch (error: any) {
     logger.error("Patient request OTP error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to send OTP. Please try again.",
-    });
+    res.status(500).json({ status: "error", message: "Failed to send OTP" });
   }
 };
 
@@ -713,59 +653,31 @@ export const patientRequestOTP = async (req: Request, res: Response) => {
 export const patientVerifyOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone, code } = req.body;
-
-    // Validate inputs
-    if ((!email && !phone) || !code) {
+    if ((!email && !phone) || !code)
       return res.status(400).json({
         status: "error",
-        message: "Email/phone and OTP code are required",
+        message: "Email/phone and OTP code required",
       });
-    }
 
     const normalizedCode = String(code).trim();
-
-    // Find patient by email or phone
     const patient = await prisma.patient.findFirst({
       where: {
         OR: [
           email ? { email: email.toLowerCase().trim() } : {},
           phone ? { phone: phone.trim() } : {},
-        ].filter((condition) => Object.keys(condition).length > 0),
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        patientNumber: true,
-        clinicId: true,
-        isActive: true,
-        birthDate: true,
-        gender: true,
-        bloodGroup: true,
-        allergies: true,
-        chronicConditions: true,
-        photoUrl: true,
-        createdAt: true,
+        ].filter((c) => Object.keys(c).length > 0),
       },
     });
 
-    if (!patient || !patient.email) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid credentials",
-      });
-    }
+    if (!patient || !patient.email)
+      return res
+        .status(401)
+        .json({ status: "error", message: "Invalid credentials" });
+    if (!patient.isActive)
+      return res
+        .status(403)
+        .json({ status: "error", message: "Account is deactivated" });
 
-    if (!patient.isActive) {
-      return res.status(403).json({
-        status: "error",
-        message: "Account is deactivated. Please contact the clinic.",
-      });
-    }
-
-    // Verify OTP
     const otp = await prisma.oTP.findFirst({
       where: {
         email: patient.email,
@@ -774,55 +686,39 @@ export const patientVerifyOTP = async (req: Request, res: Response) => {
         expiresAt: { gt: new Date() },
       },
     });
+    if (!otp)
+      return res
+        .status(401)
+        .json({ status: "error", message: "Invalid or expired OTP" });
 
-    if (!otp) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid or expired OTP",
-      });
-    }
-
-    // Mark OTP as verified
     await prisma.oTP.update({
       where: { id: otp.id },
       data: { verified: true },
     });
 
-    // Generate authentication tokens
-    // Note: We'll use the patient.id as the userId in the token
-    const accessToken = generateAccessToken(patient.id);
-    const refreshToken = generateRefreshToken(patient.id);
-
-    // Create or update user record for patient (if needed for portal access)
-    let patientUser = await prisma.user.findFirst({
-      where: {
+    // Upsert patient User
+    const patientUser = await prisma.user.upsert({
+      where: { email: patient.email },
+      update: {
+        lastLogin: new Date(),
+        patientId: patient.id,
+        clinicId: patient.clinicId,
+      },
+      create: {
         email: patient.email,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        phone: patient.phone || undefined,
         role: "PATIENT",
+        clinicId: patient.clinicId,
+        patientId: patient.id,
+        isVerified: true,
+        isActive: true,
       },
     });
 
-    if (!patientUser) {
-      // Create a user account for the patient
-      patientUser = await prisma.user.create({
-        data: {
-          email: patient.email,
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          phone: patient.phone || undefined,
-          role: "PATIENT",
-          clinicId: patient.clinicId,
-          isVerified: true,
-          isActive: true,
-          // No password needed for OTP-based login
-        },
-      });
-    }
-
-    // Update last login
-    await prisma.user.update({
-      where: { id: patientUser.id },
-      data: { lastLogin: new Date() },
-    });
+    const accessToken = generateAccessToken(patientUser.id);
+    const refreshToken = generateRefreshToken(patientUser.id);
 
     logger.info(`Patient logged in via OTP: ${patient.email}`);
 
@@ -842,12 +738,6 @@ export const patientVerifyOTP = async (req: Request, res: Response) => {
           role: "PATIENT",
           patientNumber: patient.patientNumber,
           clinicId: patient.clinicId,
-          photoUrl: patient.photoUrl,
-          birthDate: patient.birthDate,
-          gender: patient.gender,
-          bloodGroup: patient.bloodGroup,
-          allergies: patient.allergies,
-          chronicConditions: patient.chronicConditions,
           isActive: patient.isActive,
           createdAt: patient.createdAt,
         },
@@ -855,10 +745,7 @@ export const patientVerifyOTP = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Patient verify OTP error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Authentication failed. Please try again.",
-    });
+    res.status(500).json({ status: "error", message: "Authentication failed" });
   }
 };
 
@@ -868,90 +755,60 @@ export const patientVerifyOTP = async (req: Request, res: Response) => {
 export const patientResendOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone } = req.body;
-
-    if (!email && !phone) {
+    if (!email && !phone)
       return res.status(400).json({
         status: "error",
         message: "Email or phone number is required",
       });
-    }
 
-    // Find patient
     const patient = await prisma.patient.findFirst({
       where: {
         OR: [
           email ? { email: email.toLowerCase().trim() } : {},
           phone ? { phone: phone.trim() } : {},
-        ].filter((condition) => Object.keys(condition).length > 0),
+        ].filter((c) => Object.keys(c).length > 0),
       },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        isActive: true,
-      },
+      select: { id: true, email: true, firstName: true, isActive: true },
     });
 
-    if (!patient || !patient.email) {
-      // Don't reveal if patient exists
+    if (!patient || !patient.email)
       return res.json({
         status: "success",
         message: "If a patient account exists, an OTP has been sent",
       });
-    }
+    if (!patient.isActive)
+      return res
+        .status(403)
+        .json({ status: "error", message: "Account is deactivated" });
 
-    if (!patient.isActive) {
-      return res.status(403).json({
-        status: "error",
-        message: "Account is deactivated",
-      });
-    }
-
-    // Check rate limiting - prevent OTP spam
     const recentOTP = await prisma.oTP.findFirst({
       where: {
         email: patient.email,
-        createdAt: {
-          gte: new Date(Date.now() - 2 * 60 * 1000), // Last 2 minutes
-        },
+        createdAt: { gte: new Date(Date.now() - 2 * 60 * 1000) },
       },
       orderBy: { createdAt: "desc" },
     });
-
-    if (recentOTP) {
+    if (recentOTP)
       return res.status(429).json({
         status: "error",
         message: "Please wait before requesting a new OTP",
       });
-    }
 
-    // Delete old OTPs
     await prisma.oTP.deleteMany({
-      where: {
-        email: patient.email,
-        verified: false,
-      },
+      where: { email: patient.email, verified: false },
     });
 
-    // Generate new OTP
     const otpCode = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
     await prisma.oTP.create({
-      data: {
-        email: patient.email,
-        code: otpCode,
-        expiresAt: otpExpiry,
-      },
+      data: { email: patient.email, code: otpCode, expiresAt: otpExpiry },
     });
 
-    // Send OTP
     await emailService.sendPatientOTPEmail(
       patient.email,
       otpCode,
       patient.firstName
     );
-
     logger.info(`Patient OTP resent to: ${patient.email}`);
 
     res.json({
@@ -960,9 +817,6 @@ export const patientResendOTP = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Patient resend OTP error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to resend OTP",
-    });
+    res.status(500).json({ status: "error", message: "Failed to resend OTP" });
   }
 };

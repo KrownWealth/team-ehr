@@ -14,6 +14,7 @@ import { body } from "express-validator";
 const router = Router();
 
 router.use(authenticate);
+
 router.use(authorize(["PATIENT"]));
 
 router.get("/dashboard", getPatientDashboard);

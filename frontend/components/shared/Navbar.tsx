@@ -46,9 +46,9 @@ export function AppNavbar({ onMenuClick }: AppNavbarProps) {
   };
 
   const handleProfile = () => {
-    if (clinicId && user?.id) {
+    if (user?.id) {
       if (user.role === "PATIENT") {
-        router.push(`/clinic/${clinicId}/portal/profile`);
+        router.push(`/patient-portal/profile`);
       } else {
         router.push(`/clinic/${clinicId}/profile`);
       }
