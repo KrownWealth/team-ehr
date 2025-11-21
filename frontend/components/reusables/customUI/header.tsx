@@ -96,7 +96,7 @@ export default function AppNavbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <Link href={dashboardUrl}>
+                <Link href={dashboardUrl} className="w-full">
                   <DropdownMenuItem className="cursor-pointer py-2.5">
                     <Settings className="mr-3 h-4 w-4 text-gray-500" />
                     Dashboard

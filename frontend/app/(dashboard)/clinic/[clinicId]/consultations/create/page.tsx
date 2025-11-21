@@ -1,50 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  AlertTriangle,
-  Save,
-  FileText,
-  Calendar,
-  Check,
-  ChevronsUpDown,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { toast } from "sonner";
 import { ApiResponse, Patient, Medication } from "@/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
-import { calculateAge } from "@/lib/utils/formatters"; // Assuming this utility exists
+import PatientSelectionCard from "./_components/PatientSelectionCard";
+import SoapNotesCard from "./_components/SoapNotesCard";
+import PrescriptionsCard from "./_components/PrescriptionsCard";
+import LabOrdersCard from "./_components/LabOrdersCard";
+import AIInsightsCard from "./_components/AIInsightsCard";
 
 interface LabOrder {
   test: string;
@@ -75,25 +43,28 @@ interface CreateConsultationData {
   followUpDate?: string;
 }
 
+interface AIInsight {
+  type: "diagnosis" | "interaction" | "risk";
+  severity?: "low" | "medium" | "high" | "critical";
+  title: string;
+  description: string;
+  recommendations?: string[];
+}
+
 export default function CreateConsultationPage() {
   const router = useRouter();
   const params = useParams();
   const clinicId = params.clinicId as string;
-  const queryClient = useQueryClient();
 
-  // Patient Selection State
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [comboboxOpen, setComboboxOpen] = useState(false);
 
-  // SOAP Notes
   const [subjective, setSubjective] = useState("");
   const [objective, setObjective] = useState("");
   const [assessment, setAssessment] = useState("");
   const [plan, setPlan] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
 
-  // Prescriptions
   const [prescriptions, setPrescriptions] = useState<Medication[]>([]);
   const [currentMed, setCurrentMed] = useState<CurrentMedInput>({
     drug: "",
@@ -103,24 +74,23 @@ export default function CreateConsultationPage() {
     instructions: "Take after meals",
   });
 
-  // Lab Orders
   const [labOrders, setLabOrders] = useState<LabOrder[]>([]);
   const [currentLab, setCurrentLab] = useState<CurrentLabInput>({
     test: "",
     instructions: "",
   });
 
-  // Fetch patients for search combobox
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [loadingInteractions, setLoadingInteractions] = useState(false);
+
   const { data: patientsData, isLoading: loadingPatients } = useQuery({
     queryKey: ["patients-search", searchQuery],
     queryFn: async () => {
       const response = await apiClient.get<ApiResponse<Patient[]>>(
         "/v1/patient",
         {
-          params: {
-            search: searchQuery,
-            limit: 50,
-          },
+          params: { search: searchQuery, limit: 50 },
         }
       );
       return response.data;
@@ -129,12 +99,92 @@ export default function CreateConsultationPage() {
 
   const patients: Patient[] = patientsData?.data || [];
 
-  // Remove the old searchPatient function
+  const handleAIDiagnosis = async () => {
+    if (!selectedPatient || !subjective) {
+      toast.error("Please enter patient symptoms first");
+      return;
+    }
 
-  // Check for drug allergies
+    setLoadingAI(true);
+    try {
+      const response = await apiClient.post("/v1/ai/diagnose", {
+        patientId: selectedPatient.id,
+        symptoms: subjective,
+        chiefComplaint: subjective.split(".")[0],
+      });
+
+      const diagnosisData = response.data.data;
+
+      if (
+        diagnosisData.differentialDiagnoses &&
+        diagnosisData.differentialDiagnoses.length > 0
+      ) {
+        const newInsight: AIInsight = {
+          type: "diagnosis",
+          severity: "medium",
+          title: "AI Differential Diagnoses",
+          description: `Based on symptoms, possible diagnoses include: ${diagnosisData.differentialDiagnoses
+            .slice(0, 3)
+            .join(", ")}`,
+          recommendations: diagnosisData.recommendations || [],
+        };
+        setAiInsights((prev) => [...prev, newInsight]);
+        toast.success("AI diagnosis suggestions generated");
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to get AI diagnosis"
+      );
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const handleCheckInteractions = async () => {
+    if (!selectedPatient || prescriptions.length < 2) {
+      toast.error("Add at least 2 medications to check interactions");
+      return;
+    }
+
+    setLoadingInteractions(true);
+    try {
+      const response = await apiClient.post("/v1/ai/drug-interactions", {
+        patientId: selectedPatient.id,
+        proposedMedications: prescriptions.map((p) => p.drug),
+      });
+
+      const interactionData = response.data.data;
+
+      if (
+        interactionData.interactions &&
+        interactionData.interactions.length > 0
+      ) {
+        interactionData.interactions.forEach((interaction: any) => {
+          const newInsight: AIInsight = {
+            type: "interaction",
+            severity: interaction.severity || "medium",
+            title: `Drug Interaction: ${interaction.drugs.join(" + ")}`,
+            description:
+              interaction.description || "Potential interaction detected",
+            recommendations: interaction.recommendations || [],
+          };
+          setAiInsights((prev) => [...prev, newInsight]);
+        });
+        toast.warning("Drug interactions detected! Review AI insights.");
+      } else {
+        toast.success("No significant drug interactions detected");
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to check interactions"
+      );
+    } finally {
+      setLoadingInteractions(false);
+    }
+  };
+
   const checkAllergies = () => {
     if (!selectedPatient?.allergies) return [];
-
     return prescriptions
       .filter((med) =>
         selectedPatient.allergies?.some((allergy) =>
@@ -146,14 +196,12 @@ export default function CreateConsultationPage() {
 
   const allergyWarnings = checkAllergies();
 
-  // Add medication
   const addMedication = () => {
     if (!currentMed.drug || !currentMed.dosage) {
       toast.error("Please fill drug name and dosage");
       return;
     }
 
-    // Check for allergy
     if (
       selectedPatient?.allergies?.some((allergy) =>
         currentMed.drug.toLowerCase().includes(allergy.toLowerCase())
@@ -161,19 +209,14 @@ export default function CreateConsultationPage() {
     ) {
       toast.error(
         `ALLERGY ALERT: Patient may be allergic to a component of ${currentMed.drug}!`,
-        {
-          duration: 5000,
-        }
+        { duration: 5000 }
       );
       return;
     }
 
     setPrescriptions([
       ...prescriptions,
-      {
-        ...currentMed,
-        duration: `${currentMed.duration} days`,
-      },
+      { ...currentMed, duration: `${currentMed.duration} days` },
     ]);
 
     setCurrentMed({
@@ -191,13 +234,11 @@ export default function CreateConsultationPage() {
     setPrescriptions(prescriptions.filter((_, i) => i !== index));
   };
 
-  // Add lab order
   const addLabOrder = () => {
     if (!currentLab.test) {
       toast.error("Please enter test name");
       return;
     }
-
     setLabOrders([...labOrders, { ...currentLab }]);
     setCurrentLab({ test: "", instructions: "" });
     toast.success("Lab order added");
@@ -207,7 +248,6 @@ export default function CreateConsultationPage() {
     setLabOrders(labOrders.filter((_, i) => i !== index));
   };
 
-  // Create consultation mutation
   const createConsultationMutation = useMutation({
     mutationFn: async (data: CreateConsultationData) => {
       const response = await apiClient.post("/v1/consultation", data);
@@ -215,8 +255,6 @@ export default function CreateConsultationPage() {
     },
     onSuccess: () => {
       toast.success("Consultation created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["consultations"] });
-      queryClient.invalidateQueries({ queryKey: ["queue"] }); // Potentially invalidate queue on consultation completion
       router.push(`/clinic/${clinicId}/consultations`);
     },
     onError: (error: any) => {
@@ -265,437 +303,65 @@ export default function CreateConsultationPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">New Consultation</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Create a new consultation record for a patient
+            Create a new consultation record with AI assistance
           </p>
         </div>
       </div>
 
-      {/* Patient Selection Combobox */}
-      {!selectedPatient && (
-        <Card>
-          <CardContent>
-            <div className="space-y-2">
-              <Label>Select Patient</Label>
-              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={comboboxOpen}
-                    className="w-full justify-between h-12"
-                  >
-                    <span className="text-muted-foreground">
-                      Search and select patient...
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      placeholder="Search by name, ID, phone, or email..."
-                      value={searchQuery}
-                      onValueChange={setSearchQuery}
-                    />
-                    <CommandList>
-                      {loadingPatients ? (
-                        <div className="py-6 text-center text-sm text-muted-foreground">
-                          Loading patients...
-                        </div>
-                      ) : patients.length === 0 ? (
-                        <CommandEmpty>
-                          {searchQuery
-                            ? "No patients found matching your search."
-                            : "Start typing to search for patients..."}
-                        </CommandEmpty>
-                      ) : (
-                        <CommandGroup>
-                          {patients.map((patient) => {
-                            const age = calculateAge(patient.birthDate);
-                            return (
-                              <CommandItem
-                                key={patient.id}
-                                value={patient.id}
-                                onSelect={() => {
-                                  setSelectedPatient(patient);
-                                  setComboboxOpen(false);
-                                }}
-                                className="flex items-center gap-3 py-3"
-                              >
-                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                                  <span className="text-xs font-semibold text-green-600">
-                                    {patient.firstName[0]}
-                                    {patient.lastName[0]}
-                                  </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium truncate">
-                                      {patient.firstName} {patient.lastName}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                      {patient.patientNumber}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                                    <span>{patient.gender}</span>
-                                    <span>{age} yrs</span>
-                                    {patient.phone && (
-                                      <span className="font-mono">
-                                        {patient.phone}
-                                      </span>
-                                    )}
-                                    {patient.email && (
-                                      <span className="truncate">
-                                        {patient.email}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* <Check className={cn("ml-auto h-4 w-4")} /> */}
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Selected Patient Info */}
-      {selectedPatient && (
-        <Card className="bg-green-50/20 border-green-200/10">
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-lg">
-                  {selectedPatient.firstName} {selectedPatient.lastName}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  ID: {selectedPatient.patientNumber} · {selectedPatient.gender}
-                </p>
-                {selectedPatient.allergies &&
-                  selectedPatient.allergies.length > 0 && (
-                    <div className="mt-2 flex items-start gap-2">
-                      <div>
-                        <p className="text-xs font-medium text-red-600">
-                          ALLERGIES:
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selectedPatient.allergies.map((allergy, i) => (
-                            <Badge
-                              key={i}
-                              variant="destructive"
-                              className="text-xs px-2 py-1"
-                            >
-                              {allergy}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                {selectedPatient.chronicConditions &&
-                  selectedPatient.chronicConditions.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-medium text-orange-600">
-                        Chronic Conditions:{" "}
-                        {selectedPatient.chronicConditions.join(", ")}
-                      </p>
-                    </div>
-                  )}
-              </div>
-              <button
-                className="btn btn-outline"
-                onClick={() => {
-                  setSelectedPatient(null);
-                  setSearchQuery(""); // Reset search query on change
-                }}
-              >
-                Change Patient
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PatientSelectionCard
+        selectedPatient={selectedPatient}
+        onSelectPatient={setSelectedPatient}
+        onChangePatient={() => {
+          setSelectedPatient(null);
+          setSearchQuery("");
+        }}
+        patients={patients}
+        loadingPatients={loadingPatients}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       {selectedPatient && (
         <>
-          {/* SOAP Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                SOAP Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>
-                  Subjective (Patient's Complaint){" "}
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="What is the patient complaining about? (e.g., Patient reports headache for 3 days...)"
-                  value={subjective}
-                  onChange={(e) => setSubjective(e.target.value)}
-                  rows={3}
-                />
-              </div>
+          <SoapNotesCard
+            subjective={subjective}
+            objective={objective}
+            assessment={assessment}
+            plan={plan}
+            followUpDate={followUpDate}
+            onSubjectiveChange={setSubjective}
+            onObjectiveChange={setObjective}
+            onAssessmentChange={setAssessment}
+            onPlanChange={setPlan}
+            onFollowUpDateChange={setFollowUpDate}
+            onAIDiagnosis={handleAIDiagnosis}
+            loadingAI={loadingAI}
+          />
 
-              <div className="space-y-2">
-                <Label>
-                  Objective (Clinical Findings){" "}
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Physical examination findings, vital signs, test results... (e.g., BP: 120/80, Temp: 37°C, No visible signs of infection...)"
-                  value={objective}
-                  onChange={(e) => setObjective(e.target.value)}
-                  rows={3}
-                />
-              </div>
+          <AIInsightsCard insights={aiInsights} />
 
-              <div className="space-y-2">
-                <Label>
-                  Assessment (Diagnosis) <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Your medical assessment/diagnosis... (e.g., Acute tension headache, likely stress-related...)"
-                  value={assessment}
-                  onChange={(e) => setAssessment(e.target.value)}
-                  rows={3}
-                />
-              </div>
+          <PrescriptionsCard
+            prescriptions={prescriptions}
+            currentMed={currentMed}
+            onCurrentMedChange={(field, value) =>
+              setCurrentMed({ ...currentMed, [field]: value })
+            }
+            onAddMedication={addMedication}
+            onRemoveMedication={removeMedication}
+            onCheckInteractions={handleCheckInteractions}
+            loadingInteractions={loadingInteractions}
+          />
 
-              <div className="space-y-2">
-                <Label>
-                  Plan (Treatment Plan) <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Treatment plan and recommendations... (e.g., Prescribe pain relief, recommend rest, follow-up in 1 week...)"
-                  value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
-                  rows={3}
-                />
-              </div>
+          <LabOrdersCard
+            labOrders={labOrders}
+            currentLab={currentLab}
+            onCurrentLabChange={(field, value) =>
+              setCurrentLab({ ...currentLab, [field]: value })
+            }
+            onAddLabOrder={addLabOrder}
+            onRemoveLabOrder={removeLabOrder}
+          />
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Follow-up Date (Optional)
-                </Label>
-                <Input
-                  type="date"
-                  value={followUpDate}
-                  onChange={(e) => setFollowUpDate(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Prescriptions Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Prescriptions (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Drug Name</Label>
-                <Input
-                  placeholder="e.g., Paracetamol 500mg"
-                  value={currentMed.drug}
-                  onChange={(e) =>
-                    setCurrentMed({ ...currentMed, drug: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Dosage</Label>
-                  <Input
-                    placeholder="e.g., 1 tablet"
-                    value={currentMed.dosage}
-                    onChange={(e) =>
-                      setCurrentMed({ ...currentMed, dosage: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Frequency</Label>
-                  <Select
-                    value={currentMed.frequency}
-                    onValueChange={(val) =>
-                      setCurrentMed({ ...currentMed, frequency: val })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="OD">OD (Once daily)</SelectItem>
-                      <SelectItem value="BD">BD (Twice daily)</SelectItem>
-                      <SelectItem value="TDS">TDS (Three times)</SelectItem>
-                      <SelectItem value="QID">QID (Four times)</SelectItem>
-                      <SelectItem value="PRN">PRN (As needed)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Duration (days)</Label>
-                  <Input
-                    type="number"
-                    value={currentMed.duration}
-                    onChange={(e) =>
-                      setCurrentMed({
-                        ...currentMed,
-                        duration: parseInt(e.target.value) || 1,
-                      })
-                    }
-                    min="1"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Instructions</Label>
-                <Input
-                  placeholder="e.g., Take after meals"
-                  value={currentMed.instructions}
-                  onChange={(e) =>
-                    setCurrentMed({
-                      ...currentMed,
-                      instructions: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={addMedication}
-                className="btn btn-outline py-3 w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Medication
-              </button>
-
-              {prescriptions.length > 0 && (
-                <div className="space-y-3 mt-4">
-                  <p className="font-medium text-sm">
-                    Added Medications ({prescriptions.length})
-                  </p>
-                  {prescriptions.map((med, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start p-4 border rounded-lg bg-gray-50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold">{med.drug}</p>
-                        <p className="text-sm text-gray-600">
-                          {med.dosage} · {med.frequency} · {med.duration}
-                        </p>
-                        {med.instructions && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {med.instructions}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMedication(index)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Lab Orders Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Lab Orders (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Test Name</Label>
-                <Input
-                  placeholder="e.g., Complete Blood Count (CBC)"
-                  value={currentLab.test}
-                  onChange={(e) =>
-                    setCurrentLab({ ...currentLab, test: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Instructions (Optional)</Label>
-                <Input
-                  placeholder="e.g., Fasting required"
-                  value={currentLab.instructions}
-                  onChange={(e) =>
-                    setCurrentLab({
-                      ...currentLab,
-                      instructions: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={addLabOrder}
-                className="btn btn-outline py-3 w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Lab Order
-              </button>
-
-              {labOrders.length > 0 && (
-                <div className="space-y-3 mt-4">
-                  <p className="font-medium text-sm">
-                    Added Lab Orders ({labOrders.length})
-                  </p>
-                  {labOrders.map((lab, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start p-4 border rounded-lg bg-gray-50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold">{lab.test}</p>
-                        {lab.instructions && (
-                          <p className="text-sm text-gray-600">
-                            {lab.instructions}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLabOrder(index)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Allergy Warning */}
           {allergyWarnings.length > 0 && (
             <Card className="border-red-500 bg-red-50">
               <CardContent className="pt-6">
@@ -715,7 +381,6 @@ export default function CreateConsultationPage() {
             </Card>
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             <button
               className="btn btn-outline"
@@ -724,11 +389,11 @@ export default function CreateConsultationPage() {
               Cancel
             </button>
             <button
-              className="btn btn-block"
               onClick={handleSubmit}
               disabled={createConsultationMutation.isPending}
+              className="btn btn-block"
             >
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="h-4 w-4" />
               {createConsultationMutation.isPending
                 ? "Creating..."
                 : "Create Consultation"}
