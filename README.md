@@ -5,7 +5,7 @@
 
 ## 1.1 Problem Statement and Use Case Definition
 
-### Identify the Pain Point
+### Identify Pain Point
 
 Healthcare facilities across Nigeria and Sub-Saharan Africa faces a critical digitization crisis. 98% of Nigerian clinics still rely on paper-based patient records, leading to:
 
@@ -574,3 +574,4 @@ LOG_LEVEL=debug
 - Fadamintan Daniel - Frontend Developer
 
 - Testimony Everest - Frontend Developer
+
