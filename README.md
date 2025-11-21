@@ -127,7 +127,8 @@ The system implements a **role-based access workflow** where each user type (Adm
 
 #### **Admin Workflow**
 ```
-Registration → Email Verification (OTP) → Clinic Onboarding → Configure Settings → Invite Staff Members → Monitor Dashboard
+Registration → Email Verification (OTP) → Clinic Onboarding →
+Configure Settings → Invite Staff Members → Monitor Dashboard
 ```
 
 #### **Clerk Workflow**
@@ -574,5 +575,6 @@ LOG_LEVEL=debug
 - Fadamintan Daniel - Frontend Developer
 
 - Testimony Everest - Frontend Developer
+
 
 

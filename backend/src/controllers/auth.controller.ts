@@ -9,9 +9,6 @@ import logger from "../utils/logger.utils";
 
 const emailService = new EmailService();
 
-/**
- * Helper function to create and send OTP
- */
 async function createAndSendOTP(email: string) {
   // Delete any existing unverified OTPs for this email
   await prisma.oTP.deleteMany({
@@ -39,9 +36,6 @@ async function createAndSendOTP(email: string) {
   console.log(`[OTP] Created for ${email}: ${otpString}`);
 }
 
-/**
- * Register Admin User (First-time clinic setup)
- */
 export const registerAdmin = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, phone, password } = req.body;
@@ -98,9 +92,6 @@ export const registerAdmin = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Register Regular User (Staff) - UPDATED TO ASSIGN CLINIC ID
- */
 export const register = async (req: AuthRequest, res: Response) => {
   try {
     const { firstName, lastName, email, phone, password, role, clinicId } =
@@ -165,9 +156,6 @@ export const register = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Resend OTP
- */
 export const resendOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -207,9 +195,6 @@ export const resendOtp = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Verify OTP
- */
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
@@ -224,9 +209,9 @@ export const verifyOtp = async (req: Request, res: Response) => {
     const normalizedEmail = email;
     const normalizedCode = String(code).trim();
 
-    console.log(
-      `[OTP] Verification attempt - Email: ${normalizedEmail}, Code: ${normalizedCode}`
-    );
+    // console.log(
+    //   `[OTP] Verification attempt - Email: ${normalizedEmail}, Code: ${normalizedCode}`
+    // );
 
     console.log(await prisma.oTP.findMany());
 
@@ -239,7 +224,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       },
     });
 
-    console.log(`[OTP] Found OTP: ${otp ? "YES" : "NO"}`);
+    //console.log(`[OTP] Found OTP: ${otp ? "YES" : "NO"}`);
 
     if (!otp) {
       return res.status(400).json({
@@ -258,7 +243,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       data: { isVerified: true },
     });
 
-    console.log(`[OTP] ✅ Verification successful for: ${normalizedEmail}`);
+    // console.log(`[OTP] ✅ Verification successful for: ${normalizedEmail}`);
     logger.info(`OTP verified for: ${email}`);
 
     res.json({
@@ -283,7 +268,7 @@ export const login = async (req: Request, res: Response) => {
       where: { email },
     });
 
-    console.log(user, email, password);
+    //console.log(user, email, password);
 
     if (!user || !user.password) {
       return res.status(401).json({
@@ -581,10 +566,6 @@ export const logoutAllDevices = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * Patient Login - Step 1: Request OTP
- * Accepts email or phone number
- */
 export const patientRequestOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone } = req.body;
@@ -646,10 +627,6 @@ export const patientRequestOTP = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Patient Login - Step 2: Verify OTP and Authenticate
- * Verifies the OTP and returns authentication tokens
- */
 export const patientVerifyOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone, code } = req.body;
@@ -749,9 +726,6 @@ export const patientVerifyOTP = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Resend OTP for Patient
- */
 export const patientResendOTP = async (req: Request, res: Response) => {
   try {
     const { email, phone } = req.body;
