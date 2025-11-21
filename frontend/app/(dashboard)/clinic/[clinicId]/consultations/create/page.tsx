@@ -114,24 +114,152 @@ export default function CreateConsultationPage() {
       });
 
       const diagnosisData = response.data.data;
+      const aiSuggestions = diagnosisData.ai_suggestions;
+      const patientContext = diagnosisData.patient_context;
+
+      setAiInsights([]);
+      const newInsights: AIInsight[] = [];
+
+      if (aiSuggestions.red_flags && aiSuggestions.red_flags.length > 0) {
+        newInsights.push({
+          type: "risk",
+          severity: "critical",
+          title: "⚠️ Red Flags Detected",
+          description: `Critical findings requiring immediate attention: ${aiSuggestions.red_flags.join(
+            ", "
+          )}`,
+          recommendations: [
+            "Review patient vitals immediately",
+            "Consider urgent intervention if necessary",
+          ],
+        });
+      }
 
       if (
-        diagnosisData.differentialDiagnoses &&
-        diagnosisData.differentialDiagnoses.length > 0
+        aiSuggestions.differential_diagnoses &&
+        aiSuggestions.differential_diagnoses.length > 0
       ) {
-        const newInsight: AIInsight = {
+        const diagnosesList = aiSuggestions.differential_diagnoses
+          .map(
+            (dx: any) =>
+              `• ${dx.condition} (${dx.probability} probability${
+                dx.icd10_code ? `, ICD-10: ${dx.icd10_code}` : ""
+              }) - ${dx.reasoning}`
+          )
+          .join("\n");
+
+        newInsights.push({
           type: "diagnosis",
           severity: "medium",
-          title: "AI Differential Diagnoses",
-          description: `Based on symptoms, possible diagnoses include: ${diagnosisData.differentialDiagnoses
-            .slice(0, 3)
-            .join(", ")}`,
-          recommendations: diagnosisData.recommendations || [],
-        };
-        setAiInsights((prev) => [...prev, newInsight]);
-        toast.success("AI diagnosis suggestions generated");
+          title: "🔍 AI Differential Diagnoses",
+          description: diagnosesList,
+          recommendations: aiSuggestions.management_suggestions || [],
+        });
+      }
+
+      if (
+        aiSuggestions.recommended_tests &&
+        aiSuggestions.recommended_tests.length > 0
+      ) {
+        newInsights.push({
+          type: "diagnosis",
+          severity: "low",
+          title: "🧪 Recommended Laboratory Tests",
+          description: `Consider ordering the following tests: ${aiSuggestions.recommended_tests.join(
+            ", "
+          )}`,
+          recommendations: [
+            "These tests will help confirm or rule out differential diagnoses",
+          ],
+        });
+
+        const autoLabOrders = aiSuggestions.recommended_tests
+          .filter(
+            (test: string) => !labOrders.some((order) => order.test === test)
+          )
+          .map((test: string) => ({
+            test,
+            instructions: "As per clinical indication",
+          }));
+
+        if (autoLabOrders.length > 0) {
+          setLabOrders((prev) => [...prev, ...autoLabOrders]);
+          toast.info(`Added ${autoLabOrders.length} recommended lab orders`);
+        }
+      }
+
+      if (aiSuggestions.follow_up) {
+        newInsights.push({
+          type: "diagnosis",
+          severity: "low",
+          title: "📅 Follow-up Recommendation",
+          description: aiSuggestions.follow_up,
+          recommendations: ["Set appropriate follow-up date below"],
+        });
+
+        if (
+          aiSuggestions.follow_up.toLowerCase().includes("1 week") &&
+          !followUpDate
+        ) {
+          const nextWeek = new Date();
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          setFollowUpDate(nextWeek.toISOString().split("T")[0]);
+        }
+      }
+
+      if (patientContext) {
+        const contextSummary: string[] = [];
+
+        if (patientContext.chronic_conditions?.length > 0) {
+          contextSummary.push(
+            `Chronic conditions: ${patientContext.chronic_conditions.join(
+              ", "
+            )}`
+          );
+        }
+
+        if (patientContext.allergies?.length > 0) {
+          contextSummary.push(
+            `⚠️ Known allergies: ${patientContext.allergies.join(", ")}`
+          );
+        }
+
+        if (patientContext.recent_vitals?.length > 0) {
+          const vitals = patientContext.recent_vitals[0];
+          contextSummary.push(
+            `Recent vitals: BP ${vitals.bp}, Temp ${vitals.temp}°C, Pulse ${vitals.pulse} bpm`
+          );
+        }
+
+        if (contextSummary.length > 0) {
+          newInsights.push({
+            type: "risk",
+            severity: "low",
+            title: "📋 Patient Context",
+            description: contextSummary.join(" | "),
+            recommendations: [
+              "Consider patient history when prescribing medications",
+            ],
+          });
+        }
+      }
+
+      setAiInsights(newInsights);
+
+      toast.success(
+        `AI analysis complete! Generated ${newInsights.length} clinical insights`,
+        {
+          duration: 4000,
+        }
+      );
+
+      if (diagnosisData.disclaimer) {
+        toast.info("Remember: AI suggestions are for decision support only", {
+          duration: 3000,
+        });
       }
     } catch (error: any) {
+      console.error("AI Diagnosis Error:", error);
       toast.error(
         error.response?.data?.message || "Failed to get AI diagnosis"
       );
