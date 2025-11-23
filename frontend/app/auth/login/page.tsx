@@ -331,7 +331,7 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="space-y-6 w-full max-w-lg">
+    <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-extrabold text-gray-900">Welcome back!</h2>
         <p className="text-gray-600 mt-2">
@@ -343,7 +343,7 @@ export default function LoginPage() {
         value={activeTab}
         onValueChange={(v) => {
           setActiveTab(v as "staff" | "patient");
-          setPatientStep(PatientLoginStep.IDENTIFIER_INPUT); // Reset patient flow on tab change
+          setPatientStep(PatientLoginStep.IDENTIFIER_INPUT);
           setTimer(0);
           setCanResend(false);
           requestOtpMutation.reset();

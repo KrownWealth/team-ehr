@@ -106,10 +106,8 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    // Format phone with country code
     const formattedPhone = `${selectedCountry.code}${data.phone}`;
 
-    // Send data matching API spec: firstName, lastName, email, phone, password
     const registerData = {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -122,7 +120,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-extrabold text-gray-900">
           Register As an Admin!
@@ -143,26 +141,29 @@ export default function RegisterPage() {
             <React.Fragment key={s.number}>
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isActive
-                    ? "bg-green-600 text-white scale-110"
-                    : isCompleted
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    isActive
+                      ? "bg-green-600 text-white scale-110"
+                      : isCompleted
                       ? "bg-green-500 text-white"
                       : "bg-gray-200 text-gray-500"
-                    }`}
+                  }`}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
                 <span
-                  className={`text-xs mt-2 font-medium ${isActive ? "text-green-600" : "text-gray-500"
-                    }`}
+                  className={`text-xs mt-2 font-medium ${
+                    isActive ? "text-green-600" : "text-gray-500"
+                  }`}
                 >
                   {s.title}
                 </span>
               </div>
               {idx < STEPS.length - 1 && (
                 <div
-                  className={`flex-1 h-1 mx-2 rounded transition-all ${isCompleted ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                  className={`flex-1 h-1 mx-2 rounded transition-all ${
+                    isCompleted ? "bg-green-500" : "bg-gray-200"
+                  }`}
                 />
               )}
             </React.Fragment>

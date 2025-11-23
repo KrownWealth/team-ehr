@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { siteConfig } from "@/lib/siteConfig";
 import { getDefaultRouteForRole } from "@/lib/constants/routes";
 import Loader from "@/components/shared/Loader";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -17,24 +18,20 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (user) {
-      // Don't redirect if user is on change-password page
       if (pathname === "/auth/change-password") {
         return;
       }
 
-      // If user must change password, redirect to change-password
       if (user.mustChangePassword) {
         router.push("/auth/change-password");
         return;
       }
 
-      // redirect based on onboarding status
       if (user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
         return;
       }
 
-      // Redirect to dashboard if user has completed onboarding
       if (user.clinicId) {
         const defaultRoute = getDefaultRouteForRole(user.role, user.clinicId);
         router.push(defaultRoute);
@@ -42,12 +39,14 @@ export default function AuthLayout({
     }
   }, [user, router, pathname]);
 
-  // Show loader only if redirecting (not on change-password page)
-  if (user?.clinicId && pathname !== "/auth/change-password" && !user?.mustChangePassword) {
+  if (
+    user?.clinicId &&
+    pathname !== "/auth/change-password" &&
+    !user?.mustChangePassword
+  ) {
     return <Loader />;
   }
 
-  // Show loader if user must change password but not on the change-password page yet
   if (user?.mustChangePassword && pathname !== "/auth/change-password") {
     return <Loader />;
   }
@@ -71,8 +70,18 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-background">
-        {children}
+      <div className="flex-1 flex items-center justify-center bg-background p-6">
+        <div className="flex-1 flex flex-col gap-5 max-w-xl mx-auto">
+          <Image
+            src={"/images/logo.png"}
+            alt={siteConfig.name}
+            width={409}
+            height={142}
+            className="w-40 md:w-45 lg:hidden flex"
+            priority
+          />
+          <div className="flex-1">{children}</div>
+        </div>
       </div>
     </div>
   );

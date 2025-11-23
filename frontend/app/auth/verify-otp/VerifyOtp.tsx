@@ -112,7 +112,7 @@ export default function OTPVerificationPage() {
   }
 
   return (
-    <div className="space-y-6 w-full max-w-md">
+    <div className="space-y-6">
       <Link
         href="/auth/login"
         className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
