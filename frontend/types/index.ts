@@ -585,6 +585,8 @@ export interface DashboardStats {
   todayAppointments: number;
   pendingBills: number;
   todayRevenue: number;
+  totalQueue: number;
+  totalAppointments: number;
 }
 
 // ============================================================================

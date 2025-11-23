@@ -15,7 +15,7 @@ export default function DoctorDashboard() {
   const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["doctor-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/dashboard/stats");
       return response.data;
     },
   });
@@ -24,13 +24,6 @@ export default function DoctorDashboard() {
 
   const statCards = [
     {
-      title: "Today's Appointments",
-      value: statsData?.todayAppointments || 0,
-      subtitle: "Scheduled",
-      icon: Clock,
-      href: `/clinic/${user?.clinicId}/queue`,
-    },
-    {
       title: "Total Patients",
       value: statsData?.totalPatients || 0,
       subtitle: "Under care",
@@ -38,11 +31,18 @@ export default function DoctorDashboard() {
       href: `/clinic/${user?.clinicId}/patients`,
     },
     {
-      title: "Staff Members",
-      value: statsData?.totalStaff || 0,
-      subtitle: "Team size",
-      icon: FileText,
-      href: `/clinic/${user?.clinicId}/staff`,
+      title: "Total Appointments",
+      value: statsData?.totalAppointments || 0,
+      subtitle: "Scheduled",
+      icon: Clock,
+      href: `/clinic/${user?.clinicId}/queue`,
+    },
+    {
+      title: "Today's Appointments",
+      value: statsData?.todayAppointments || 0,
+      subtitle: "Scheduled",
+      icon: Clock,
+      href: `/clinic/${user?.clinicId}/queue`,
     },
   ];
 
@@ -67,30 +67,30 @@ export default function DoctorDashboard() {
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
           : statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Link href={stat.href} key={index}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xl font-medium text-gray-600">
-                        {stat.title}
-                      </CardTitle>
-                      <div className="bg-primary/10 p-2 rounded-lg">
-                        <Icon className="h-10 w-10 text-primary" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold text-gray-900">
-                        {stat.value}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        {stat.subtitle}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            const Icon = stat.icon;
+            return (
+              <Link href={stat.href} key={index}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-medium text-gray-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                      <Icon className="h-10 w-10 text-primary" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {stat.subtitle}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
       </div>
 
       <Card className="w-fit">
