@@ -47,17 +47,18 @@ export default function NurseDashboard() {
   ];
 
   return (
-    <div className="space-y-7">
-      <div className="flex justify-between items-center">
+    <div className="space-y-5 sm:space-y-7 px-4 sm:px-0">
+
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nurse Station</h1>
-          <p className="text-base text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Nurse Station</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Welcome, {user?.firstName}\! Monitor vitals and patient queue.
           </p>
         </div>
         <Link href={`/clinic/${user?.clinicId}/queue`}>
-          <button className="btn btn-block">
-            <Heart className="mr-2 h-5 w-5" />
+          <button className="btn btn-block w-full sm:w-auto whitespace-nowrap">
+            <Heart className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
             View Queue
           </button>
         </Link>

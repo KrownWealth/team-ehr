@@ -172,38 +172,39 @@ export default function LandingPage() {
     <div className="flex flex-col">
       <AppNavbar />
 
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center mt-10 gap-4 py-8 px-6 md:py-16 text-foreground">
-        <div className="inline-block max-w-4xl text-center justify-center">
-          <div className="mb-4">
-            <span className="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+      {/* Hero Section - Mobile Optimized */}
+      <section className="flex flex-col items-center justify-center mt-6 sm:mt-10 gap-4 py-6 sm:py-8 md:py-16 px-4 sm:px-6 text-foreground">
+        <div className="inline-block max-w-4xl text-center justify-center w-full">
+          <div className="mb-3 sm:mb-4">
+            <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-semibold">
               🇳🇬 Built for Nigerian Healthcare
             </span>
           </div>
-          <h1 className="xl:text-6xl text-5xl md:text-nowrap text-wrap mt-7 font-extrabold text-center">
-            Modern Clinic Management <br />
-            <span className="text-[#3d7e46]">&nbsp;Made Simple</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl mt-4 sm:mt-7 font-extrabold text-center leading-tight px-2">
+            Modern Clinic Management{" "}
+            <br className="hidden sm:block" />
+            <span className="text-[#3d7e46]">Made Simple</span>
           </h1>
-          <p className="md:text-2xl text-xl font-semibold text-stone-700 mt-6">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-stone-700 mt-4 sm:mt-6 px-2">
             Join 500+ Nigerian healthcare facilities using WecareEHR to deliver
             better patient care, streamline operations, and grow their practice.
           </p>
 
-          <div className="flex items-center justify-center space-x-8 py-4 mt-8">
+          <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center py-4 mt-6 sm:mt-8 px-4">
             <Button
               as={Link}
-              className="flex items-center justify-center font-semibold text-white md:text-xl text-lg py-6 px-8"
+              className="flex items-center justify-center font-semibold text-white text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
               color="primary"
               href="/auth/register"
               variant="shadow"
             >
-              Start Free 30-Day Trial <MoveRight />
+              Start Free 30-Day Trial <MoveRight className="ml-2" size={20} />
             </Button>
 
             <Button
               as={Link}
               href="/auth/login"
-              className="border-green-700 text-green-700 hover:bg-green-50 font-semibold md:text-xl text-lg py-6 px-8"
+              className="w-full sm:w-auto border-green-700 text-green-700 hover:bg-green-50 font-semibold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8"
               color="default"
               variant="bordered"
             >
@@ -211,22 +212,22 @@ export default function LandingPage() {
             </Button>
           </div>
 
-          <p className="text-sm text-gray-600 mt-4">
+          <p className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 px-4">
             No credit card required • Cancel anytime • Nigerian support team
           </p>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="bg-green-50 py-12 px-6">
+      <section className="bg-green-50 py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-green-700">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-green-700">
                   {stat.number}
                 </div>
-                <div className="text-gray-700 mt-2 font-medium">
+                <div className="text-gray-700 mt-1 sm:mt-2 font-medium text-xs sm:text-sm md:text-base">
                   {stat.label}
                 </div>
               </div>
@@ -236,15 +237,15 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-foreground">
-        <div className="text-center max-w-3xl mb-12">
-          <h2 className="md:text-5xl text-4xl font-bold">How It Works</h2>
-          <p className="sm:text-xl text-lg font-semibold text-stone-700 mt-4">
+      <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
+        <div className="text-center max-w-3xl mb-8 sm:mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">How It Works</h2>
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
             Get your clinic up and running in 4 simple steps
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-7xl w-full">
           {howItWorksSteps.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -254,13 +255,13 @@ export default function LandingPage() {
                   <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-green-200 z-0" />
                 )}
 
-                <div className="relative z-10 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-green-100">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-xl">
+                <div className="relative z-10 bg-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-green-100">
+                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                       {item.step}
                     </div>
-                    <Icon size={40} className="text-green-600" />
-                    <h3 className="font-bold text-xl text-zinc-800">
+                    <Icon size={32} className="text-green-600 sm:w-10 sm:h-10" />
+                    <h3 className="font-bold text-lg sm:text-xl text-zinc-800">
                       {item.title}
                     </h3>
                     <p className="text-zinc-600 text-sm">{item.description}</p>
@@ -273,27 +274,27 @@ export default function LandingPage() {
       </section>
 
       {/* Nigerian-Specific Features */}
-      <section className="bg-gray-50 py-16 px-6">
+      <section className="bg-gray-50 py-10 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="md:text-5xl text-4xl font-bold">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
               Built for Nigerian Clinics
             </h2>
-            <p className="sm:text-xl text-lg font-semibold text-stone-700 mt-4">
+            <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
               Features designed specifically for the Nigerian healthcare system
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {nigerianFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                className="bg-white p-5 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={24} />
+                  <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={20} />
                   <div>
-                    <h3 className="font-bold text-lg text-zinc-800 mb-2">
+                    <h3 className="font-bold text-base sm:text-lg text-zinc-800 mb-2">
                       {feature.title}
                     </h3>
                     <p className="text-zinc-600 text-sm">
@@ -308,34 +309,34 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-foreground">
+      <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
         <div className="text-center">
-          <h2 className="md:text-5xl text-4xl font-bold">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
             Everything You Need to Run Your Clinic
           </h2>
-          <p className="sm:text-xl text-lg font-semibold text-stone-700 mt-6 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-4 sm:mt-6 max-w-3xl mx-auto">
             Comprehensive features to handle every aspect of your healthcare
             facility
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-10 max-w-7xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8 py-8 sm:py-10 max-w-7xl">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={index}
-                  className="bg-white py-8 px-5 flex flex-col space-y-5 rounded-lg shadow-xl hover:shadow-2xl transition-shadow text-left border border-gray-100"
+                  className="bg-white py-6 sm:py-8 px-4 sm:px-5 flex flex-col space-y-4 sm:space-y-5 rounded-lg shadow-xl hover:shadow-2xl transition-shadow text-left border border-gray-100"
                 >
                   <div className="flex flex-col">
                     <Icon
-                      size={60}
-                      className="text-[#0d5117] font-extrabold mb-4"
+                      size={48}
+                      className="text-[#0d5117] font-extrabold mb-3 sm:mb-4 sm:w-[60px] sm:h-[60px]"
                     />
-                    <span className="font-bold text-xl text-zinc-800">
+                    <span className="font-bold text-lg sm:text-xl text-zinc-800">
                       {feature.title}
                     </span>
                   </div>
-                  <p className="text-zinc-600">{feature.description}</p>
+                  <p className="text-zinc-600 text-sm sm:text-base">{feature.description}</p>
                 </div>
               );
             })}
@@ -344,36 +345,36 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-green-50 flex flex-col items-center justify-center gap-4 py-16 px-6 text-foreground">
+      <section className="bg-green-50 flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
         <div className="text-center">
-          <h2 className="md:text-5xl text-4xl font-bold">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold px-2">
             Trusted by Healthcare Professionals Across Nigeria
           </h2>
-          <p className="sm:text-xl text-lg font-semibold text-stone-700 mt-4">
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
             See what clinic owners and healthcare professionals are saying
           </p>
         </div>
 
-        <div className="flex items-center justify-center w-full mt-8 py-6">
+        <div className="flex items-center justify-center w-full mt-6 sm:mt-8 py-4 sm:py-6">
           <Carousel className="max-w-md md:max-w-3xl w-full">
             <CarouselContent>
               {testimonials.map((item, index) => (
                 <CarouselItem
                   key={index}
-                  className="flex items-center justify-center text-center w-full px-4"
+                  className="flex items-center justify-center text-center w-full px-2 sm:px-4"
                 >
-                  <div className="flex flex-col items-center text-center space-y-6 px-6 bg-white rounded-xl shadow-lg py-8">
+                  <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 px-4 sm:px-6 bg-white rounded-xl shadow-lg py-6 sm:py-8">
                     <User
                       name={item.name}
                       description={item.role}
                       avatarProps={{
                         src: item.avatar,
-                        className: "w-16 h-16",
+                        className: "w-12 h-12 sm:w-16 sm:h-16",
                       }}
                       className="justify-center"
                     />
 
-                    <p className="text-lg text-zinc-700 max-w-2xl leading-relaxed">
+                    <p className="text-sm sm:text-base md:text-lg text-zinc-700 max-w-2xl leading-relaxed">
                       "{item.message}"
                     </p>
                   </div>
@@ -381,7 +382,7 @@ export default function LandingPage() {
               ))}
             </CarouselContent>
 
-            <div className="flex justify-center gap-4 mt-8">
+            <div className="flex justify-center gap-4 mt-6 sm:mt-8">
               <CarouselPrevious className="relative left-0" />
               <CarouselNext className="relative right-0" />
             </div>
@@ -390,15 +391,15 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Highlight */}
-      <section className="py-16 px-6">
+      <section className="py-10 sm:py-16 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="md:text-5xl text-4xl font-bold mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
             Simple, Transparent Pricing
           </h2>
-          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl p-12 shadow-2xl">
-            <div className="text-6xl font-bold mb-4">₦15,000</div>
-            <div className="text-2xl mb-6">per month</div>
-            <div className="space-y-3 text-lg mb-8">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl p-8 sm:p-12 shadow-2xl">
+            <div className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4">₦15,000</div>
+            <div className="text-xl sm:text-2xl mb-4 sm:mb-6">per month</div>
+            <div className="space-y-2 sm:space-y-3 text-sm sm:text-base md:text-lg mb-6 sm:mb-8">
               <p>✓ Unlimited patients and staff</p>
               <p>✓ All features included</p>
               <p>✓ Nigerian phone & WhatsApp support</p>
@@ -408,7 +409,7 @@ export default function LandingPage() {
             <Button
               as={Link}
               href="/auth/register"
-              className="bg-white text-green-700 hover:bg-gray-100 font-bold text-xl py-6 px-8"
+              className="bg-white text-green-700 hover:bg-gray-100 font-bold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
               size="lg"
             >
               Start Your Free Trial
@@ -418,30 +419,30 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-foreground bg-[#0d5117]">
-        <div className="text-center py-7 max-w-4xl">
-          <h2 className="capitalize md:text-5xl text-4xl mt-7 font-bold text-white">
+      <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground bg-[#0d5117]">
+        <div className="text-center py-6 sm:py-7 max-w-4xl">
+          <h2 className="capitalize text-3xl sm:text-4xl md:text-5xl mt-4 sm:mt-7 font-bold text-white">
             Ready to Transform Your Clinic?
           </h2>
-          <p className="sm:text-xl text-lg font-semibold text-gray-100 mt-6">
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-100 mt-4 sm:mt-6">
             Join hundreds of Nigerian healthcare providers modernizing their
             practice with WecareEHR. Start your free 30-day trial today.
           </p>
 
-          <div className="mx-auto pt-7 max-w-md">
+          <div className="mx-auto pt-6 sm:pt-7 max-w-md">
             <Button
               as={Link}
               href="/auth/register"
-              className="flex items-center justify-center bg-white font-semibold text-[#0d5117] md:text-xl text-lg py-6 w-full"
+              className="flex items-center justify-center bg-white font-semibold text-[#0d5117] text-base sm:text-lg md:text-xl py-5 sm:py-6 w-full"
               variant="shadow"
               radius="md"
               size="lg"
             >
-              Get Started Free <MoveRight className="ml-2" />
+              Get Started Free <MoveRight className="ml-2" size={20} />
             </Button>
           </div>
 
-          <p className="text-gray-300 mt-4">
+          <p className="text-gray-300 mt-3 sm:mt-4 text-xs sm:text-sm">
             Questions? Call us on +234 800 123 4567 or WhatsApp
           </p>
         </div>
