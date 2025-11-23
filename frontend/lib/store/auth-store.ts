@@ -11,6 +11,7 @@ interface AuthState {
   token: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean; // ADD THIS
   setAuth: (token: string, refreshToken: string, user: StoredUser) => void;
   updateToken: (token: string) => void;
   logout: () => void;
@@ -24,8 +25,6 @@ const COOKIE_OPTIONS = {
   path: "/",
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
-  // Add domain for production if needed
-  // domain: process.env.NODE_ENV === "production" ? ".yourdomain.com" : undefined,
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -33,15 +32,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   refreshToken: null,
   isAuthenticated: false,
+  isInitialized: false, // ADD THIS
 
   setAuth: (token: string, refreshToken: string, user: StoredUser) => {
     try {
-      // Set cookies synchronously
       setCookie("auth_token", token, COOKIE_OPTIONS);
       setCookie("refresh_token", refreshToken, COOKIE_OPTIONS);
       setCookie("user_data", JSON.stringify(user), COOKIE_OPTIONS);
 
-      // Verify cookies were set (only in development)
       if (
         typeof window !== "undefined" &&
         process.env.NODE_ENV === "development"
@@ -58,8 +56,13 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
       }
 
-      // Update Zustand state
-      set({ user, token, refreshToken, isAuthenticated: true });
+      set({
+        user,
+        token,
+        refreshToken,
+        isAuthenticated: true,
+        isInitialized: true, // ADD THIS
+      });
     } catch (error) {
       console.error("❌ Failed to set auth cookies:", error);
       throw error;
@@ -81,17 +84,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     try {
-      // Delete all auth cookies
       deleteCookie("auth_token", { path: "/" });
       deleteCookie("refresh_token", { path: "/" });
       deleteCookie("user_data", { path: "/" });
 
-      // Clear Zustand state
       set({
         user: null,
         token: null,
         refreshToken: null,
         isAuthenticated: false,
+        isInitialized: true, // KEEP THIS TRUE - we know the auth state (logged out)
       });
 
       if (process.env.NODE_ENV === "development") {
@@ -179,6 +181,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             token,
             refreshToken: refreshToken || null,
             isAuthenticated: true,
+            isInitialized: true, // ADD THIS
           });
 
           if (process.env.NODE_ENV === "development") {
@@ -192,7 +195,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         } catch (parseError) {
           console.error("❌ Failed to parse user data:", parseError);
 
-          // Clear invalid cookies
           deleteCookie("auth_token", { path: "/" });
           deleteCookie("refresh_token", { path: "/" });
           deleteCookie("user_data", { path: "/" });
@@ -202,32 +204,39 @@ export const useAuthStore = create<AuthState>((set) => ({
             token: null,
             refreshToken: null,
             isAuthenticated: false,
+            isInitialized: true, // ADD THIS - initialization complete, just no user
           });
         }
       } else {
         if (process.env.NODE_ENV === "development") {
           console.log("ℹ️ No auth data found in cookies");
         }
+
+        // ADD THIS - mark as initialized even when no auth data
+        set({
+          isInitialized: true,
+        });
       }
     } catch (error) {
       console.error("❌ Auth initialization error:", error);
 
-      // Clear potentially corrupted data
       set({
         user: null,
         token: null,
         refreshToken: null,
         isAuthenticated: false,
+        isInitialized: true, // ADD THIS - initialization attempted
       });
     }
   },
 }));
 
-// Helper function to check auth state (useful for debugging)
+// Update helper functions
 export const getAuthState = () => {
   const state = useAuthStore.getState();
   return {
     isAuthenticated: state.isAuthenticated,
+    isInitialized: state.isInitialized, // ADD THIS
     hasUser: !!state.user,
     hasToken: !!state.token,
     userId: state.user?.id,
@@ -237,7 +246,6 @@ export const getAuthState = () => {
   };
 };
 
-// Helper function to verify cookies (useful for debugging)
 export const verifyCookies = () => {
   const token = getCookie("auth_token");
   const refreshToken = getCookie("refresh_token");
