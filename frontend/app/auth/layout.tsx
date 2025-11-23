@@ -1,6 +1,6 @@
 "use client";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { siteConfig } from "@/lib/siteConfig";
 import { getDefaultRouteForRole } from "@/lib/constants/routes";
@@ -13,22 +13,42 @@ export default function AuthLayout({
 }) {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (user) {
+      // CRITICAL: Don't redirect if user is on change-password page
+      if (pathname === "/auth/change-password") {
+        return;
+      }
+
+      // CRITICAL: If user must change password, redirect to change-password
+      if (user.mustChangePassword) {
+        router.push("/auth/change-password");
+        return;
+      }
+
+      // Normal flow: redirect based on onboarding status
       if (user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
         return;
       }
 
+      // Redirect to dashboard if user has completed onboarding
       if (user.clinicId) {
         const defaultRoute = getDefaultRouteForRole(user.role, user.clinicId);
         router.push(defaultRoute);
       }
     }
-  }, [user, router]);
+  }, [user, router, pathname]);
 
-  if (user?.clinicId) {
+  // Show loader only if redirecting (not on change-password page)
+  if (user?.clinicId && pathname !== "/auth/change-password" && !user?.mustChangePassword) {
+    return <Loader />;
+  }
+
+  // Show loader if user must change password but not on the change-password page yet
+  if (user?.mustChangePassword && pathname !== "/auth/change-password") {
     return <Loader />;
   }
 
