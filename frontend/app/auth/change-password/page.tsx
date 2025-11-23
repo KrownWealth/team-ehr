@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/hooks/use-auth";
 import apiClient from "@/lib/api/axios-instance";
+import Loader from "@/components/shared/Loader";
 
 const passwordSchema = z
   .object({
@@ -39,6 +40,7 @@ export default function FirstTimeChangePasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     register,
@@ -47,6 +49,27 @@ export default function FirstTimeChangePasswordPage() {
   } = useForm<FormData>({
     resolver: zodResolver(passwordSchema),
   });
+
+  useEffect(() => {
+    // Wait for auth to initialize
+    if (user !== undefined) {
+      setIsLoading(false);
+
+      // Redirect if user doesn't need to change password
+      if (user && !user.mustChangePassword) {
+        if (user.clinicId) {
+          router.replace(`/clinic/${user.clinicId}/dashboard`);
+        } else if (user.onboardingStatus === "PENDING") {
+          router.replace("/onboarding");
+        }
+      }
+
+      // Redirect if no user at all
+      if (!user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, [user, router]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -59,10 +82,13 @@ export default function FirstTimeChangePasswordPage() {
 
       toast.success("Password changed successfully!");
 
-      // Update user's mustChangePassword flag
+      // Update user's mustChangePassword flag in the store
       if (user) {
         updateUser({ ...user, mustChangePassword: false });
       }
+
+      // Small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Redirect based on user role and onboarding status
       if (user?.onboardingStatus === "PENDING") {
@@ -80,12 +106,14 @@ export default function FirstTimeChangePasswordPage() {
     }
   };
 
-  // Redirect if user doesn't need to change password
+  // Show loader while checking auth state
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  // Don't render if user doesn't need to change password (will redirect via useEffect)
   if (!user?.mustChangePassword) {
-    if (user?.clinicId) {
-      router.replace(`/clinic/${user.clinicId}/dashboard`);
-    }
-    return null;
+    return <Loader />;
   }
 
   return (
