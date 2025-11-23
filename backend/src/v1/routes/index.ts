@@ -1,6 +1,5 @@
 import express from "express";
 
-// Import all route modules
 import authRoutes from "./auth.routes";
 import adminRoutes from "./admin.routes";
 import clinicRoutes from "./clinic.routes";
@@ -15,11 +14,9 @@ import systemRoutes from "./system.routes";
 import tenantRoutes from "./tenant.routes";
 import patientPortalRoutes from "./patient-portal.routes";
 import appointmentRoutes from "./appointment.routes";
+import statRoutes from "./stats.route";
 
-// Initialize router
 const router = express.Router();
-
-// Mount all routes with base paths
 
 router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
@@ -35,5 +32,6 @@ router.use("/system", systemRoutes);
 router.use("/tenant", tenantRoutes);
 router.use("/patient-portal", patientPortalRoutes);
 router.use("/appointment", appointmentRoutes);
+router.use("/dashboard", statRoutes);
 
 export default router;

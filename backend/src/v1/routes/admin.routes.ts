@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { updateProfile } from "../../controllers/admin.controller";
+import {
+  updateProfile,
+  getDashboardStats,
+} from "../../controllers/admin.controller";
 import { authenticate, authorize } from "../../middleware/auth.middleware";
 import { tenantIsolation } from "../../middleware/tenant.middleware";
 
@@ -12,5 +15,8 @@ router.use(tenantIsolation);
 router.use(authorize(["ADMIN"]));
 
 router.put("/profile", updateProfile);
+
+// Dashboard
+router.get("/dashboard/stats", getDashboardStats);
 
 export default router;
