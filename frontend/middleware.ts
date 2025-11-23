@@ -12,7 +12,6 @@ const PUBLIC_ROUTES = [
   "/auth/verify-otp",
   "/auth/forgot-password",
   "/auth/reset-password",
-  "/auth/change-password",
   "/terms",
   "/privacy",
   "/about",
@@ -34,6 +33,7 @@ function isAuthRoute(pathname: string): boolean {
 type FullUserData = AuthTokenPayload & {
   onboardingStatus: OnboardingStatus;
   role: string;
+  mustChangePassword?: boolean;
 };
 
 export async function middleware(request: NextRequest) {
@@ -110,6 +110,14 @@ export async function middleware(request: NextRequest) {
 
   const isAuthenticated = user?.userId && user?.role;
 
+  if (pathname === "/auth/change-password") {
+    if (!isAuthenticated) {
+      return NextResponse.redirect(loginUrl);
+    }
+    // Allow authenticated users to change password
+    return NextResponse.next();
+  }
+
   if (!isAuthenticated) {
     if (user?.role === "ADMIN" || !user?.role) {
       return NextResponse.redirect(loginUrl);
@@ -118,11 +126,17 @@ export async function middleware(request: NextRequest) {
   }
 
   const fullUser = user as FullUserData;
+
+  if (fullUser.mustChangePassword && pathname !== "/auth/change-password") {
+    const changePasswordUrl = new URL("/auth/change-password", request.url);
+    return NextResponse.redirect(changePasswordUrl);
+  }
+
   const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
 
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
-  if (isPending && !isOnboardingRoute) {
+  if (isPending && !isOnboardingRoute && !fullUser.mustChangePassword) {
     const onboardingUrl = new URL("/onboarding", request.url);
     return NextResponse.redirect(onboardingUrl);
   }
@@ -139,7 +153,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isAuthRoute(pathname) && !isPending && fullUser.clinicId) {
+  if (
+    isAuthRoute(pathname) &&
+    !isPending &&
+    fullUser.clinicId &&
+    !fullUser.mustChangePassword
+  ) {
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
       request.url
