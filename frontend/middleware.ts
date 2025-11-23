@@ -114,7 +114,6 @@ export async function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       return NextResponse.redirect(loginUrl);
     }
-    // Allow authenticated users to change password
     return NextResponse.next();
   }
 
@@ -133,15 +132,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const isPending = fullUser.onboardingStatus === OnboardingStatus.PENDING;
-
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
   if (isPending && !isOnboardingRoute && !fullUser.mustChangePassword) {
     const onboardingUrl = new URL("/onboarding", request.url);
     return NextResponse.redirect(onboardingUrl);
   }
-
-  console.log(fullUser);
 
   if (!isPending && isOnboardingRoute) {
     if (fullUser.clinicId) {
@@ -167,7 +163,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathParts = pathname.split("/").filter(Boolean);
-  if (pathParts.length === 0 && fullUser.clinicId && !isPending) {
+  if (
+    pathParts.length === 0 &&
+    fullUser.clinicId &&
+    !isPending &&
+    !fullUser.mustChangePassword
+  ) {
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
       request.url
@@ -185,19 +186,38 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // FIXED: Build route pattern to match ROUTE_PERMISSIONS format
+  // Extract route parts after /clinic/[clinicId]
   const routeParts = pathParts.slice(2);
-  let baseRoute = "/" + routeParts.join("/");
 
-  baseRoute = baseRoute.replace(/\/[a-zA-Z0-9-_]+$/, "");
+  if (routeParts.length === 0) {
+    // Just /clinic/[clinicId] - allow access
+    return NextResponse.next();
+  }
+
+  // Replace any long alphanumeric IDs with {id} placeholder
+  const normalizedParts = routeParts.map((part) => {
+    // Check if it looks like a database ID (long alphanumeric string)
+    if (part.length > 15 && /^[a-z0-9]+$/i.test(part)) {
+      return "{id}";
+    }
+    return part;
+  });
+
+  // Build the route pattern: /clinic/{id}/routeName/...
+  const baseRoute = `/clinic/{id}/${normalizedParts.join("/")}`;
 
   let allowedRoles: string[] | undefined = ROUTE_PERMISSIONS[baseRoute];
 
-  if (!allowedRoles && baseRoute !== "/") {
-    const parentRoute = baseRoute.split("/").slice(0, -1).join("/") || "/";
+  // If no exact match, try parent route (for nested routes like /patients/{id}/edit)
+  if (!allowedRoles && normalizedParts.length > 1) {
+    const parentRoute = `/clinic/{id}/${normalizedParts[0]}`;
     allowedRoles = ROUTE_PERMISSIONS[parentRoute];
   }
 
+  // Check permissions
   if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
+    console.log(`Access denied: ${fullUser.role} cannot access ${baseRoute}`);
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
       request.url
