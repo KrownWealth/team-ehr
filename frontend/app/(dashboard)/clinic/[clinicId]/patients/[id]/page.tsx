@@ -216,8 +216,8 @@ function PatientDetailsContent() {
                     value={
                       formData.birthDate
                         ? new Date(formData.birthDate)
-                            .toISOString()
-                            .split("T")[0]
+                          .toISOString()
+                          .split("T")[0]
                         : ""
                     }
                     onChange={(e) => handleChange("birthDate", e.target.value)}

@@ -11,46 +11,46 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  // const { user } = useAuth();
+  // const router = useRouter();
+  // const pathname = usePathname();
 
-  useEffect(() => {
-    if (user) {
-      // Don't redirect if user is on change-password page
-      if (pathname === "/auth/change-password") {
-        return;
-      }
+  // useEffect(() => {
+  //   if (user) {
+  //     // Don't redirect if user is on change-password page
+  //     if (pathname === "/auth/change-password") {
+  //       return;
+  //     }
 
-      // If user must change password, redirect to change-password
-      if (user.mustChangePassword) {
-        router.push("/auth/change-password");
-        return;
-      }
+  //     // If user must change password, redirect to change-password
+  //     if (user.mustChangePassword) {
+  //       router.push("/auth/change-password");
+  //       return;
+  //     }
 
-      // redirect based on onboarding status
-      if (user.onboardingStatus === "PENDING") {
-        router.push("/onboarding");
-        return;
-      }
+  //     // redirect based on onboarding status
+  //     if (user.onboardingStatus === "PENDING") {
+  //       router.push("/onboarding");
+  //       return;
+  //     }
 
-      // Redirect to dashboard if user has completed onboarding
-      if (user.clinicId) {
-        const defaultRoute = getDefaultRouteForRole(user.role, user.clinicId);
-        router.push(defaultRoute);
-      }
-    }
-  }, [user, router, pathname]);
+  //     // Redirect to dashboard if user has completed onboarding
+  //     if (user.clinicId) {
+  //       const defaultRoute = getDefaultRouteForRole(user.role, user.clinicId);
+  //       router.push(defaultRoute);
+  //     }
+  //   }
+  // }, [user, router, pathname]);
 
-  // Show loader only if redirecting (not on change-password page)
-  if (user?.clinicId && pathname !== "/auth/change-password" && !user?.mustChangePassword) {
-    return <Loader />;
-  }
+  // // Show loader only if redirecting (not on change-password page)
+  // if (user?.clinicId && pathname !== "/auth/change-password" && !user?.mustChangePassword) {
+  //   return <Loader />;
+  // }
 
-  // Show loader if user must change password but not on the change-password page yet
-  if (user?.mustChangePassword && pathname !== "/auth/change-password") {
-    return <Loader />;
-  }
+  // // Show loader if user must change password but not on the change-password page yet
+  // if (user?.mustChangePassword && pathname !== "/auth/change-password") {
+  //   return <Loader />;
+  // }
 
   return (
     <div className="min-h-screen flex">
