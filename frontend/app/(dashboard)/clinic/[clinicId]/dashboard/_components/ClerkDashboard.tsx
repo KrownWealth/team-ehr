@@ -67,7 +67,7 @@ export default function ClerkDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
           : statCards.map((stat, index) => {
