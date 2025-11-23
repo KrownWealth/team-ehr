@@ -438,6 +438,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
       todayAppointments,
       pendingBills,
       todayRevenue,
+      totalQueue,
     ] = await Promise.all([
       prisma.patient.count({
         where: { clinicId, isActive: true },
@@ -472,6 +473,12 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
           amountPaid: true,
         },
       }),
+      prisma.queue.count({
+        where: {
+          patient: { clinicId },
+          status: { in: ["WAITING", "IN_CONSULTATION"] },
+        },
+      }),
     ]);
 
     res.json({
@@ -482,10 +489,146 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
         todayAppointments,
         pendingBills,
         todayRevenue: todayRevenue._sum.amountPaid || 0,
+        totalQueue,
       },
     });
   } catch (error: any) {
     logger.error("Get dashboard stats error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+export const getGeneralDashboardStats = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { clinicId } = req;
+    const userRole = req.user!.role;
+
+    // Base stats accessible to all roles
+    const [totalPatients, todayAppointments, totalQueue, totalAppointments] =
+      await Promise.all([
+        prisma.patient.count({
+          where: { clinicId, isActive: true },
+        }),
+        prisma.appointment.count({
+          where: {
+            patient: { clinicId },
+            appointmentDate: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              lt: new Date(new Date().setHours(23, 59, 59, 999)),
+            },
+          },
+        }),
+        prisma.queue.count({
+          where: {
+            patient: { clinicId },
+            status: { in: ["WAITING", "IN_CONSULTATION"] },
+          },
+        }),
+        prisma.appointment.count({
+          where: {
+            patient: { clinicId },
+          },
+        }),
+      ]);
+
+    // Role-specific stats
+    let roleSpecificStats: any = {};
+
+    switch (userRole) {
+      case "ADMIN":
+      case "CLERK":
+        const totalStaff = await prisma.user.count({
+          where: { clinicId, isActive: true },
+        });
+        roleSpecificStats = { totalStaff };
+        break;
+
+      case "DOCTOR":
+        const [myConsultations, pendingConsultations] = await Promise.all([
+          prisma.consultation.count({
+            where: {
+              doctorId: req.user!.id,
+              createdAt: {
+                gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              },
+            },
+          }),
+          prisma.queue.count({
+            where: {
+              patient: { clinicId },
+              status: "WAITING",
+            },
+          }),
+        ]);
+        roleSpecificStats = { myConsultations, pendingConsultations };
+        break;
+
+      case "NURSE":
+        const [vitalsRecorded, patientsWaiting] = await Promise.all([
+          prisma.vitals.count({
+            where: {
+              recordedById: req.user!.id,
+              createdAt: {
+                gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              },
+            },
+          }),
+          prisma.queue.count({
+            where: {
+              patient: { clinicId },
+              status: "WAITING",
+            },
+          }),
+        ]);
+        roleSpecificStats = { vitalsRecorded, patientsWaiting };
+        break;
+
+      case "CASHIER":
+        const [pendingBills, todayRevenue] = await Promise.all([
+          prisma.bill.count({
+            where: {
+              clinicId,
+              status: "PENDING",
+            },
+          }),
+          prisma.bill.aggregate({
+            where: {
+              clinicId,
+              paymentDate: {
+                gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                lt: new Date(new Date().setHours(23, 59, 59, 999)),
+              },
+            },
+            _sum: {
+              amountPaid: true,
+            },
+          }),
+        ]);
+        roleSpecificStats = {
+          pendingBills,
+          todayRevenue: todayRevenue._sum.amountPaid || 0,
+        };
+        break;
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        totalPatients,
+        todayAppointments,
+        totalQueue,
+        totalAppointments,
+        ...roleSpecificStats,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Get general dashboard stats error:", error);
     res.status(500).json({
       status: "error",
       message: error.message,

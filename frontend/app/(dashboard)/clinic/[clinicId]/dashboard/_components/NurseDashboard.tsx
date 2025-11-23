@@ -15,7 +15,7 @@ export default function NurseDashboard() {
   const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["nurse-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/dashboard/stats");
       return response.data;
     },
   });
@@ -67,30 +67,30 @@ export default function NurseDashboard() {
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
           : statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Link href={stat.href} key={index}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xl font-medium text-gray-600">
-                        {stat.title}
-                      </CardTitle>
-                      <div className="bg-primary/10 p-2 rounded-lg">
-                        <Icon className="h-10 w-10 text-primary" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold text-gray-900">
-                        {stat.value}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        {stat.subtitle}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            const Icon = stat.icon;
+            return (
+              <Link href={stat.href} key={index}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-medium text-gray-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                      <Icon className="h-10 w-10 text-primary" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {stat.subtitle}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
       </div>
 
       <Card className="w-fit">

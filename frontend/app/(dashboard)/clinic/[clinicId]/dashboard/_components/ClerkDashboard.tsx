@@ -15,7 +15,7 @@ export default function ClerkDashboard() {
   const { data: stats, isLoading } = useQuery<ApiResponse<DashboardStats>>({
     queryKey: ["clerk-dashboard-stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/v1/admin/dashboard/stats");
+      const response = await apiClient.get("/v1/dashboard/stats");
       return response.data;
     },
   });
@@ -24,22 +24,28 @@ export default function ClerkDashboard() {
 
   const statCards = [
     {
-      title: "Today's Appointments",
-      value: statsData?.todayAppointments || 0,
-      icon: CheckCircle,
-      href: `/clinic/${user?.clinicId}/queue`,
-    },
-    {
       title: "Total Patients",
       value: statsData?.totalPatients || 0,
       icon: Users,
       href: `/clinic/${user?.clinicId}/patients`,
     },
     {
-      title: "Staff Members",
-      value: statsData?.totalStaff || 0,
+      title: "Total Appointments",
+      value: statsData?.todayAppointments || 0,
+      icon: CheckCircle,
+      href: `/clinic/${user?.clinicId}/queue`,
+    },
+    {
+      title: "Today's Appointments",
+      value: statsData?.totalAppointments || 0,
+      icon: CheckCircle,
+      href: `/clinic/${user?.clinicId}/queue`,
+    },
+    {
+      title: "Total Queue",
+      value: statsData?.totalQueue || 0,
       icon: Users,
-      href: `/clinic/${user?.clinicId}/staff`,
+      href: `/clinic/${user?.clinicId}/patients`,
     },
   ];
 
@@ -65,27 +71,27 @@ export default function ClerkDashboard() {
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
           : statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Link href={stat.href} key={index}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xl font-medium text-gray-600">
-                        {stat.title}
-                      </CardTitle>
-                      <div className="bg-primary/10 p-2 rounded-lg">
-                        <Icon className="h-10 w-10 text-primary" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold text-gray-900">
-                        {stat.value}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            const Icon = stat.icon;
+            return (
+              <Link href={stat.href} key={index}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-medium text-gray-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                      <Icon className="h-10 w-10 text-primary" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
       </div>
 
       <Card className="w-fit">
