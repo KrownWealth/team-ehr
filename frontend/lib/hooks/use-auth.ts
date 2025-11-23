@@ -112,29 +112,39 @@ export function useLogin() {
 
       return response.data.data;
     },
-    onSuccess: (data: LoginResponseData) => {
+    onSuccess: async (data: LoginResponseData) => {
+      // First, set the auth state and cookies
       setAuth(data.token, data.refreshToken, data.user);
+
       toast.success("Staff Login successful!");
 
+      // Small delay to ensure cookies are written
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Handle password change requirement
       if (data.user.mustChangePassword) {
-        router.replace("/auth/change-password");
+        window.location.href = "/auth/change-password";
         return;
       }
 
+      // Handle onboarding
       if (data.user.onboardingStatus === OnboardingStatus.PENDING) {
-        router.replace("/onboarding");
+        window.location.href = "/onboarding";
         return;
       }
 
+      // Handle successful login with clinicId
       if (data.user.clinicId) {
         const redirectUrl = getDefaultRouteForRole(
           data.user.role,
           data.user.clinicId
         );
-        router.replace(redirectUrl);
+
+        // Use window.location for hard navigation to ensure cookies are sent
+        window.location.href = redirectUrl;
       } else {
         console.warn("User has completed onboarding but no clinicId found");
-        router.replace("/onboarding");
+        window.location.href = "/onboarding";
       }
     },
     onError: (error: any, variables: LoginCredentials) => {
@@ -212,22 +222,27 @@ export function usePatientVerifyOtp() {
 
       return response.data.data;
     },
-    onSuccess: (data: PatientLoginResponseData) => {
+    onSuccess: async (data: PatientLoginResponseData) => {
       setAuth(data.token, data.refreshToken, data.user);
       toast.success("Patient Login successful!");
+
+      // Small delay for cookies to be written
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       if (data.user.clinicId) {
         const redirectUrl = getDefaultRouteForRole(
           data.user.role,
           data.user.clinicId
         );
-        router.replace(redirectUrl);
+        window.location.href = redirectUrl;
       } else {
-        router.replace("/patient-dashboard");
+        window.location.href = "/patient-dashboard";
       }
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Invalid or expired OTP";
+      // You might want to show this error
+      toast.error(message);
     },
   });
 }
