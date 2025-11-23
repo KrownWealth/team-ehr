@@ -186,12 +186,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // FIXED: Build route pattern to match ROUTE_PERMISSIONS format
-  // Extract route parts after /clinic/[clinicId]
   const routeParts = pathParts.slice(2);
 
   if (routeParts.length === 0) {
-    // Just /clinic/[clinicId] - allow access
     return NextResponse.next();
   }
 
@@ -215,7 +212,6 @@ export async function middleware(request: NextRequest) {
     allowedRoles = ROUTE_PERMISSIONS[parentRoute];
   }
 
-  // Check permissions
   if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
     console.log(`Access denied: ${fullUser.role} cannot access ${baseRoute}`);
     const dashboardUrl = new URL(
