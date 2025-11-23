@@ -142,8 +142,7 @@ export default function CreateConsultationPage() {
         const diagnosesList = aiSuggestions.differential_diagnoses
           .map(
             (dx: any) =>
-              `• ${dx.condition} (${dx.probability} probability${
-                dx.icd10_code ? `, ICD-10: ${dx.icd10_code}` : ""
+              `• ${dx.condition} (${dx.probability} probability${dx.icd10_code ? `, ICD-10: ${dx.icd10_code}` : ""
               }) - ${dx.reasoning}`
           )
           .join("\n");

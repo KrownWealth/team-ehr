@@ -94,27 +94,27 @@ export default function AdminDashboard() {
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton />)
           : statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Link href={stat.href} key={index}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xl font-medium text-gray-600">
-                        {stat.title}
-                      </CardTitle>
-                      <div className={`bg-primary/4 p-2 rounded-lg`}>
-                        <Icon className={`h-10 w-10 text-primary`} />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold text-gray-900">
-                        {stat.value}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            const Icon = stat.icon;
+            return (
+              <Link href={stat.href} key={index}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-medium text-gray-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div className={`bg-primary/4 p-2 rounded-lg`}>
+                      <Icon className={`h-10 w-10 text-primary`} />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
       </div>
     </div>
   );
