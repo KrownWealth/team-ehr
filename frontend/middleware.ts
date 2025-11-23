@@ -38,6 +38,8 @@ type FullUserData = AuthTokenPayload & {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Add this logging
+  console.log("[Middleware] Processing:", pathname);
 
   if (
     pathname.startsWith("/_next") ||
@@ -220,7 +222,7 @@ export async function middleware(request: NextRequest) {
     );
     return NextResponse.redirect(dashboardUrl);
   }
-
+  console.log("[Middleware] Allowing access to:", pathname);
   return NextResponse.next();
 }
 
