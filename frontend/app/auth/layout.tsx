@@ -17,18 +17,18 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (user) {
-      // CRITICAL: Don't redirect if user is on change-password page
+      // Don't redirect if user is on change-password page
       if (pathname === "/auth/change-password") {
         return;
       }
 
-      // CRITICAL: If user must change password, redirect to change-password
+      // If user must change password, redirect to change-password
       if (user.mustChangePassword) {
         router.push("/auth/change-password");
         return;
       }
 
-      // Normal flow: redirect based on onboarding status
+      // redirect based on onboarding status
       if (user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
         return;
