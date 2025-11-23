@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/shared/Sidebar";
 import { AppNavbar } from "@/components/shared/Navbar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MenuIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { DashboardSkeleton } from "@/components/shared/loading/DashboardSkeleton";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Show loading while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#fcfcfc]">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated after loading
+  if (!user) {
+    router.push("/auth/login");
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#fcfcfc]">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#fcfcfc] overflow-hidden">

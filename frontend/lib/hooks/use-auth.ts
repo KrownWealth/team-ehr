@@ -66,6 +66,7 @@ export function useAuth() {
     user,
     token,
     isAuthenticated,
+    isInitialized,
     logout,
     updateUser,
     initializeAuth,
@@ -75,17 +76,20 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    initializeAuth();
+    if (!isInitialized) {
+      initializeAuth();
+    }
 
     if (typeof window !== "undefined") {
       (window as any).updateAuthToken = updateToken;
     }
-  }, [initializeAuth, updateToken]);
+  }, [initializeAuth, updateToken, isInitialized]);
 
   return {
     user,
     token,
     isAuthenticated,
+    isLoading: !isInitialized,
     logout,
     updateUser,
   };
