@@ -31,7 +31,7 @@ const Footer = () => {
 
   return (
     <footer className="">
-      <div className="mx-auto px-6 md:px-8 py-16">
+      <div className="mx-auto max-w-screen-2xl px-6 md:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Logo and Description */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
