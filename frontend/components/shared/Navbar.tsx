@@ -68,10 +68,10 @@ export function AppNavbar({ onMenuClick }: AppNavbarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden size-10"
             onClick={onMenuClick}
           >
-            <MenuIcon className="h-5 w-5" />
+            <MenuIcon className="h-7 w-7" />
           </Button>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
@@ -90,7 +90,7 @@ export function AppNavbar({ onMenuClick }: AppNavbarProps) {
                 variant="ghost"
                 className="flex items-center gap-2 hover:bg-gray-100 p-2 py-4 md:py-6"
               >
-                <Avatar className="h-7 w-7 md:h-8 md:w-8">
+                <Avatar className="h-8 w-8 md:h-8 md:w-8">
                   <AvatarImage src={user.photoUrl} alt={userFullName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {userInitials}

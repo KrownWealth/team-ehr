@@ -71,12 +71,12 @@ apiClient.interceptors.response.use(
       const refreshToken = getCookie("refresh_token");
 
       if (!refreshToken) {
-        // deleteCookie("auth_token");
-        // deleteCookie("refresh_token");
-        // deleteCookie("user_data");
-        // if (typeof window !== "undefined") {
-        //   window.location.href = "/auth/login";
-        // }
+        deleteCookie("auth_token");
+        deleteCookie("refresh_token");
+        deleteCookie("user_data");
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/login";
+        }
         return Promise.reject(error);
       }
 
@@ -107,12 +107,12 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // deleteCookie("auth_token");
-        // deleteCookie("refresh_token");
-        // deleteCookie("user_data");
-        // if (typeof window !== "undefined") {
-        //   window.location.href = "/auth/login";
-        // }
+        deleteCookie("auth_token");
+        deleteCookie("refresh_token");
+        deleteCookie("user_data");
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/login";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -121,17 +121,9 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 403) {
       if (typeof window !== "undefined" && !isAuthPage) {
-        // window.location.href = "/404";
+        window.location.href = "/404";
       }
       return Promise.reject(error);
-    }
-
-    if (error.response?.status !== 401 || isAuthPage) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Something went wrong";
-      toast.error(message);
     }
 
     return Promise.reject(error);

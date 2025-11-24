@@ -344,7 +344,7 @@ export default function LoginPage() {
         value={activeTab}
         onValueChange={(v) => {
           setActiveTab(v as "staff" | "patient");
-          setPatientStep(PatientLoginStep.IDENTIFIER_INPUT); // Reset patient flow on tab change
+          setPatientStep(PatientLoginStep.IDENTIFIER_INPUT);
           setTimer(0);
           setCanResend(false);
           requestOtpMutation.reset();

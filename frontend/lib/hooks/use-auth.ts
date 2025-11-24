@@ -1,5 +1,3 @@
-// src/lib/hooks/use-auth.ts
-
 "use client";
 
 import { useAuthStore } from "@/lib/store/auth-store";
@@ -26,7 +24,6 @@ interface ApiResponse<T> {
   errors?: Array<{ field: string; message: string }>;
 }
 
-// Updated to use imported LoginResponse and ensure the User object is complete
 interface LoginResponseData extends Omit<LoginResponse, "user"> {
   user: User;
 }
@@ -34,7 +31,7 @@ interface LoginResponseData extends Omit<LoginResponse, "user"> {
 interface PatientLoginResponseData {
   token: string;
   refreshToken: string;
-  user: User; // Patient User will be of role PATIENT
+  user: User;
 }
 
 interface RegisterResponseData {
@@ -51,7 +48,7 @@ interface PatientRequestOtpData {
 }
 
 interface PatientRequestOtpResponse {
-  email: string; // Masked email
+  email: string;
   expiresIn: string;
 }
 
@@ -95,8 +92,6 @@ export function useAuth() {
   };
 }
 
-// --- Staff/Admin Login ---
-
 export function useLogin() {
   const { setAuth } = useAuthStore();
   const router = useRouter();
@@ -117,34 +112,28 @@ export function useLogin() {
       return response.data.data;
     },
     onSuccess: async (data: LoginResponseData) => {
-      // First, set the auth state and cookies
       setAuth(data.token, data.refreshToken, data.user);
 
       toast.success("Staff Login successful!");
 
-      // Small delay to ensure cookies are written
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // Handle password change requirement
       if (data.user.mustChangePassword) {
         window.location.href = "/auth/change-password";
         return;
       }
 
-      // Handle onboarding
       if (data.user.onboardingStatus === OnboardingStatus.PENDING) {
         window.location.href = "/onboarding";
         return;
       }
 
-      // Handle successful login with clinicId
       if (data.user.clinicId) {
         const redirectUrl = getDefaultRouteForRole(
           data.user.role,
           data.user.clinicId
         );
 
-        // Use window.location for hard navigation to ensure cookies are sent
         window.location.href = redirectUrl;
       } else {
         console.warn("User has completed onboarding but no clinicId found");
@@ -165,11 +154,11 @@ export function useLogin() {
         );
         return;
       }
+
+      toast.error(message);
     },
   });
 }
-
-// --- Patient OTP Auth Hooks (New) ---
 
 export function usePatientRequestOtp() {
   return useMutation({
@@ -203,6 +192,7 @@ export function usePatientRequestOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to send OTP";
+      toast.error(message);
       throw new Error(message);
     },
   });
@@ -230,7 +220,6 @@ export function usePatientVerifyOtp() {
       setAuth(data.token, data.refreshToken, data.user);
       toast.success("Patient Login successful!");
 
-      // Small delay for cookies to be written
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       if (data.user.clinicId) {
@@ -245,7 +234,6 @@ export function usePatientVerifyOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Invalid or expired OTP";
-      // You might want to show this error
       toast.error(message);
     },
   });
@@ -266,11 +254,10 @@ export function usePatientResendOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to resend OTP";
+      toast.error(message);
     },
   });
 }
-
-// --- Other Auth Hooks (Existing, slightly modified for flow control) ---
 
 export function useRegister() {
   const router = useRouter();
@@ -295,6 +282,7 @@ export function useRegister() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
+      toast.error(message);
     },
   });
 }
@@ -318,6 +306,7 @@ export function useVerifyOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Verification failed";
+      toast.error(message);
     },
   });
 }
@@ -339,6 +328,7 @@ export function useForgotPassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to send reset link";
+      toast.error(message);
     },
   });
 }
@@ -362,6 +352,7 @@ export function useResetPassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to reset password";
+      toast.error(message);
     },
   });
 }
@@ -383,6 +374,8 @@ export function useChangePassword() {
     onError: (error: any) => {
       const message =
         error.response?.data?.message || "Failed to change password";
+
+      toast.error(message);
     },
   });
 }
@@ -402,6 +395,8 @@ export function useResendOtp() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to resend OTP";
+
+      toast.error(message);
     },
   });
 }

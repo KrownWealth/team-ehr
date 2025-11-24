@@ -51,11 +51,9 @@ export default function FirstTimeChangePasswordPage() {
   });
 
   useEffect(() => {
-    // Wait for auth to initialize
     if (user !== undefined) {
       setIsLoading(false);
 
-      // Redirect if user doesn't need to change password
       if (user && !user.mustChangePassword) {
         if (user.clinicId) {
           router.replace(`/clinic/${user.clinicId}/dashboard`);
@@ -64,7 +62,6 @@ export default function FirstTimeChangePasswordPage() {
         }
       }
 
-      // Redirect if no user at all
       if (!user) {
         router.replace("/auth/login");
       }
@@ -82,15 +79,12 @@ export default function FirstTimeChangePasswordPage() {
 
       toast.success("Password changed successfully!");
 
-      // Update user's mustChangePassword flag in the store
       if (user) {
         updateUser({ ...user, mustChangePassword: false });
       }
 
-      // Small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Redirect based on user role and onboarding status
       if (user?.onboardingStatus === "PENDING") {
         router.replace("/onboarding");
       } else if (user?.clinicId) {
@@ -99,33 +93,33 @@ export default function FirstTimeChangePasswordPage() {
         router.replace("/onboarding");
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to change password";
+      const message =
+        error.response?.data?.message || "Failed to change password";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Show loader while checking auth state
   if (isLoading) {
     return <Loader />;
   }
 
-  // Don't render if user doesn't need to change password (will redirect via useEffect)
   if (!user?.mustChangePassword) {
     return <Loader />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="flex items-center justify-center bg-background">
+      <div className="w-full space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
             <ShieldCheck className="w-8 h-8 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Change Password</h1>
           <p className="text-gray-600">
-            For security reasons, you must change your temporary password before continuing.
+            For security reasons, you must change your temporary password before
+            continuing.
           </p>
         </div>
 
@@ -153,7 +147,9 @@ export default function FirstTimeChangePasswordPage() {
               </button>
             </div>
             {errors.oldPassword && (
-              <p className="text-sm text-red-600">{errors.oldPassword.message}</p>
+              <p className="text-sm text-red-600">
+                {errors.oldPassword.message}
+              </p>
             )}
           </div>
 
@@ -180,7 +176,9 @@ export default function FirstTimeChangePasswordPage() {
               </button>
             </div>
             {errors.newPassword && (
-              <p className="text-sm text-red-600">{errors.newPassword.message}</p>
+              <p className="text-sm text-red-600">
+                {errors.newPassword.message}
+              </p>
             )}
           </div>
 
@@ -207,7 +205,9 @@ export default function FirstTimeChangePasswordPage() {
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+              <p className="text-sm text-red-600">
+                {errors.confirmPassword.message}
+              </p>
             )}
           </div>
 
@@ -224,11 +224,7 @@ export default function FirstTimeChangePasswordPage() {
             </ul>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full h-12"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" className="w-full h-12" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

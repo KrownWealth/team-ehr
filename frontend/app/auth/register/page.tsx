@@ -104,10 +104,8 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    // Format phone with country code
     const formattedPhone = `${selectedCountry.code}${data.phone}`;
 
-    // Send data matching API spec: firstName, lastName, email, phone, password
     const registerData = {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -142,10 +140,10 @@ export default function RegisterPage() {
               <div className="flex flex-col items-center">
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isActive
-                    ? "bg-green-600 text-white scale-110"
-                    : isCompleted
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-500"
+                      ? "bg-green-600 text-white scale-110"
+                      : isCompleted
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200 text-gray-500"
                     }`}
                 >
                   <Icon className="w-5 h-5" />

@@ -162,7 +162,7 @@
 	}
 
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground scroll-smooth;
 	}
 
 	.btn {
@@ -175,5 +175,15 @@
 
 	.btn-block {
 		@apply bg-primary text-primary-foreground;
+	}
+
+	.folder-3d {
+		transform: rotateX(10deg) translateY(20px);
+		transform-style: preserve-3d;
+		transition: transform 0.8s ease-out;
+	}
+
+	.folder-3d.straight {
+		transform: rotateX(0deg) translateY(0);
 	}
 }
