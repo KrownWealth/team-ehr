@@ -48,7 +48,7 @@ export default function NurseDashboard() {
 
   return (
     <div className="space-y-7">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between gap-3 md:items-center md:flex-row flex-col">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Nurse Station</h1>
           <p className="text-base text-gray-600 mt-1">

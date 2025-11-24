@@ -6,6 +6,7 @@ import Sidebar from "@/components/shared/Sidebar";
 import { AppNavbar } from "@/components/shared/Navbar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { DashboardSkeleton } from "@/components/shared/loading/DashboardSkeleton";
+import Loader from "@/components/shared/Loader";
 
 export default function DashboardLayout({
   children,
@@ -17,21 +18,13 @@ export default function DashboardLayout({
 
   // Show loading while auth is initializing
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fcfcfc]">
-        <DashboardSkeleton />
-      </div>
-    );
+    return <Loader />;
   }
 
   // Don't redirect here - middleware handles auth
   // Just show loading if no user yet (will be redirected by middleware)
   if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fcfcfc]">
-        <DashboardSkeleton />
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
