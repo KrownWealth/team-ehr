@@ -120,7 +120,15 @@ export default function InviteStaffDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent
+        className="
+    sm:max-w-xl
+    max-h-[90vh]
+   overflow-y-auto 
+    sm:max-h-none sm:overflow-visible
+    rounded-lg
+    p-4 sm:p-6
+  ">
         <DialogHeader>
           <DialogTitle>Invite New Staff Member</DialogTitle>
           <DialogDescription>

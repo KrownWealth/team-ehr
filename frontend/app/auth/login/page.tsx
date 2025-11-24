@@ -331,9 +331,10 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6 w-full max-w-lg px-4 sm:px-0">
       <div>
-        <h2 className="text-3xl font-extrabold text-gray-900">Welcome back!</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+          Welcome back!</h2>
         <p className="text-gray-600 mt-2">
           Choose your login method to continue
         </p>

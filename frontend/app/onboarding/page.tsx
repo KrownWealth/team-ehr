@@ -295,7 +295,7 @@ export default function OnboardingPage() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-12 px-5 py-14">
+    <div className="max-w-3xl mx-auto space-y-8 pb-12 py-14 px-4 sm:px-5">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">Clinic Onboarding</h1>
         <p className="text-gray-600 mt-2 text-base">
@@ -314,13 +314,12 @@ export default function OnboardingPage() {
             <React.Fragment key={step.id}>
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isActive
-                      ? "bg-green-600 text-white shadow-lg shadow-green-200"
-                      : isCompleted
+                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
+                    ? "bg-green-600 text-white shadow-lg shadow-green-200"
+                    : isCompleted
                       ? "bg-green-600 text-white"
                       : "bg-gray-100 text-gray-400"
-                  }`}
+                    }`}
                 >
                   {isCompleted ? (
                     <Check className="w-6 h-6" />
@@ -329,18 +328,16 @@ export default function OnboardingPage() {
                   )}
                 </div>
                 <span
-                  className={`text-sm font-medium ${
-                    isActive || isCompleted ? "text-gray-900" : "text-gray-400"
-                  }`}
+                  className={`text-sm font-medium ${isActive || isCompleted ? "text-gray-900" : "text-gray-400"
+                    }`}
                 >
                   {step.name}
                 </span>
               </div>
               {idx < STEPS.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${
-                    isCompleted ? "bg-green-600" : "bg-gray-200"
-                  }`}
+                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${isCompleted ? "bg-green-600" : "bg-gray-200"
+                    }`}
                 />
               )}
             </React.Fragment>

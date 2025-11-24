@@ -97,14 +97,14 @@ export default function RegisterPatientPage() {
         <Button
           variant="ghost"
           size="sm"
-          className="mx-auto text-center justify-center"
+          className="lg:mx-auto text-center justify-start lg:justify-center"
           onClick={() => router.back()}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">
+        <div className="text-start lg:text-center">
+          <h1 className="text-2xl lg:text-4xl font-bold text-gray-900">
             Register New Patient
           </h1>
           <p className="text-gray-600 mt-3 text-[15px]">
@@ -113,7 +113,7 @@ export default function RegisterPatientPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-4">
+      <div className="flex w-full items-center justify-between px-4">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
           const isActive = currentStep === step.id;
@@ -121,31 +121,30 @@ export default function RegisterPatientPage() {
 
           return (
             <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center">
                 <div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
-                    ? "bg-green-600 text-white shadow-lg shadow-green-200"
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isActive
+                    ? "bg-green-600 text-white scale-110"
                     : isCompleted
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-400"
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-500"
                     }`}
                 >
                   {isCompleted ? (
-                    <Check className="w-6 h-6" />
+                    <Check className="w-5 h-5" />
                   ) : (
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-5 h-5" />
                   )}
                 </div>
                 <span
-                  className={`text-sm font-medium ${isActive || isCompleted ? "text-gray-900" : "text-gray-400"
+                  className={`text-xs lg:text-sm font-medium ${isActive || isCompleted ? "text-gray-900" : "text-gray-400"
                     }`}
                 >
                   {step.name}
                 </span>
-              </div>
-              {idx < STEPS.length - 1 && (
+              </div> {idx < STEPS.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${isCompleted ? "bg-green-600" : "bg-gray-200"
+                  className={`flex-1 h-1 mx-2 rounded transition-all ${isCompleted ? "bg-green-500" : "bg-gray-200"
                     }`}
                 />
               )}

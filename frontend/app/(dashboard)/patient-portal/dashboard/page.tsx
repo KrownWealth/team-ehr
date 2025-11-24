@@ -74,7 +74,7 @@ export default function PatientDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <MedicationRemindersCard /> 
+          <MedicationRemindersCard />
         </div>
 
         <div className="bg-white p-6 rounded-xl border shadow-sm h-fit">
@@ -82,23 +82,24 @@ export default function PatientDashboard() {
             Quick Actions
           </h3>
           <div className="space-y-3">
-            <Link className="block" href="/patient-portal/vitals">
-              <button className="btn btn-outline w-full justify-start">
+
+            <Link className="block w-full" href="/patient-portal/vitals">
+              <div className="btn btn-outline w-full justify-start">
                 <Activity className="mr-3 h-5 w-5 text-green-600" />
                 Record Vitals
-              </button>
+              </div>
             </Link>
-            <Link className="block" href="/patient-portal/records">
-              <button className="btn btn-outline w-full justify-start">
+            <Link className="block w-full" href="/patient-portal/records">
+              <div className="btn btn-outline w-full justify-start">
                 <FileText className="mr-3 h-5 w-5 text-green-600" />
                 Medical Records
-              </button>
+              </div>
             </Link>
-            <Link className="block" href="/patient-portal/profile">
-              <button className="btn btn-outline w-full justify-start">
+            <Link className="block w-full" href="/patient-portal/profile">
+              <div className="btn btn-outline w-full justify-start">
                 <User className="mr-3 h-5 w-5 text-green-600" />
                 Profile Settings
-              </button>
+              </div>
             </Link>
           </div>
         </div>

@@ -43,11 +43,9 @@ import {
   Droplet,
   Scale,
   Ruler,
-  Check,
   ChevronsUpDown,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/helper";
-import { cn } from "@/lib/utils";
 
 interface VitalsFormState {
   systolic: string;
@@ -332,7 +330,7 @@ export default function VitalsPage() {
                   <Heart className="h-4 w-4" />
                   Blood Pressure (mmHg) <span className="text-red-500">*</span>
                 </Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Input
                       type="number"

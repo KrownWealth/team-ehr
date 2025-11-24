@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/axios-instance";
 import { ApiResponse } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, FileText, Pill, Stethoscope, Plus } from "lucide-react";
+import { Activity, Pill, Stethoscope, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import MedicalHistoryList from "./_components/MedicalHistoryList";
 import RecordVitalsDialog from "./_components/RecordVitalsDialog";
@@ -60,7 +60,26 @@ export default function PatientRecordsPage() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="inline-flex h-12 items-center justify-center rounded-xl bg-gray-100 p-1">
+        <TabsList
+          className="
+    flex 
+    gap-2
+    overflow-x-auto 
+    overscroll-x-contain
+    scroll-smooth
+    whitespace-nowrap
+    h-12 
+    items-center 
+    rounded-xl 
+    bg-gray-100 
+    p-1
+    sm:justify-center
+
+    [&::-webkit-scrollbar]:hidden 
+    [-ms-overflow-style:'none'] 
+    [scrollbar-width:'none']
+  "
+        >
           <TabsTrigger
             value="consultations"
             className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
