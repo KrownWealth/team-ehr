@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-xl">
+    <div className="space-y-6 sm:space-y-6 w-full max-w-lg px-4 sm:px-0">
       <Link
         href="/auth/login"
         className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
@@ -118,13 +118,12 @@ export default function ForgotPasswordPage() {
             <React.Fragment key={s.num}>
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    isActive
-                      ? "bg-green-600 text-white"
-                      : isCompleted
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive
+                    ? "bg-green-600 text-white"
+                    : isCompleted
                       ? "bg-green-500 text-white"
                       : "bg-gray-200 text-gray-500"
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
@@ -132,9 +131,8 @@ export default function ForgotPasswordPage() {
               </div>
               {idx < 2 && (
                 <div
-                  className={`flex-1 h-1 mx-2 ${
-                    isCompleted ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                  className={`flex-1 h-1 mx-2 ${isCompleted ? "bg-green-500" : "bg-gray-200"
+                    }`}
                 />
               )}
             </React.Fragment>

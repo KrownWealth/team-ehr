@@ -61,11 +61,9 @@ function TableList<TData, TValue>({
     page,
     limit,
   ];
-  const queryUrl = `${endpoint}?search=${search}${
-    filter?.value ? `&${filter.value}` : ""
-  }${extraUi?.value ? `&${extraUi.value}` : ""}${
-    tabs?.value ? `&${tabs.value}` : ""
-  }&page=${page}&limit=${limit}`;
+  const queryUrl = `${endpoint}?search=${search}${filter?.value ? `&${filter.value}` : ""
+    }${extraUi?.value ? `&${extraUi.value}` : ""}${tabs?.value ? `&${tabs.value}` : ""
+    }&page=${page}&limit=${limit}`;
 
   const {
     data: res,
@@ -82,11 +80,11 @@ function TableList<TData, TValue>({
 
   const meta: PaginationMeta | undefined = Array.isArray(res?.data)
     ? {
-        page: page,
-        limit: normalizedData.length,
-        total: normalizedData.length,
-        pages: 1,
-      }
+      page: page,
+      limit: normalizedData.length,
+      total: normalizedData.length,
+      pages: 1,
+    }
     : res?.data?.pagination;
 
   const table = useReactTable({
@@ -108,8 +106,10 @@ function TableList<TData, TValue>({
   return (
     <div className="sheet space-y-6">
       <div className="space-y-4">
-        <div className="flex gap-4 justify-between items-center flex-wrap">
-          <div className="w-fit">{tabs?.component}</div>
+        <div className="flex flex-col lg:flex-row gap-4 lg:justify-between lg:items-center">
+          <div className="w-full lg:w-fit overflow-x-auto">
+            <div className="w-fit">{tabs?.component}</div>
+          </div>
 
           <div className="flex gap-3">
             {!noSearch && (

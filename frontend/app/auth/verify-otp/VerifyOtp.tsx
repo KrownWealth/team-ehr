@@ -112,7 +112,7 @@ export default function OTPVerificationPage() {
   }
 
   return (
-    <div className="space-y-6 w-full max-w-md">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8">
       <Link
         href="/auth/login"
         className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
@@ -133,7 +133,8 @@ export default function OTPVerificationPage() {
         </p>
       </div>
 
-      <div className="flex justify-between gap-4" onPaste={handlePaste}>
+      <div className="grid grid-cols-6 gap-2 sm:flex sm:justify-between sm:gap-4"
+        onPaste={handlePaste}>
         {otp.map((digit, index) => (
           <Input
             key={index}
@@ -146,7 +147,7 @@ export default function OTPVerificationPage() {
             value={digit}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
-            className="w-14 h-14 text-center text-2xl font-bold"
+            className="w-8 h-8 sm:w-14 sm:h-14 text-center text-xl sm:text-2xl font-bold"
             autoFocus={index === 0}
           />
         ))}

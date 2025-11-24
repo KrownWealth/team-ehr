@@ -7,10 +7,8 @@ import { z } from "zod";
 import {
   Eye,
   EyeOff,
-  Building2,
   Mail,
   Phone,
-  MapPin,
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -122,9 +120,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-xl">
+    <div className="space-y-5 sm:space-y-6 w-full max-w-lg px-4 sm:px-0">
       <div>
-        <h2 className="text-3xl font-extrabold text-gray-900">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
           Register As an Admin!
         </h2>
         <p className="text-gray-600 mt-2">
