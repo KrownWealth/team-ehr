@@ -42,10 +42,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <body
         className={cn(
-          "min-h-screen bg-linear-to-br from-white via-green-50 to-green-100 antialiased",
+          "min-h-screen bg-linear-to-br from-white via-green-50 to-green-100 antialiased scroll-smooth",
           inter.className,
           manrope.variable
         )}
