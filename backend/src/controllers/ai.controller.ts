@@ -13,7 +13,7 @@ const ai = new GoogleGenAI({
 
 export const getDiagnosisSuggestions = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { patientId, symptoms, chiefComplaint } = req.body;
@@ -106,7 +106,7 @@ Provide a structured clinical assessment in this exact JSON format:
 `;
 
     const summaryCompletion = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.1-flash-lite-preview",
       contents: [
         {
           role: "user",
@@ -158,14 +158,14 @@ Provide a structured clinical assessment in this exact JSON format:
     return serverErrorResponse(
       res,
       "Failed to generate diagnosis suggestions",
-      error
+      error,
     );
   }
 };
 
 export const checkDrugInteractions = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { patientId, proposedMedications } = req.body;
@@ -204,7 +204,7 @@ export const checkDrugInteractions = async (
     // Check basic interactions
     const basicInteractions = checkCommonInteractions(
       currentMedications,
-      proposedMedications
+      proposedMedications,
     );
 
     res.json({
@@ -335,7 +335,7 @@ export const assessPatientRisk = async (req: AuthRequest, res: Response) => {
 // Helper functions
 function checkCommonInteractions(
   currentMeds: string[],
-  proposedMeds: string[]
+  proposedMeds: string[],
 ) {
   // Simplified interaction database (expand with real data)
   const knownInteractions = [
@@ -441,7 +441,7 @@ function calculateCardiovascularRisk(patient: any) {
     patient.chronicConditions.some(
       (c: string) =>
         c.toLowerCase().includes("hypertension") ||
-        c.toLowerCase().includes("diabetes")
+        c.toLowerCase().includes("diabetes"),
     )
   ) {
     riskScore += 3;
@@ -463,8 +463,8 @@ function calculateCardiovascularRisk(patient: any) {
       riskScore >= 7
         ? ["Age", "Chronic conditions", "High BP or BMI"]
         : riskScore >= 4
-        ? ["Some risk factors present"]
-        : ["Low risk"],
+          ? ["Some risk factors present"]
+          : ["Low risk"],
   };
 }
 
@@ -474,7 +474,7 @@ function calculateDiabetesRisk(patient: any) {
   // Check for diabetes in chronic conditions
   if (
     patient.chronicConditions.some((c: string) =>
-      c.toLowerCase().includes("diabetes")
+      c.toLowerCase().includes("diabetes"),
     )
   ) {
     return { score: 10, level: "diagnosed", note: "Patient has diabetes" };
