@@ -1,8 +1,12 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useBrand } from "@/lib/hooks/use-brand";
 
 const Footer = () => {
+  const brand = useBrand();
   const footerLinks = {
     product: [
       { name: "How it works", href: "#how-it-works" },
@@ -38,7 +42,7 @@ const Footer = () => {
             <Link href="/" className="block mb-4">
               <Image
                 src="/images/logo.png"
-                alt="wecareEHR"
+                alt={brand.name}
                 width={140}
                 height={48}
                 className="w-32"
@@ -122,7 +126,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} wecareEHR. All rights reserved.
+              © {new Date().getFullYear()} {brand.name}. All rights reserved.
             </p>
           </div>
         </div>

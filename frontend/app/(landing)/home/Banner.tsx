@@ -1,9 +1,13 @@
+"use client";
+
 import ImageFolder from "@/components/custom/table/ImageFolder";
 import Gradient1 from "@/components/reusables/Gradient1";
 import Link from "next/link";
 import React from "react";
+import { useBrand } from "@/lib/hooks/use-brand";
 
 function Banner() {
+  const brand = useBrand();
   return (
     <div className="bg-primary/90 text-white rounded-2xl gap-12 md:gap-20 flex flex-col justify-between md:rounded-[33px] min-h-[calc(100svh-28px)] w-full p-6 pt-30 md:pt-36 pb-0 relative overflow-hidden">
       <div className="space-y-7 text-center mx-auto relative z-20">
@@ -23,7 +27,7 @@ function Banner() {
         </Link>
       </div>
 
-      <ImageFolder images={sampleData} title="wecareEHR Screenshots" />
+      <ImageFolder images={sampleData} title={`${brand.name} Screenshots`} />
 
       <Gradient1 />
     </div>

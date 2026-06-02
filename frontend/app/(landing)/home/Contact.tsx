@@ -55,10 +55,10 @@ const ContactUs = () => {
                 <div>
                   <p className="font-semibold text-lg mb-1">Email us</p>
                   <a
-                    href="mailto:hello@wecareehr.com"
+                    href="mailto:info@lifevenhealth.com"
                     className="text-gray-600 hover:text-primary transition-colors"
                   >
-                    hello@wecareehr.com
+                    info@lifevenhealth.com
                   </a>
                 </div>
               </div>

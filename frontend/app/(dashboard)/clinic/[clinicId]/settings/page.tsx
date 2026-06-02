@@ -305,7 +305,7 @@ export default function SettingsPage() {
                       disabled={hours.closed}
                       className="w-32 h-10"
                     />
-                    <span className="text-gray-400 font-medium">—</span>
+                    <span className="text-gray-400 font-medium">to</span>
                     <Input
                       type="time"
                       value={hours.close}

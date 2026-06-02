@@ -2,223 +2,212 @@
 
 import * as React from "react";
 import { Button, Link } from "@heroui/react";
-import { User } from "@heroui/react";
 import {
-  Carousel,
-  CarouselItem,
-  CarouselContent,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousels";
-import {
-  Calendar,
   MoveRight,
-  Users,
-  Activity,
-  FileText,
   CheckCircle,
   Shield,
   Clock,
-  Smartphone,
+  WifiOff,
+  Fingerprint,
+  Share2,
+  ScanLine,
   BarChart3,
-  Zap,
-  UserPlus,
-  ClipboardList,
-  Heart,
+  Trophy,
+  GraduationCap,
+  ShieldCheck,
+  Sparkles,
+  Activity,
+  Building2,
 } from "lucide-react";
 
 import Footer from "@/components/reusables/footer/Footer";
 import AppNavbar from "@/components/reusables/customUI/header";
+import { useBrand } from "@/lib/hooks/use-brand";
 
 export default function LandingPage() {
+  const brand = useBrand();
+
+  // Cited problem-scale figures (sources documented in our grant application).
+  const stats = [
+    { number: "85.3%", label: "of Nigerian health facilities still rely on paper records" },
+    { number: "30-40%", label: "of patient files lost or misfiled every year" },
+    { number: "70%", label: "of Nigerians depend on PHCs & private clinics for care" },
+    { number: "95M+", label: "Nigerians living with a communicable & non-communicable disease burden" },
+  ];
+
+  // The three core operational components of the platform.
+  const pillars = [
+    {
+      icon: WifiOff,
+      title: "Offline-First Point-of-Care",
+      description:
+        "Clinicians capture patient information on a mobile-first app. Records are stored securely on-device and sync to the cloud once connectivity returns, so unstable internet and power never interrupt care.",
+    },
+    {
+      icon: Fingerprint,
+      title: "Unified Patient Identity",
+      description:
+        "Linking the National Identity Number (NIN) gives every patient one portable digital record across facilities, cutting duplicate entries, repeated tests, and the loss of paper files.",
+    },
+    {
+      icon: BarChart3,
+      title: "Real-Time Health Intelligence",
+      description:
+        "Fragmented clinical notes become structured, actionable data that helps facilities track disease patterns, treatment outcomes, and strengthen public-health surveillance in real time.",
+    },
+  ];
+
+  // Honest, shippable capabilities. No overclaiming.
   const features = [
     {
-      icon: Calendar,
-      title: "Appointment Management",
+      icon: WifiOff,
+      title: "Works Offline",
       description:
-        "Schedule and manage patient appointments with automated SMS reminders for Nigerian patients.",
+        "Offline-first design for facilities with intermittent internet and power. Capture now, sync automatically later.",
     },
     {
-      icon: Users,
-      title: "Staff Management",
+      icon: Fingerprint,
+      title: "NIN-Linked Records",
       description:
-        "Efficiently manage doctors, nurses, and administrative staff with role-based access control.",
+        "A single, verifiable patient identity that follows the patient between clinics and diagnostic centers.",
     },
     {
-      icon: Activity,
-      title: "Patient Records",
+      icon: Share2,
+      title: "Standards-Based Interoperability",
       description:
-        "Secure digital patient records with comprehensive health history tracking and NHIS integration.",
+        "Built on global openEHR canonical modeling and HL7 FHIR for secure, portable longitudinal records.",
     },
     {
-      icon: FileText,
-      title: "Reports & Analytics",
+      icon: ScanLine,
+      title: "Digitize Legacy Paper",
       description:
-        "Generate FMOH-compliant reports and gain insights into clinic performance and patient outcomes.",
+        "OCR-assisted onboarding evaluates existing paper files so facilities transition without losing history.",
+    },
+    {
+      icon: Clock,
+      title: "Queue & Clinic Operations",
+      description:
+        "Queue-based monitoring streamlines patient flow and reduces time spent waiting at the point of care.",
     },
     {
       icon: Shield,
-      title: "Data Security",
+      title: "Privacy & Compliance",
       description:
-        "Bank-level encryption and NDPR compliance to protect sensitive patient information.",
-    },
-    {
-      icon: Smartphone,
-      title: "Mobile Access",
-      description:
-        "Access your clinic management system anywhere, anytime on any device with internet.",
+        "Designed around the Nigeria Data Protection Act (2023), with encryption in transit and at rest.",
     },
   ];
 
-  const howItWorksSteps = [
+  // Real validation. The proof a funder actually trusts.
+  const recognition = [
     {
-      step: 1,
-      icon: UserPlus,
-      title: "Register Your Clinic",
+      icon: Trophy,
+      title: "1st Place at Build with Google Hackathon",
       description:
-        "Sign up in 3 minutes with your clinic details and admin information. No paperwork required.",
+        "Our MVP won 1st place at the 2025 Codematic Build with Google Hackathon, validating the technical framework.",
     },
     {
-      step: 2,
-      icon: Users,
-      title: "Add Your Team",
+      icon: GraduationCap,
+      title: "Africa Health-Tech Accelerator",
       description:
-        "Invite doctors, nurses, and staff members. Set permissions based on their roles.",
+        "Currently enrolled, with the mentorship and institutional support to move from prototype to market-ready.",
     },
     {
-      step: 3,
-      icon: ClipboardList,
-      title: "Register Patients",
+      icon: Sparkles,
+      title: "Working MVP",
       description:
-        "Add patient records digitally. Import existing records or start fresh with new registrations.",
+        "A cloud-based MVP has undergone technical validation, confirming our interoperable, standards-aligned architecture.",
     },
     {
-      step: 4,
-      icon: Heart,
-      title: "Start Treating Patients",
+      icon: ShieldCheck,
+      title: "Policy-Aligned",
       description:
-        "Manage consultations, prescriptions, lab orders, and billing all in one place.",
+        "Aligned with the Nigeria Digital Health Architecture (NDHA) and the Nigeria Data Protection Act (2023).",
     },
   ];
 
-  const nigerianFeatures = [
-    {
-      title: "NHIS Integration Ready",
-      description:
-        "Prepare for seamless integration with the National Health Insurance Scheme.",
-    },
-    {
-      title: "Local Payment Options",
-      description:
-        "Accept payments via bank transfer, POS, and popular Nigerian payment gateways.",
-    },
-    {
-      title: "SMS Notifications",
-      description:
-        "Automated appointment reminders via SMS for patients across all Nigerian networks.",
-    },
-    {
-      title: "Multiple Locations",
-      description:
-        "Manage multiple clinic branches across Nigeria from a single dashboard.",
-    },
-    {
-      title: "Naira Pricing",
-      description:
-        "All pricing and billing in Nigerian Naira with no hidden charges.",
-    },
-    {
-      title: "Local Support",
-      description:
-        "Nigerian-based customer support team available via phone, WhatsApp, and email.",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Dr. Sarah Johnson",
-      role: "Chief Medical Officer, Hope Clinic, Lagos",
-      message:
-        "WecareEHR transformed our clinic operations. Patient wait times reduced by 40% and we can now see 30% more patients daily. The system is intuitive and our staff adapted quickly.",
-      avatar:
-        "https://images.unsplash.com/photo-1512361436605-a484bdb34b5f?ixlib=rb-4.1.0&auto=format&fit=crop&q=60&w=500",
-    },
-    {
-      name: "Dr. Michael Adeyemi",
-      role: "Managing Partner, SmileCare Dental, Abuja",
-      message:
-        "As a dental practice, we needed something specialized yet flexible. WecareEHR delivered beyond expectations. Our revenue tracking and patient management are now seamless.",
-      avatar:
-        "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?ixlib=rb-4.1.0&auto=format&fit=crop&q=60&w=500",
-    },
-    {
-      name: "Nurse Bentley Okeke",
-      role: "Lead Nurse, Grace Medical Center, Port Harcourt",
-      message:
-        "The vitals recording and queue management features save us hours daily. Everything flows smoothly from patient check-in to consultation. Highly recommended!",
-      avatar:
-        "https://media.istockphoto.com/id/1390000431/photo/shot-of-a-mature-doctor-using-a-digital-tablet-in-a-modern-hospital.webp?a=1&b=1&s=612x612&w=0&k=20&c=ObBKK9a_LJZZRH0isnIiX8YUCNpZQ6rBKoGbo_Z8vnk=",
-    },
-  ];
-
-  const stats = [
-    { number: "500+", label: "Healthcare Facilities" },
-    { number: "50,000+", label: "Patients Served" },
-    { number: "1,000+", label: "Healthcare Professionals" },
-    { number: "99.9%", label: "Uptime Guarantee" },
+  // Measurable 12-month outcomes from our roadmap.
+  const outcomes = [
+    "Pilot with 1 private clinic and 2 diagnostic centers in our first 12 months",
+    "70% digital record-sharing within pilot facilities",
+    "95% confidence score on OCR-driven evaluation of legacy paper files",
+    "15% reduction in average patient waiting times via queue monitoring",
+    "40% fewer duplicate records and less care discontinuity",
   ];
 
   return (
     <div className="flex flex-col">
       <AppNavbar />
 
-      {/* Hero Section - Mobile Optimized */}
+      {/* Hero Section */}
       <section className="flex flex-col items-center justify-center mt-6 sm:mt-10 gap-4 py-6 sm:py-8 md:py-16 px-4 sm:px-6 text-foreground">
         <div className="inline-block max-w-4xl text-center justify-center w-full">
-          <div className="mb-3 sm:mb-4">
+          <div className="mb-3 sm:mb-4 flex flex-wrap items-center justify-center gap-2">
             <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-semibold">
-              🇳🇬 Built for Nigerian Healthcare
+              🇳🇬 Built for Nigerian healthcare
+            </span>
+            <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-100 text-amber-700 rounded-full text-xs sm:text-sm font-semibold">
+              In development • Piloting 2026
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl mt-4 sm:mt-7 font-extrabold text-center leading-tight px-2">
-            Modern Clinic Management{" "}
+            A patient&apos;s history should follow them{" "}
             <br className="hidden sm:block" />
-            <span className="text-[#3d7e46]">Made Simple</span>
+            <span className="text-[#3d7e46]">everywhere they receive care</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-stone-700 mt-4 sm:mt-6 px-2">
-            Join 500+ Nigerian healthcare facilities using WecareEHR to deliver
-            better patient care, streamline operations, and grow their practice.
+            {brand.name} is a mobile-first, offline-capable electronic health
+            record system built for Nigeria&apos;s low-to-medium healthcare
+            facilities, so records are never lost and care is never interrupted.
           </p>
 
-          <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center py-4 mt-6 sm:mt-8 px-4">
-            <Button
-              as={Link}
-              className="flex items-center justify-center font-semibold text-white text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
-              color="primary"
-              href="/auth/register"
-              variant="shadow"
-            >
-              Start Free 30-Day Trial <MoveRight className="ml-2" size={20} />
-            </Button>
+          {!brand.hideAuthButtons && (
+            <>
+              <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center py-4 mt-6 sm:mt-8 px-4">
+                <Button
+                  as={Link}
+                  className="flex items-center justify-center font-semibold text-white text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
+                  color="primary"
+                  href="/auth/register"
+                  variant="shadow"
+                >
+                  Get Started <MoveRight className="ml-2" size={20} />
+                </Button>
 
-            <Button
-              as={Link}
-              href="/auth/login"
-              className="w-full sm:w-auto border-green-700 text-green-700 hover:bg-green-50 font-semibold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8"
-              color="default"
-              variant="bordered"
-            >
-              Sign In
-            </Button>
-          </div>
+                <Button
+                  as={Link}
+                  href="/auth/login"
+                  className="w-full sm:w-auto border-green-700 text-green-700 hover:bg-green-50 font-semibold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8"
+                  color="default"
+                  variant="bordered"
+                >
+                  Sign In
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
-          <p className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 px-4">
-            No credit card required • Cancel anytime • Nigerian support team
+      {/* The Problem */}
+      <section className="flex flex-col items-center justify-center gap-4 pt-4 pb-10 sm:pb-16 px-4 sm:px-6 text-foreground">
+        <div className="text-center max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            When paper records fail, care fails
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl text-stone-700 mt-3 sm:mt-4 leading-relaxed">
+            Across Nigeria&apos;s primary healthcare centers, private clinics,
+            and diagnostic centers, patient records are still paper-based:
+            fragmented, easily lost, and inaccessible across points of care.
+            Enterprise EHRs exist, but they are expensive,
+            internet-dependent, and built for large urban hospitals. The
+            facilities that serve most Nigerians are left behind, driving
+            repeated tests, medication errors, treatment delays, and weak
+            disease surveillance.
           </p>
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats / Problem Scale */}
       <section className="bg-green-50 py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
@@ -236,36 +225,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* How It Works (Core Pillars) */}
       <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
         <div className="text-center max-w-3xl mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">How It Works</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            How {brand.name} works
+          </h2>
           <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
-            Get your clinic up and running in 4 simple steps
+            Three core capabilities, designed for the realities of underserved
+            facilities
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-7xl w-full">
-          {howItWorksSteps.map((item, index) => {
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-7xl w-full">
+          {pillars.map((item, index) => {
             const Icon = item.icon;
             return (
-              <div key={index} className="relative">
-                {/* Connector line for desktop */}
-                {index < howItWorksSteps.length - 1 && (
-                  <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-green-200 z-0" />
-                )}
-
-                <div className="relative z-10 bg-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-green-100">
-                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
-                      {item.step}
-                    </div>
-                    <Icon size={32} className="text-green-600 sm:w-10 sm:h-10" />
-                    <h3 className="font-bold text-lg sm:text-xl text-zinc-800">
-                      {item.title}
-                    </h3>
-                    <p className="text-zinc-600 text-sm">{item.description}</p>
+              <div
+                key={index}
+                className="relative z-10 bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-green-100"
+              >
+                <div className="flex flex-col items-start text-left space-y-3 sm:space-y-4">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-600 flex items-center justify-center text-white">
+                    <Icon size={26} />
                   </div>
+                  <h3 className="font-bold text-lg sm:text-xl text-zinc-800">
+                    {item.title}
+                  </h3>
+                  <p className="text-zinc-600 text-sm sm:text-base leading-relaxed">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             );
@@ -273,178 +262,174 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Nigerian-Specific Features */}
-      <section className="bg-gray-50 py-10 sm:py-16 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-              Built for Nigerian Clinics
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
-              Features designed specifically for the Nigerian healthcare system
-            </p>
-          </div>
+      {/* Features */}
+      <section className="bg-gray-50 flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
+        <div className="text-center max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            What we&apos;re building
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-4 sm:mt-6">
+            An infrastructure-aware EHR tailored to low-to-medium resource
+            facilities
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
-            {nigerianFeatures.map((feature, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8 py-8 sm:py-10 max-w-7xl w-full">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
               <div
                 key={index}
-                className="bg-white p-5 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                className="bg-white py-6 sm:py-8 px-4 sm:px-5 flex flex-col space-y-4 sm:space-y-5 rounded-lg shadow-xl hover:shadow-2xl transition-shadow text-left border border-gray-100"
               >
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={20} />
-                  <div>
-                    <h3 className="font-bold text-base sm:text-lg text-zinc-800 mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-zinc-600 text-sm">
-                      {feature.description}
-                    </p>
-                  </div>
+                <div className="flex flex-col">
+                  <Icon size={44} className="text-[#0d5117] mb-3 sm:mb-4" />
+                  <span className="font-bold text-lg sm:text-xl text-zinc-800">
+                    {feature.title}
+                  </span>
                 </div>
+                <p className="text-zinc-600 text-sm sm:text-base">
+                  {feature.description}
+                </p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Recognition & Validation */}
       <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
-        <div className="text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-            Everything You Need to Run Your Clinic
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-4 sm:mt-6 max-w-3xl mx-auto">
-            Comprehensive features to handle every aspect of your healthcare
-            facility
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8 py-8 sm:py-10 max-w-7xl">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={index}
-                  className="bg-white py-6 sm:py-8 px-4 sm:px-5 flex flex-col space-y-4 sm:space-y-5 rounded-lg shadow-xl hover:shadow-2xl transition-shadow text-left border border-gray-100"
-                >
-                  <div className="flex flex-col">
-                    <Icon
-                      size={48}
-                      className="text-[#0d5117] font-extrabold mb-3 sm:mb-4 sm:w-[60px] sm:h-[60px]"
-                    />
-                    <span className="font-bold text-lg sm:text-xl text-zinc-800">
-                      {feature.title}
-                    </span>
-                  </div>
-                  <p className="text-zinc-600 text-sm sm:text-base">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="bg-green-50 flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
-        <div className="text-center">
+        <div className="text-center max-w-3xl">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold px-2">
-            Trusted by Healthcare Professionals Across Nigeria
+            Where we are today
           </h2>
           <p className="text-base sm:text-lg md:text-xl font-semibold text-stone-700 mt-3 sm:mt-4">
-            See what clinic owners and healthcare professionals are saying
+            We are pre-launch, but the foundation is real, validated, and
+            recognized
           </p>
         </div>
 
-        <div className="flex items-center justify-center w-full mt-6 sm:mt-8 py-4 sm:py-6">
-          <Carousel className="max-w-md md:max-w-3xl w-full">
-            <CarouselContent>
-              {testimonials.map((item, index) => (
-                <CarouselItem
-                  key={index}
-                  className="flex items-center justify-center text-center w-full px-2 sm:px-4"
-                >
-                  <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 px-4 sm:px-6 bg-white rounded-xl shadow-lg py-6 sm:py-8">
-                    <User
-                      name={item.name}
-                      description={item.role}
-                      avatarProps={{
-                        src: item.avatar,
-                        className: "w-12 h-12 sm:w-16 sm:h-16",
-                      }}
-                      className="justify-center"
-                    />
-
-                    <p className="text-sm sm:text-base md:text-lg text-zinc-700 max-w-2xl leading-relaxed">
-                      "{item.message}"
-                    </p>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-
-            <div className="flex justify-center gap-4 mt-6 sm:mt-8">
-              <CarouselPrevious className="relative left-0" />
-              <CarouselNext className="relative right-0" />
-            </div>
-          </Carousel>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8 mt-6 sm:mt-8 max-w-7xl w-full">
+          {recognition.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={index}
+                className="bg-white p-5 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-green-100 text-left"
+              >
+                <Icon size={32} className="text-green-600 mb-3" />
+                <h3 className="font-bold text-base sm:text-lg text-zinc-800 mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-zinc-600 text-sm leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Pricing Highlight */}
-      <section className="py-10 sm:py-16 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
-            Simple, Transparent Pricing
-          </h2>
-          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl p-8 sm:p-12 shadow-2xl">
-            <div className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4">₦15,000</div>
-            <div className="text-xl sm:text-2xl mb-4 sm:mb-6">per month</div>
-            <div className="space-y-2 sm:space-y-3 text-sm sm:text-base md:text-lg mb-6 sm:mb-8">
-              <p>✓ Unlimited patients and staff</p>
-              <p>✓ All features included</p>
-              <p>✓ Nigerian phone & WhatsApp support</p>
-              <p>✓ Free setup assistance</p>
-              <p>✓ 30-day free trial</p>
+      {/* Impact & Outcomes */}
+      <section className="bg-green-50 py-10 sm:py-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+          <div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+              The impact we&apos;re working toward
+            </h2>
+            <p className="text-base sm:text-lg text-stone-700 mt-3 sm:mt-4">
+              Clear, measurable goals for our first 12 months of pilots.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {outcomes.map((item, index) => (
+                <li key={index} className="flex items-start gap-3">
+                  <CheckCircle
+                    className="text-green-600 mt-0.5 flex-shrink-0"
+                    size={20}
+                  />
+                  <span className="text-zinc-700 text-sm sm:text-base">
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <p className="font-semibold text-zinc-800">
+              Contributing to the UN Sustainable Development Goals:
+            </p>
+            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-md border border-green-100 flex items-start gap-4">
+              <Activity className="text-green-600 flex-shrink-0" size={28} />
+              <div>
+                <h3 className="font-bold text-zinc-800">
+                  SDG 3: Good Health & Well-being
+                </h3>
+                <p className="text-zinc-600 text-sm mt-1">
+                  Reducing premature mortality from communicable and
+                  non-communicable diseases through continuity of care.
+                </p>
+              </div>
             </div>
-            <Button
-              as={Link}
-              href="/auth/register"
-              className="bg-white text-green-700 hover:bg-gray-100 font-bold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
-              size="lg"
-            >
-              Start Your Free Trial
-            </Button>
+            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-md border border-green-100 flex items-start gap-4">
+              <Building2 className="text-green-600 flex-shrink-0" size={28} />
+              <div>
+                <h3 className="font-bold text-zinc-800">
+                  SDG 9: Industry, Innovation & Infrastructure
+                </h3>
+                <p className="text-zinc-600 text-sm mt-1">
+                  Building resilient digital health infrastructure for the
+                  facilities still reliant on paper.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* Why Now */}
+      <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground">
+        <div className="text-center max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            Why now
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl text-stone-700 mt-4 sm:mt-6 leading-relaxed">
+            Nigeria has reached a policy turning point with the launch of the
+            Nigeria Digital Health Architecture (NDHA), an urgent mandate to
+            bridge paper-based records and a unified national health ecosystem.
+            The Ministry of Health&apos;s call for private-sector agility, the
+            need for patient-centered interoperability, and the readiness of
+            cloud-native, offline-capable systems make this the moment to act.
+          </p>
+        </div>
+      </section>
+
+      {/* Mission / Final CTA */}
       <section className="flex flex-col items-center justify-center gap-4 py-10 sm:py-16 px-4 sm:px-6 text-foreground bg-[#0d5117]">
         <div className="text-center py-6 sm:py-7 max-w-4xl">
-          <h2 className="capitalize text-3xl sm:text-4xl md:text-5xl mt-4 sm:mt-7 font-bold text-white">
-            Ready to Transform Your Clinic?
+          <h2 className="text-3xl sm:text-4xl md:text-5xl mt-4 sm:mt-7 font-bold text-white">
+            Our mission
           </h2>
-          <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-100 mt-4 sm:mt-6">
-            Join hundreds of Nigerian healthcare providers modernizing their
-            practice with WecareEHR. Start your free 30-day trial today.
+          <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-100 mt-4 sm:mt-6 leading-relaxed">
+            To improve care outcomes, and provide care continuity through an
+            affordable digital electronic health record system for
+            low-to-medium healthcare facilities in Nigeria.
           </p>
 
-          <div className="mx-auto pt-6 sm:pt-7 max-w-md">
-            <Button
-              as={Link}
-              href="/auth/register"
-              className="flex items-center justify-center bg-white font-semibold text-[#0d5117] text-base sm:text-lg md:text-xl py-5 sm:py-6 w-full"
-              variant="shadow"
-              radius="md"
-              size="lg"
-            >
-              Get Started Free <MoveRight className="ml-2" size={20} />
-            </Button>
-          </div>
-
-          <p className="text-gray-300 mt-3 sm:mt-4 text-xs sm:text-sm">
-            Questions? Call us on +234 800 123 4567 or WhatsApp
-          </p>
+          {!brand.hideAuthButtons && (
+            <div className="mx-auto pt-6 sm:pt-7 max-w-md">
+              <Button
+                as={Link}
+                href="/auth/register"
+                className="flex items-center justify-center bg-white font-semibold text-[#0d5117] text-base sm:text-lg md:text-xl py-5 sm:py-6 w-full"
+                variant="shadow"
+                radius="md"
+                size="lg"
+              >
+                Get Started <MoveRight className="ml-2" size={20} />
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
