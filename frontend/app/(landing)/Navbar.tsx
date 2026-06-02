@@ -175,23 +175,31 @@ function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      ) : brand.hideAuthButtons ? null : (
+      ) : (
         <div className="hidden lg:flex gap-3 items-center">
           <Link
             className={cn(
               "block font-semibold px-6 transition-colors hover:opacity-70",
-              scrolled ? "text-black" : "text-white"
+              scrolled ? "text-black" : "text-white",
+              brand.disableAuthButtons &&
+                "opacity-50 cursor-not-allowed pointer-events-none"
             )}
-            href={"/auth/login"}
+            href={brand.disableAuthButtons ? "#" : "/auth/login"}
+            aria-disabled={brand.disableAuthButtons}
+            tabIndex={brand.disableAuthButtons ? -1 : undefined}
           >
             Login
           </Link>
 
           <Link
-            href={"/auth/register"}
+            href={brand.disableAuthButtons ? "#" : "/auth/register"}
+            aria-disabled={brand.disableAuthButtons}
+            tabIndex={brand.disableAuthButtons ? -1 : undefined}
             className={cn(
               "block font-semibold px-6 py-3 rounded-full transition-colors hover:bg-opacity-90",
-              scrolled ? "bg-primary text-white" : "bg-white text-black"
+              scrolled ? "bg-primary text-white" : "bg-white text-black",
+              brand.disableAuthButtons &&
+                "opacity-50 cursor-not-allowed pointer-events-none"
             )}
           >
             Get Started
@@ -248,18 +256,30 @@ function Navbar() {
                 Logout
               </button>
             </>
-          ) : brand.hideAuthButtons ? null : (
+          ) : (
             <>
               <Link
-                className="block w-full text-center font-semibold text-black py-3 border border-gray-200 rounded-full"
-                href={"/auth/login"}
+                className={cn(
+                  "block w-full text-center font-semibold text-black py-3 border border-gray-200 rounded-full",
+                  brand.disableAuthButtons &&
+                    "opacity-50 cursor-not-allowed pointer-events-none"
+                )}
+                href={brand.disableAuthButtons ? "#" : "/auth/login"}
+                aria-disabled={brand.disableAuthButtons}
+                tabIndex={brand.disableAuthButtons ? -1 : undefined}
                 onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
               <Link
-                href={"/auth/register"}
-                className="block w-full text-center font-semibold bg-primary text-white px-6 py-3 rounded-full"
+                href={brand.disableAuthButtons ? "#" : "/auth/register"}
+                aria-disabled={brand.disableAuthButtons}
+                tabIndex={brand.disableAuthButtons ? -1 : undefined}
+                className={cn(
+                  "block w-full text-center font-semibold bg-primary text-white px-6 py-3 rounded-full",
+                  brand.disableAuthButtons &&
+                    "opacity-50 cursor-not-allowed pointer-events-none"
+                )}
                 onClick={() => setIsOpen(false)}
               >
                 Get Started

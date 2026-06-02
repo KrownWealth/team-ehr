@@ -13,20 +13,23 @@
 export interface Brand {
   /** Display name shown in copy, alt text and document title. */
   name: string;
-  /** Hide the public "Login" / "Get Started" buttons on the landing pages. */
-  hideAuthButtons: boolean;
+  /**
+   * Disable the public "Login" / "Get Started" buttons on the landing pages.
+   * The buttons stay visible but are rendered non-interactive (not clickable).
+   */
+  disableAuthButtons: boolean;
 }
 
 export const DEFAULT_BRAND: Brand = {
   name: "Lifeven Health",
-  hideAuthButtons: false,
+  disableAuthButtons: false,
 };
 
 /** Host (bare domain, no `www.` / port) -> brand overrides. */
 const BRANDS_BY_HOST: Record<string, Brand> = {
   "lifevenhealth.com": {
     name: "Lifeven Health",
-    hideAuthButtons: true,
+    disableAuthButtons: true,
   },
 };
 

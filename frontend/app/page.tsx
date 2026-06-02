@@ -150,41 +150,41 @@ export default function LandingPage() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl mt-4 sm:mt-7 font-extrabold text-center leading-tight px-2">
-            A patient&apos;s history should follow them{" "}
+            Reliable Point of Care Digitization{" "}
             <br className="hidden sm:block" />
-            <span className="text-[#3d7e46]">everywhere they receive care</span>
+            <span className="text-[#3d7e46]">for Healthcare Facilities</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-stone-700 mt-4 sm:mt-6 px-2">
-            {brand.name} is a mobile-first, offline-capable electronic health
-            record system built for Nigeria&apos;s low-to-medium healthcare
-            facilities, so records are never lost and care is never interrupted.
+            Small and medium healthcare facilities use {brand.name} online and
+            offline to digitize patient paper records, secure data sharing,
+            streamline clinical workflows, manage financial processes, enhance
+            administration efficiency, and ultimately improve patient care
+            outcomes.
           </p>
 
-          {!brand.hideAuthButtons && (
-            <>
-              <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center py-4 mt-6 sm:mt-8 px-4">
-                <Button
-                  as={Link}
-                  className="flex items-center justify-center font-semibold text-white text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
-                  color="primary"
-                  href="/auth/register"
-                  variant="shadow"
-                >
-                  Get Started <MoveRight className="ml-2" size={20} />
-                </Button>
+          <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center py-4 mt-6 sm:mt-8 px-4">
+            <Button
+              as={brand.disableAuthButtons ? undefined : Link}
+              className="flex items-center justify-center font-semibold text-white text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8 w-full sm:w-auto"
+              color="primary"
+              href={brand.disableAuthButtons ? undefined : "/auth/register"}
+              isDisabled={brand.disableAuthButtons}
+              variant="shadow"
+            >
+              Get Started <MoveRight className="ml-2" size={20} />
+            </Button>
 
-                <Button
-                  as={Link}
-                  href="/auth/login"
-                  className="w-full sm:w-auto border-green-700 text-green-700 hover:bg-green-50 font-semibold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8"
-                  color="default"
-                  variant="bordered"
-                >
-                  Sign In
-                </Button>
-              </div>
-            </>
-          )}
+            <Button
+              as={brand.disableAuthButtons ? undefined : Link}
+              href={brand.disableAuthButtons ? undefined : "/auth/login"}
+              isDisabled={brand.disableAuthButtons}
+              className="w-full sm:w-auto border-green-700 text-green-700 hover:bg-green-50 font-semibold text-base sm:text-lg md:text-xl py-5 sm:py-6 px-6 sm:px-8"
+              color="default"
+              variant="bordered"
+            >
+              Sign In
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -416,20 +416,19 @@ export default function LandingPage() {
             low-to-medium healthcare facilities in Nigeria.
           </p>
 
-          {!brand.hideAuthButtons && (
-            <div className="mx-auto pt-6 sm:pt-7 max-w-md">
-              <Button
-                as={Link}
-                href="/auth/register"
-                className="flex items-center justify-center bg-white font-semibold text-[#0d5117] text-base sm:text-lg md:text-xl py-5 sm:py-6 w-full"
-                variant="shadow"
-                radius="md"
-                size="lg"
-              >
-                Get Started <MoveRight className="ml-2" size={20} />
-              </Button>
-            </div>
-          )}
+          <div className="mx-auto pt-6 sm:pt-7 max-w-md">
+            <Button
+              as={brand.disableAuthButtons ? undefined : Link}
+              href={brand.disableAuthButtons ? undefined : "/auth/register"}
+              isDisabled={brand.disableAuthButtons}
+              className="flex items-center justify-center bg-white font-semibold text-[#0d5117] text-base sm:text-lg md:text-xl py-5 sm:py-6 w-full"
+              variant="shadow"
+              radius="md"
+              size="lg"
+            >
+              Get Started <MoveRight className="ml-2" size={20} />
+            </Button>
+          </div>
         </div>
       </section>
 
