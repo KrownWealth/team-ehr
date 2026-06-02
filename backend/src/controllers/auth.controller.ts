@@ -33,7 +33,7 @@ async function createAndSendOTP(email: string) {
 
   await emailService.sendOTPEmail(email, otpString);
 
-  console.log(`[OTP] Created for ${email}: ${otpString}`);
+  // console.log(`[OTP] Created for ${email}: ${otpString}`);
 }
 
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -213,7 +213,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     //   `[OTP] Verification attempt - Email: ${normalizedEmail}, Code: ${normalizedCode}`
     // );
 
-    console.log(await prisma.oTP.findMany());
+    // console.log(await prisma.oTP.findMany());
 
     const otp = await prisma.oTP.findFirst({
       where: {
@@ -609,7 +609,7 @@ export const patientRequestOTP = async (req: Request, res: Response) => {
     await emailService.sendPatientOTPEmail(
       patient.email,
       otpCode,
-      patient.firstName
+      patient.firstName,
     );
     logger.info(`Patient OTP sent to: ${patient.email}`);
 
@@ -781,7 +781,7 @@ export const patientResendOTP = async (req: Request, res: Response) => {
     await emailService.sendPatientOTPEmail(
       patient.email,
       otpCode,
-      patient.firstName
+      patient.firstName,
     );
     logger.info(`Patient OTP resent to: ${patient.email}`);
 

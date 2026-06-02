@@ -124,12 +124,13 @@ export default function AppNavbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </NavbarItem>
-        ) : brand.hideAuthButtons ? null : (
+        ) : (
           <>
             <NavbarItem>
               <Button
-                as={Link}
-                href="/auth/login"
+                as={brand.disableAuthButtons ? undefined : Link}
+                href={brand.disableAuthButtons ? undefined : "/auth/login"}
+                isDisabled={brand.disableAuthButtons}
                 variant="bordered"
                 className="border-green-700 text-green-700 hover:bg-green-50 font-semibold"
               >
@@ -138,8 +139,9 @@ export default function AppNavbar() {
             </NavbarItem>
             <NavbarItem>
               <Button
-                as={Link}
-                href="/auth/register"
+                as={brand.disableAuthButtons ? undefined : Link}
+                href={brand.disableAuthButtons ? undefined : "/auth/register"}
+                isDisabled={brand.disableAuthButtons}
                 color="primary"
                 variant="shadow"
                 className="bg-green-700 hover:bg-green-800 text-white font-semibold"
@@ -179,20 +181,27 @@ export default function AppNavbar() {
                 </Button>
               </NavbarMenuItem>
             </>
-          ) : brand.hideAuthButtons ? null : (
+          ) : (
             <>
               <NavbarMenuItem>
                 <Link
-                  href="/auth/login"
-                  className="w-full text-green-700 font-bold text-lg py-3 block text-center border border-green-700 rounded-xl hover:bg-green-50"
+                  href={brand.disableAuthButtons ? "#" : "/auth/login"}
+                  aria-disabled={brand.disableAuthButtons}
+                  tabIndex={brand.disableAuthButtons ? -1 : undefined}
+                  className={`w-full text-green-700 font-bold text-lg py-3 block text-center border border-green-700 rounded-xl hover:bg-green-50 ${
+                    brand.disableAuthButtons
+                      ? "opacity-50 cursor-not-allowed pointer-events-none"
+                      : ""
+                  }`}
                 >
                   Sign In
                 </Link>
               </NavbarMenuItem>
               <NavbarMenuItem>
                 <Button
-                  as={Link}
-                  href="/auth/register"
+                  as={brand.disableAuthButtons ? undefined : Link}
+                  href={brand.disableAuthButtons ? undefined : "/auth/register"}
+                  isDisabled={brand.disableAuthButtons}
                   className="w-full bg-green-700 hover:bg-green-800 text-white font-bold text-lg py-6"
                 >
                   Get Started

@@ -46,14 +46,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       ) {
         const tokenSet = getCookie("auth_token");
         const userSet = getCookie("user_data");
-        console.log("🔐 Auth cookies set:", {
-          hasToken: !!tokenSet,
-          hasRefreshToken: !!getCookie("refresh_token"),
-          hasUser: !!userSet,
-          clinicId: user.clinicId,
-          role: user.role,
-          userId: user.id,
-        });
+        // console.log("🔐 Auth cookies set:", {
+        //   hasToken: !!tokenSet,
+        //   hasRefreshToken: !!getCookie("refresh_token"),
+        //   hasUser: !!userSet,
+        //   clinicId: user.clinicId,
+        //   role: user.role,
+        //   userId: user.id,
+        // });
       }
 
       set({
@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ token });
 
       if (process.env.NODE_ENV === "development") {
-        console.log("🔄 Token updated");
+        // console.log("🔄 Token updated");
       }
     } catch (error) {
       console.error("❌ Failed to update token:", error);
@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       if (process.env.NODE_ENV === "development") {
-        console.log("👋 User logged out");
+        //  console.log("👋 User logged out");
       }
     } catch (error) {
       console.error("❌ Logout error:", error);
@@ -116,7 +116,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         setCookie("user_data", JSON.stringify(updatedUser), COOKIE_OPTIONS);
 
         if (process.env.NODE_ENV === "development") {
-          console.log("👤 User data updated:", userData);
+          //  console.log("👤 User data updated:", userData);
         }
 
         return { user: updatedUser };
@@ -147,7 +147,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         setCookie("user_data", JSON.stringify(updatedUser), COOKIE_OPTIONS);
 
         if (process.env.NODE_ENV === "development") {
-          console.log("🎯 Onboarding status updated:", { status, clinicId });
+          // console.log("🎯 Onboarding status updated:", { status, clinicId });
         }
 
         return { user: updatedUser };
@@ -165,11 +165,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       const userDataStr = getCookie("user_data") as string | undefined;
 
       if (process.env.NODE_ENV === "development") {
-        console.log("🚀 Initializing auth:", {
-          hasToken: !!token,
-          hasRefreshToken: !!refreshToken,
-          hasUserData: !!userDataStr,
-        });
+        // console.log("🚀 Initializing auth:", {
+        //   hasToken: !!token,
+        //   hasRefreshToken: !!refreshToken,
+        //   hasUserData: !!userDataStr,
+        // });
       }
 
       if (token && userDataStr) {
@@ -185,12 +185,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           });
 
           if (process.env.NODE_ENV === "development") {
-            console.log("✅ Auth initialized:", {
-              userId: user.id,
-              role: user.role,
-              clinicId: user.clinicId,
-              onboardingStatus: user.onboardingStatus,
-            });
+            //   console.log("✅ Auth initialized:", {
+            //     userId: user.id,
+            //     role: user.role,
+            //     clinicId: user.clinicId,
+            //     onboardingStatus: user.onboardingStatus,
+            // });
           }
         } catch (parseError) {
           console.error("❌ Failed to parse user data:", parseError);
@@ -209,7 +209,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       } else {
         if (process.env.NODE_ENV === "development") {
-          console.log("ℹ️ No auth data found in cookies");
+          //console.log("ℹ️ No auth data found in cookies");
         }
 
         // ADD THIS - mark as initialized even when no auth data
@@ -251,24 +251,24 @@ export const verifyCookies = () => {
   const refreshToken = getCookie("refresh_token");
   const userData = getCookie("user_data");
 
-  console.log("🍪 Cookie verification:", {
-    hasToken: !!token,
-    hasRefreshToken: !!refreshToken,
-    hasUserData: !!userData,
-    tokenLength: token ? String(token).length : 0,
-    userDataLength: userData ? String(userData).length : 0,
-  });
+  // console.log("🍪 Cookie verification:", {
+  //   hasToken: !!token,
+  //   hasRefreshToken: !!refreshToken,
+  //   hasUserData: !!userData,
+  //   tokenLength: token ? String(token).length : 0,
+  //   userDataLength: userData ? String(userData).length : 0,
+  // });
 
   if (userData) {
     try {
       const parsed = JSON.parse(String(userData));
-      console.log("📦 Parsed user data:", {
-        id: parsed.id,
-        email: parsed.email,
-        role: parsed.role,
-        clinicId: parsed.clinicId,
-        onboardingStatus: parsed.onboardingStatus,
-      });
+      // console.log("📦 Parsed user data:", {
+      //   id: parsed.id,
+      //   email: parsed.email,
+      //   role: parsed.role,
+      //   clinicId: parsed.clinicId,
+      //   onboardingStatus: parsed.onboardingStatus,
+      // });
     } catch (e) {
       console.error("❌ Failed to parse user data:", e);
     }

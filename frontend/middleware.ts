@@ -23,7 +23,7 @@ const AUTH_ROUTES = ["/auth/login", "/auth/register", "/auth/verify-otp"];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
+    (route) => pathname === route || pathname.startsWith(route + "/"),
   );
 }
 
@@ -40,7 +40,7 @@ type FullUserData = AuthTokenPayload & {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Add this logging
-  console.log("[Middleware] Processing:", pathname);
+  // console.log("[Middleware] Processing:", pathname);
 
   if (
     pathname.startsWith("/_next") ||
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
 
       if (decodedUser.exp < currentTime) {
         const userDataFromCookie = parseCookieValue(
-          userDataStr
+          userDataStr,
         ) as Partial<FullUserData> | null;
 
         if (userDataFromCookie?.role === "ADMIN") {
@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
       user = decodedUser;
     } catch (error) {
       const userDataFromCookie = parseCookieValue(
-        userDataStr
+        userDataStr,
       ) as Partial<FullUserData> | null;
 
       if (userDataFromCookie?.role === "ADMIN") {
@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const userDataFromCookie = parseCookieValue(
-    userDataStr
+    userDataStr,
   ) as Partial<FullUserData> | null;
   if (user && userDataFromCookie) {
     user = { ...user, ...userDataFromCookie };
@@ -146,7 +146,7 @@ export async function middleware(request: NextRequest) {
     if (fullUser.clinicId) {
       const dashboardUrl = new URL(
         `/clinic/${fullUser.clinicId}/dashboard`,
-        request.url
+        request.url,
       );
       return NextResponse.redirect(dashboardUrl);
     }
@@ -160,7 +160,7 @@ export async function middleware(request: NextRequest) {
   ) {
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
+      request.url,
     );
     return NextResponse.redirect(dashboardUrl);
   }
@@ -174,7 +174,7 @@ export async function middleware(request: NextRequest) {
   ) {
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
+      request.url,
     );
     return NextResponse.redirect(dashboardUrl);
   }
@@ -216,14 +216,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (allowedRoles && !allowedRoles.includes(fullUser.role)) {
-    console.log(`Access denied: ${fullUser.role} cannot access ${baseRoute}`);
+    //console.log(`Access denied: ${fullUser.role} cannot access ${baseRoute}`);
     const dashboardUrl = new URL(
       `/clinic/${fullUser.clinicId}/dashboard`,
-      request.url
+      request.url,
     );
     return NextResponse.redirect(dashboardUrl);
   }
-  console.log("[Middleware] Allowing access to:", pathname);
+  //console.log("[Middleware] Allowing access to:", pathname);
   return NextResponse.next();
 }
 
