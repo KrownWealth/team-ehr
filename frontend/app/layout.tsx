@@ -6,15 +6,19 @@ import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { ReactQueryProvider } from "./provider";
 import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@/lib/siteConfig";
+import { getServerBrand } from "@/lib/server/get-brand";
 import { Toaster } from "@/components/ui/sonner";
 
-export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getServerBrand();
+  return {
+    title: {
+      default: brand.name,
+      template: `%s | ${brand.name}`,
+    },
+    description: siteConfig.description,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#012201",

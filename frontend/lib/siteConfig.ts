@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "wecareEHR",
+  name: "Lifeven Health",
   description: "Modern Healthcare Management System",
   tagline: "Efficient. Secure. Patient-Centered.",
   url: "https://app.wecareehr.com",

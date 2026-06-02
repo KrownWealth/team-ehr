@@ -14,6 +14,7 @@ import {
 
 import { useState } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { useBrand } from "@/lib/hooks/use-brand";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ import { getDefaultRouteForRole } from "@/lib/constants/routes";
 export default function AppNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const brand = useBrand();
   const clinicId = user?.clinicId;
 
   const dashboardUrl = user?.clinicId
@@ -51,7 +53,7 @@ export default function AppNavbar() {
               width={142}
               height={142}
               priority
-              alt="WCE"
+              alt={brand.name}
             />
           </Link>
         </NavbarBrand>
@@ -105,7 +107,7 @@ export default function AppNavbar() {
                 <DropdownMenuItem
                   className="cursor-pointer py-2.5"
                   onClick={() => {
-                    window.location.href = "mailto:support@wecareehr.com";
+                    window.location.href = "mailto:info@lifevenhealth.com";
                   }}
                 >
                   <Mail className="mr-3 h-4 w-4 text-gray-500" />
@@ -122,7 +124,7 @@ export default function AppNavbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </NavbarItem>
-        ) : (
+        ) : brand.hideAuthButtons ? null : (
           <>
             <NavbarItem>
               <Button
@@ -177,7 +179,7 @@ export default function AppNavbar() {
                 </Button>
               </NavbarMenuItem>
             </>
-          ) : (
+          ) : brand.hideAuthButtons ? null : (
             <>
               <NavbarMenuItem>
                 <Link

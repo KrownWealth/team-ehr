@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { siteConfig } from "@/lib/siteConfig";
+import { useBrand } from "@/lib/hooks/use-brand";
 import { LogOutIcon, MailIcon, Menu, SettingsIcon, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +43,7 @@ const nlinks = [
 
 function Navbar() {
   const { user, logout } = useAuth();
+  const brand = useBrand();
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -81,7 +82,7 @@ function Navbar() {
       <Link href={"/"} className="block relative z-[1000] md:w-45">
         <Image
           src={"/images/logo.png"}
-          alt={siteConfig.name}
+          alt={brand.name}
           width={409}
           height={142}
           className={cn(
@@ -157,7 +158,7 @@ function Navbar() {
               <DropdownMenuItem
                 className="cursor-pointer py-2.5"
                 onClick={() => {
-                  window.location.href = "mailto:support@wecareehr.com";
+                  window.location.href = "mailto:info@lifevenhealth.com";
                 }}
               >
                 <MailIcon className="mr-3 h-4 w-4 text-gray-500" />
@@ -174,7 +175,7 @@ function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      ) : (
+      ) : brand.hideAuthButtons ? null : (
         <div className="hidden lg:flex gap-3 items-center">
           <Link
             className={cn(
@@ -247,7 +248,7 @@ function Navbar() {
                 Logout
               </button>
             </>
-          ) : (
+          ) : brand.hideAuthButtons ? null : (
             <>
               <Link
                 className="block w-full text-center font-semibold text-black py-3 border border-gray-200 rounded-full"

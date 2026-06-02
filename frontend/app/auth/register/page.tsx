@@ -22,6 +22,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useRegister } from "@/lib/hooks/use-auth";
+import { useBrand } from "@/lib/hooks/use-brand";
 import Link from "next/link";
 
 const countries = [
@@ -69,6 +70,7 @@ const STEPS = [
 ];
 
 export default function RegisterPage() {
+  const brand = useBrand();
   const [step, setStep] = useState(1);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showPassword, setShowPassword] = useState(false);
@@ -124,7 +126,7 @@ export default function RegisterPage() {
           Register As an Admin!
         </h2>
         <p className="text-gray-600 mt-2">
-          Join wecareEHR and modernize your healthcare practice
+          Join {brand.name} and modernize your healthcare practice
         </p>
       </div>
 
