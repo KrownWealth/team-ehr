@@ -66,7 +66,7 @@ class IntegrationTester {
       SUCCESS: "\x1b[32m",
       ERROR: "\x1b[31m",
     };
-    console.log(`${colors[level]}[${level}]\x1b[0m ${message}`);
+    //console.log(`${colors[level]}[${level}]\x1b[0m ${message}`);
   }
 
   private recordTest(name: string, passed: boolean, error?: string) {
@@ -110,7 +110,7 @@ class IntegrationTester {
 
       this.recordTest(
         "User Login",
-        loginResponse.status === 200 && !!this.clinicAAdmin.token
+        loginResponse.status === 200 && !!this.clinicAAdmin.token,
       );
     } catch (error: any) {
       this.recordTest("Authentication Flow", false, error.message);
@@ -140,7 +140,7 @@ class IntegrationTester {
         },
         {
           headers: { Authorization: `Bearer ${this.clinicAAdmin.token}` },
-        }
+        },
       );
 
       this.clinicAAdmin.clinicId = response.data.data.id;
@@ -189,7 +189,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": clientId,
           },
-        }
+        },
       );
 
       const success =
@@ -243,7 +243,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": clientId,
           },
-        }
+        },
       );
 
       const success =
@@ -295,7 +295,7 @@ class IntegrationTester {
         },
         {
           headers: { Authorization: `Bearer ${this.clinicBAdmin.token}` },
-        }
+        },
       );
 
       // Try to access Clinic A's patient with Clinic B's token
@@ -308,7 +308,7 @@ class IntegrationTester {
         this.recordTest(
           "Tenancy Isolation",
           false,
-          "Cross-tenant access allowed!"
+          "Cross-tenant access allowed!",
         );
       } catch (error: any) {
         // Should get 404 or 403
@@ -384,7 +384,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": uuidv4(),
           },
-        }
+        },
       );
 
       // 2. Check in appointment
@@ -396,7 +396,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": uuidv4(),
           },
-        }
+        },
       );
 
       // 3. Start consultation
@@ -407,7 +407,7 @@ class IntegrationTester {
           headers: {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
           },
-        }
+        },
       );
 
       // 4. Create consultation
@@ -433,7 +433,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": uuidv4(),
           },
-        }
+        },
       );
 
       // 5. Create bill
@@ -452,7 +452,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": uuidv4(),
           },
-        }
+        },
       );
 
       // 6. Record payment
@@ -468,7 +468,7 @@ class IntegrationTester {
             Authorization: `Bearer ${this.clinicAAdmin.token}`,
             "X-Request-ID": uuidv4(),
           },
-        }
+        },
       );
 
       this.recordTest("Complete Clinical Workflow", true);
@@ -498,26 +498,26 @@ class IntegrationTester {
    * Print test results
    */
   private printResults() {
-    console.log("\n" + "=".repeat(60));
-    console.log("TEST RESULTS");
-    console.log("=".repeat(60));
+    // console.log("\n" + "=".repeat(60));
+    // console.log("TEST RESULTS");
+    // console.log("=".repeat(60));
 
     this.results.tests.forEach((test) => {
       const icon = test.status === "PASS" ? "✓" : "✗";
       const color = test.status === "PASS" ? "\x1b[32m" : "\x1b[31m";
-      console.log(`${color}${icon} ${test.name}\x1b[0m`);
+      //console.log(`${color}${icon} ${test.name}\x1b[0m`);
       if (test.error) {
-        console.log(`  Error: ${test.error}`);
+        //  console.log(`  Error: ${test.error}`);
       }
     });
 
-    console.log("\n" + "=".repeat(60));
-    console.log(
-      `Total: ${this.results.passed + this.results.failed} | ` +
-        `\x1b[32mPassed: ${this.results.passed}\x1b[0m | ` +
-        `\x1b[31mFailed: ${this.results.failed}\x1b[0m`
-    );
-    console.log("=".repeat(60) + "\n");
+    //console.log("\n" + "=".repeat(60));
+    // console.log(
+    //   `Total: ${this.results.passed + this.results.failed} | ` +
+    //     `\x1b[32mPassed: ${this.results.passed}\x1b[0m | ` +
+    //     `\x1b[31mFailed: ${this.results.failed}\x1b[0m`,
+    // );
+    //console.log("=".repeat(60) + "\n");
 
     process.exit(this.results.failed > 0 ? 1 : 0);
   }
