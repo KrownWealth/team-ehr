@@ -123,8 +123,9 @@ export const config = {
   },
   // ✅ FIX: Improved frontend URLs configuration
   frontendUrls: [
-    "https://team-ehr.vercel.app",
     process.env.FRONTEND_URL,
+    "https://lifevenhealth.com",
+    "https://team-ehr.vercel.app",
     process.env.FRONTEND_URL_2,
     "http://localhost:3000",
   ].filter((url): url is string => Boolean(url)),
