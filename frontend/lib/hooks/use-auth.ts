@@ -180,15 +180,11 @@ export function usePatientRequestOtp() {
       return response.data.data;
     },
     onSuccess: (data) => {
-      if (data.email) {
-        toast.success(
-          `OTP sent to your email: ${data.email}. It expires in ${data.expiresIn}.`
-        );
-      } else {
-        toast.success(
-          "If a patient account exists, an OTP has been sent to your email address."
-        );
-      }
+      toast.success(
+        data.email
+          ? `OTP sent to your email: ${data.email}. It expires in ${data.expiresIn}.`
+          : "OTP has been sent to your email."
+      );
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to send OTP";
