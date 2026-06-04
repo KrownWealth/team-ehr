@@ -74,7 +74,24 @@ export const registerAdmin = async (req: Request, res: Response) => {
       },
     });
 
-    await createAndSendOTP(email);
+    try {
+      await createAndSendOTP(email);
+    } catch (emailError) {
+      // The verification email failed to send. Roll back the just-created
+      // user (and any OTP) so the account isn't left half-created and the
+      // person can retry instead of hitting "Email already registered".
+      await prisma.oTP.deleteMany({ where: { email } });
+      await prisma.user.delete({ where: { id: user.id } });
+      logger.error(
+        "Admin registration email failed; rolled back user:",
+        emailError
+      );
+      return res.status(502).json({
+        status: "error",
+        message:
+          "We couldn't send your verification email. Please try again shortly.",
+      });
+    }
 
     logger.info(`Admin registered: ${email}`);
 
@@ -138,7 +155,23 @@ export const register = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    await createAndSendOTP(email);
+    try {
+      await createAndSendOTP(email);
+    } catch (emailError) {
+      // Verification email failed: roll back the half-created staff user so
+      // the admin can retry instead of hitting "Email already registered".
+      await prisma.oTP.deleteMany({ where: { email } });
+      await prisma.user.delete({ where: { id: user.id } });
+      logger.error(
+        "Staff registration email failed; rolled back user:",
+        emailError
+      );
+      return res.status(502).json({
+        status: "error",
+        message:
+          "We couldn't send the verification email. Please try again shortly.",
+      });
+    }
 
     logger.info(`Staff registered: ${email} for Clinic ID: ${clinicId}`);
 
