@@ -18,6 +18,7 @@ app.use(
       if (!origin) return callback(null, true);
 
       const allowedOrigins = [
+        "https://lifevenhealth.com",
         "https://team-ehr.vercel.app",
         "http://localhost:3000",
         process.env.FRONTEND_URL,
