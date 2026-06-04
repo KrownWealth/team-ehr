@@ -586,9 +586,11 @@ export const patientRequestOTP = async (req: Request, res: Response) => {
     });
 
     if (!patient || !patient.email)
-      return res.json({
-        status: "success",
-        message: "If a patient account exists, an OTP has been sent",
+      return res.status(404).json({
+        status: "error",
+        message: email
+          ? "No account found for this email"
+          : "No account found for this phone number",
       });
     if (!patient.isActive)
       return res
@@ -746,9 +748,11 @@ export const patientResendOTP = async (req: Request, res: Response) => {
     });
 
     if (!patient || !patient.email)
-      return res.json({
-        status: "success",
-        message: "If a patient account exists, an OTP has been sent",
+      return res.status(404).json({
+        status: "error",
+        message: email
+          ? "No account found for this email"
+          : "No account found for this phone number",
       });
     if (!patient.isActive)
       return res
