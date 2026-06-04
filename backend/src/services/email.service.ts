@@ -7,10 +7,17 @@ export class EmailService {
   private frontendUrl: string;
 
   constructor() {
+    const smtpPort = config.email.port;
     this.transporter = nodemailer.createTransport({
       host: config.email.host,
-      port: config.email.port,
-      secure: false,
+      port: smtpPort,
+      // 465/2465 are implicit-TLS ports; 587/2587 use STARTTLS.
+      // Getting this wrong causes silent connection timeouts.
+      secure: smtpPort === 465 || smtpPort === 2465,
+      // Fail fast instead of nodemailer's 2-minute default, so a blocked
+      // SMTP port surfaces as a quick, clear error.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
       auth: {
         user: config.email.user,
         pass: config.email.password,
