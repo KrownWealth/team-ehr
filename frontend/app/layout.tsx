@@ -51,7 +51,7 @@ export default function RootLayout({
         className={cn(
           "min-h-screen bg-linear-to-br from-white via-green-50 to-green-100 antialiased scroll-smooth",
           inter.className,
-          manrope.variable
+          manrope.variable,
         )}
       >
         <ThemeProvider
