@@ -129,14 +129,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setOnboardingStatus: (status: OnboardingStatus, clinicId?: string) => {
     set((state) => {
-      if (!state.user) {
-        console.warn("⚠️ Cannot set onboarding status: No user in state");
-        return state;
-      }
-
       try {
+        // Fall back to the user_data cookie when the in-memory store hasn't
+        // been initialized (e.g. the page was refreshed mid-onboarding).
+        // The middleware routes off this cookie, so it must always be
+        // updated here or the user gets bounced back to /onboarding.
+        let baseUser = state.user;
+        if (!baseUser) {
+          const cookieStr = getCookie("user_data") as string | undefined;
+          baseUser = cookieStr ? (JSON.parse(cookieStr) as StoredUser) : null;
+        }
+
+        if (!baseUser) {
+          console.warn(
+            "⚠️ Cannot set onboarding status: no user in state or cookie"
+          );
+          return state;
+        }
+
         const updatedUser: StoredUser = {
-          ...state.user,
+          ...baseUser,
           onboardingStatus: status,
         };
 
