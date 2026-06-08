@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/error.middleware";
 import { rateLimiter } from "./middleware/rate-limit.midleware";
 import v1Routes from "./v1/routes/index";
 import logger from "./utils/logger.utils";
+import prisma from "./config/database";
 
 const app: Application = express();
 
@@ -56,12 +57,19 @@ app.use(morgan(config.nodeEnv === "development" ? "dev" : "combined"));
 
 app.use(rateLimiter);
 
-app.get("/health", (req: Request, res: Response) => {
+app.get("/health", async (req: Request, res: Response) => {
+  let dbStatus = "ok";
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    dbStatus = "error";
+  }
   res.status(200).json({
     status: "success",
-    message: "WeCareEHR API is running",
+    message: "Lifeven Health API is running",
     timestamp: new Date().toISOString(),
     environment: config.nodeEnv,
+    db: dbStatus,
   });
 });
 
