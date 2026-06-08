@@ -1,6 +1,5 @@
 "use client";
 
-
 import React from "react";
 import PricingPage from "./Pricing";
 import Features from "./Features";
@@ -14,7 +13,7 @@ function page() {
     <div className="p-4 space-y-10 md:space-y-20">
       <Banner />
       <br />
-      <About/>
+      <About />
       <Features />
       <PricingPage />
       <HowItWorks />

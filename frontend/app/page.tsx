@@ -23,16 +23,27 @@ import {
 import Footer from "@/components/reusables/footer/Footer";
 import AppNavbar from "@/components/reusables/customUI/header";
 import { useBrand } from "@/lib/hooks/use-brand";
+import WaitlistSection from "@/components/WaitlistSection";
 
 export default function LandingPage() {
   const brand = useBrand();
 
   // Cited problem-scale figures (sources documented in our grant application).
   const stats = [
-    { number: "85.3%", label: "of Nigerian health facilities still rely on paper records" },
+    {
+      number: "85.3%",
+      label: "of Nigerian health facilities still rely on paper records",
+    },
     { number: "30-40%", label: "of patient files lost or misfiled every year" },
-    { number: "70%", label: "of Nigerians depend on PHCs & private clinics for care" },
-    { number: "95M+", label: "Nigerians living with a communicable & non-communicable disease burden" },
+    {
+      number: "70%",
+      label: "of Nigerians depend on PHCs & private clinics for care",
+    },
+    {
+      number: "95M+",
+      label:
+        "Nigerians living with a communicable & non-communicable disease burden",
+    },
   ];
 
   // The three core operational components of the platform.
@@ -198,11 +209,10 @@ export default function LandingPage() {
             Across Nigeria&apos;s primary healthcare centers, private clinics,
             and diagnostic centers, patient records are still paper-based:
             fragmented, easily lost, and inaccessible across points of care.
-            Enterprise EHRs exist, but they are expensive,
-            internet-dependent, and built for large urban hospitals. The
-            facilities that serve most Nigerians are left behind, driving
-            repeated tests, medication errors, treatment delays, and weak
-            disease surveillance.
+            Enterprise EHRs exist, but they are expensive, internet-dependent,
+            and built for large urban hospitals. The facilities that serve most
+            Nigerians are left behind, driving repeated tests, medication
+            errors, treatment delays, and weak disease surveillance.
           </p>
         </div>
       </section>
@@ -412,8 +422,8 @@ export default function LandingPage() {
           </h2>
           <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-100 mt-4 sm:mt-6 leading-relaxed">
             To improve care outcomes, and provide care continuity through an
-            affordable digital electronic health record system for
-            low-to-medium healthcare facilities in Nigeria.
+            affordable digital electronic health record system for low-to-medium
+            healthcare facilities in Nigeria.
           </p>
 
           <div className="mx-auto pt-6 sm:pt-7 max-w-md">
@@ -431,6 +441,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <WaitlistSection />
 
       <Footer />
     </div>
